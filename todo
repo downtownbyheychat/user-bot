@@ -1,0 +1,309 @@
+TODO: Intent Handling 
+    TODO: Greeting Response:
+        Sup {{WhatsApp name}},
+        Welcome back to Downtown, where you chat, order, and eat fast.
+
+    TODO: About Company Response:
+        😎 Can’t say much about that one right now, But you can vibe with us on downtown.ng
+        or join #thehashtag WhatsApp channel, we drop daily updates there.
+
+    TODO: Customer Service Response:
+        Oops 😅 sounds like you need a hand!
+        Our support teams got you, just send a quick mail to help@downtown.ng
+        and someone will get back to you fast ⚡
+
+    TODO: Reordering Response:
+        No Wahala, you can reorder your last meal in one tap.
+        Tap “Reorder” below to bring back your previous order 
+        Action Button 1: Reorder🔁
+
+    TODO: Find Restaurant Response:
+        -	Right now, we deliver from a few spots around campus.
+        You fit type “show restaurants” to see where you can order from
+
+        …After Typing Show restaurants
+
+        Action Button List: Available Vendors
+    
+    TODO: Order Cancellation Response:
+        state: When user asks to cancel (within 2 min 30 sec)  
+            Got it! You’re still within the 2 min 30 sec grace window, so your order can be canceled 👌
+            Want me to go ahead and cancel it?
+            Action Button 1: Cancel Order👍
+        
+
+Greeting Response:
+Sup {{WhatsApp name}},
+Welcome back to Downtown, where you chat, order, and eat fast.
+
+About Company Response:
+😎 Can’t say much about that one right now, But you can vibe with us on downtown.ng
+or join #thehashtag WhatsApp channel, we drop daily updates there.
+
+Customer Service Response:
+Oops 😅 sounds like you need a hand!
+Our support teams got you, just send a quick mail to help@downtown.ng
+and someone will get back to you fast ⚡
+
+
+Reordering Response:
+No Wahala, you can reorder your last meal in one tap.
+Tap “Reorder” below to bring back your previous order 
+Action Button 1: Reorder🔁
+
+Find Restaurant Response:
+-	Right now, we deliver from a few spots around campus.
+You fit type “show restaurants” to see where you can order from
+
+…After Typing Show restaurants
+
+Action Button List: Available Vendors
+
+
+Order Cancellation Response:
+state: When user asks to cancel (within 2 min 30 sec)  
+Got it! You’re still within the 2 min 30 sec grace window, so your order can be canceled 👌🏽
+Want me to go ahead and cancel it?
+Action Button 1: Cancel Order👍 
+
+
+…After Clicking Cancel Order
+Done ✅ Your order’s been canceled successfully.
+Refund will be processed within {{refund time}} hours 💸
+Wanna try placing a new one?
+
+state: When user tries to cancel after 2 min 30 sec 
+Hmm… looks like your 2 min 30 sec window has passed 😕
+At this stage, your order’s already in progress and can’t be canceled.
+You can still let us know what went wrong, we’ll see how best to help.
+
+
+Order Modification Response:
+state: When user tries to modify an active order (within 2 min 30 sec) 
+Sure thing! You’re still within your 2 min 30 sec window, so we can make changes to your order 
+
+…Order Modified
+All set ✨ Your order’s been updated!
+{{updated order summary}}
+
+state: When user tries to modify after 2min 30sec window 
+Hey, it looks like your 2 min 30 sec window has closed 😕
+Your order’s already being processed, so we can’t make changes at this point.
+You can still re-order or let me know what went wrong, we’ll see what can be done.
+
+View Balance Response:
+state: When user asks to view balance and hasn’t created a wallet 
+Looks like you don’t have a Downtown wallet yet 👀
+You can set it up in seconds, just tap “Create Wallet” below to get started.
+Action Button 1: Create Wallet 
+
+state: When user asks to view balance and has created a wallet
+Sure thing boss, 👍
+Your Downtown wallet balance is ₦ {{balance amount}} 
+You can use it for orders, tips, or quick re-ups anytime
+
+state: When wallet service is down 
+Wallet’s taking a little nap right now 😴
+Try checking again in a few minutes, we’re on it.
+
+Fund Wallet Response:
+state: When user asks to fund wallet or account details and has created wallet 
+Here are your wallet details 👇
+Account Name: {{Wallet Name}}
+Account Number: {{Wallet Account Number}}
+Bank: {{Wallet Bank}}
+Action Button 1: Copy Account Number
+
+state: When user asks to fund wallet and hasn’t created a wallet 
+Looks like you don’t have a Downtown wallet yet 👀
+You can set it up in seconds, just tap “Create Wallet” below to get started.
+Action Button 1: Create Wallet 
+
+…Immediately after wallet creation
+Here are your wallet details 👇
+Account Name: {{Wallet Name}}
+Account Number: {{Wallet Account Number}}
+Bank: {{Wallet Bank}}
+Action Button 1: Copy Account Number
+INITIATED RESPONSE BASED ON BACKGROUND PROCESSES
+
+State: Order Just Placed 
+Got it! Your order has been received 🧾
+We’ll confirm with the restaurant and update you shortly.
+
+state: Preparing Order 
+Your order is being prepared by {{vendor name}} 👨🏽‍🍳🔥
+It smells good already 😋, we’ll ping you when it’s out for delivery.
+
+state: Out for Delivery 
+Your order is on its way! 🚴‍♂️💨
+rider just picked it up; you can expect delivery in about 7-10 mins.
+
+state: Delayed Order 
+Hey 👋 just a heads-up, your delivery’s taking a little longer than expected 😓
+Our chefs are still on it though, 5mins. Thanks for your patience ❤️
+
+state: Delivered Order 
+Your Order has been delivered.
+
+
+state: Insufficient Wallet Balance 
+Your wallet balance isn’t enough for this order.
+Please top up.
+Action Button 1: Top Up Wallet 
+…Top Up Button selected
+Here are your wallet details 👇
+Account Name: {{Wallet Name}}
+Account Number: {{Wallet Account Number}}
+Bank: {{Wallet Bank}}
+Action Button 1: Copy Account Number
+
+state: Wallet funded successfully 
+Alert!🎉🎉🎉 you were credited ₦{{credit amount},
+your new balance is ₦{{balance amount}}, 
+
+state: User hasn’t created wallet yet and wants to pay 
+
+Here’s your unique payment account for this order 👇Send ₦{{total amount}} to complete your payment. 💸
+Account Name: {{Account Name}}
+Account Number: {{Bank Account Number}}
+Bank: {{Bank Name}}
+Once you’ve sent it, tap “Sent” so we can confirm your payment right away. ✅
+Action Button 1: Copy Account Number 
+Action Button 2: Sent 
+
+state: User has Paid for Order
+Here is your receipt, 📃📃
+{{Receipt_image.png}}
+
+
+state: Wallet Payment confirmation
+Please confirm your payment of ₦ {{Total Payment}} to complete your order. 
+Action Button 1: Confirm Payment 
+
+state: User hasn’t created a wallet yet after two orders 
+You don’t have a Downtown wallet yet.
+Create one to start paying faster and earn cashback on every order. 💸
+Action Button 1: Create Wallet
+Action Button 2: Don’t Show Again 
+
+
+state: User just completed Onboarding
+Hey there! I’m Downtown, your go-to food ordering buddy 🍽️. I’m here to make your everyday meals super easy and stress-free 
+…After Onboarding message
+Alrighty Say what you want: (“e.g., jollof rice 800 from African Kitchen”)
+
+state: Chatbot failed to process food name 
+Hmm… we couldn’t find that meal.
+Here are some dishes you can order from this vendor 👇
+Action Button 1: View Menu 🍩
+
+state: User just Onboarded
+ Wanna go ahead and place an order? 😋
+Tap Yes to confirm or No to cancel.
+Action Button 1: Yes✅
+Action Button 2: No❌
+
+state: Chatbot failed to process multiple food quantity
+Oops! you didn’t specify the quantity of food Mind sending it again, like this: ‘800 jollof rice, plantain 200 and one egg from {{Restaurant Name}}’? I’ll be ready to place your order once I’ve got the full details! 
+
+state: Chatbot failed to process food quantity of single item 
+How much {{Food name}} do you want
+How many {{Food name}} do you want
+
+
+state: Chatbot failed to process merchant name 
+“Hmm, we don’t seem to have that merchant yet.”
+Double-check the name or pick from available ones below 👇
+Action Button 1: Available MERCHANT Name
+
+state: Merchant exist but isn’t onboarded
+This merchant isn’t on Downtown yet.
+We’re expanding fast, stay tuned or try another restaurant near you🔥
+Action Button 1: Available MERCHANTS
+
+state: Merchant exist but hasn’t opened
+⚠ Looks like this vendor isn’t available now.
+Try again later or pick another spot near you 🍽
+Action Button 1: Available MERCHANTS
+
+state: Choose option after food and merchant has been processed
+Quick one, you want it dropped off or you’ll grab it?
+Action Button 1: Pickup🚲
+Action Button 2: Delivery 📦
+
+state: User selected delivery as option 
+Where do you want your food delivered to?
+
+
+state: Order Summary for Pickup with no pack
+📃YOUR ORDER RECAP FROM {{Vendor Name}}
+🛍️Food:
+Chicken Shawarma *2 = ₦1500 each
+Zobo Drink *1= ₦500
+*Service Fee = ₦50
+PICK UP
+……………………………………………
+Total: ₦3550
+Action Button 1: Proceed to pay
+Action Button 2: Add new pack
+Action Button 3: cancel
+
+
+NOTE:PACK FEE SHOULD ONLY BE INCLUDED WHEN FOOD OR SOUP IS INCLUDED IN THE ORDER SUMMARY
+
+state: Order Summary for Pickup with pack
+📃YOUR ORDER RECAP FROM {{Vendor Name}}
+🛍️Food:
+Jollof Rice *800 = ₦800 
+Egg* 1= ₦250 
+Zobo Drink *1= ₦500 each
+Pack: 200
+*Service Fee = ₦50
+PICK UP
+……………………………………………
+Total: ₦1800
+Action Button 1: Proceed to pay
+Action Button 2: Add new pack
+Action Button 3: cancel
+
+state: Order Summary for Delivery
+📃YOUR ORDER RECAP FROM {{Vendor Name}}
+Location: {{Location Provided}}
+🛍️Food:
+Jollof Rice *800 = ₦800 
+Egg* 1= ₦250 
+Zobo Drink *1= ₦500 each
+Pack: 200
+*Service Fee = ₦100
+DELIVERY
+……………………………………………
+Total: ₦1800
+Action Button 1: Proceed to pay
+Action Button 2: Add new pack
+Action Button 3: cancel
+
+state: Order Summary for Multiple Orders 
+📃YOUR 1st ORDER RECAP FROM {{Vendor Name}}
+Location: {{Location Provided}}
+🛍️Food:
+Jollof Rice *800 = ₦800 
+Egg* 1= ₦250 
+Zobo Drink *1= ₦500 each
+Pack: 200
+DELIVERY
+****
+📃YOUR 2nd ORDER RECAP FROM {{Vendor Name}}
+🛍️Food:
+Jollof Rice *800 = ₦800 
+Egg* 1= ₦250 
+Zobo Drink *1= ₦500 each
+Pack: 200
+PICK UP
+*Service Fee = ₦300
+……………………………………………
+Total: ₦1800
+
+Action Button 1: Proceed to pay
+Action Button 2: Add new pack
+Action Button 3: cancel
