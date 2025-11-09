@@ -135,7 +135,7 @@ async function processMessagesAsync(body) {
             if (change.field === 'messages') {
                 const value = change.value;
                 const recipientNumber = value.metadata?.display_phone_number;
-                const myPhoneId = "2348055209628";
+                const myPhoneId = process.env.MY_PHONE_NUMBER;
 
                 if (recipientNumber !== myPhoneId) {
                 console.log("Message not for this bot. Ignoring.");
