@@ -1,4 +1,6 @@
 import { getUserName } from "../db/Utils/users.js";
+import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, validateOrderItem, hasMixedTypes, hasOnlyAddOns } from "../db/Utils/vendor.js";
+
 
 export const intentHandlers = {
   "Greeting": async (customerId, message) => {
@@ -47,14 +49,212 @@ export const intentHandlers = {
 
 
   "Food Ordering": async (customerId, message, orderSummary) => {
-    // Check if order has proper format
-    const hasValidOrder = orderSummary?.items?.length > 0 && 
-                         orderSummary?.delivery_location && 
-                         message.toLowerCase().includes('from');
+  if (!orderSummary) {
+    return {
+      status: "success",
+      response_type: "order_format",
+      customer_id: customerId,
+      timestamp: new Date().toISOString(),
+      message: "Got an order? Say less 😌\nFormat:\n\n₦800 jollof rice, 2 chicken from African Kitchen delivered to my hostel"
+    };
+  }
+
+  const { vendor, items, delivery_location } = orderSummary;
+
+  // Case 1: Vendor only, no items
+  if (vendor && items.length === 0) {
+    const vendorData = await getVendorByName(vendor);
+    if (!vendorData) {
+      return {
+        status: "error",
+        response_type: "vendor_not_found",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: `Sorry, I couldn't find "${vendor}".`
+      };
+    }
     
-    if (hasValidOrder) {
-      const itemsList = orderSummary.items.map(item => 
-        `${item.quantity}x ${item.name}${item.special_requests ? ` (${item.special_requests})` : ''}`
+    const catalogue = await getVendorCatalogue(vendorData.id);
+    return {
+      status: "success",
+      response_type: "vendor_catalogue",
+      customer_id: customerId,
+      timestamp: new Date().toISOString(),
+      message: catalogue
+    };
+  }
+
+//   // Case 2: Items without vendor
+//   if (!vendor && items.length > 0) {
+//     const firstItem = items[0].name;
+//     const vendors = await searchItemAcrossVendors(firstItem);
+    
+//     if (vendors.length === 0) {
+//       return {
+//         status: "error",
+//         response_type: "item_not_found",
+//         customer_id: customerId,
+//         timestamp: new Date().toISOString(),
+//         message: `Sorry, I couldn't find "${firstItem}".`
+//       };
+//     }
+    
+//     const vendorList = vendors.map((v, i) => `${i + 1}. ${v.vendor_name}`).join('\n');
+//     return {
+//       status: "success",
+//       response_type: "vendor_selection",
+//       customer_id: customerId,
+//       timestamp: new Date().toISOString(),
+//       message: `Found "${firstItem}" at:\n\n${vendorList}\n\nWhich vendor you wan order from?`
+//     };
+//   }
+
+// Case 2: Items without vendor
+if (!vendor && items.length > 0) {
+  // Find vendors that have ALL items
+  const vendorItemMap = new Map(); // vendorId -> Set of available items
+  
+  for (const item of items) {
+    if (!item.name) continue;
+    
+    const vendors = await searchItemAcrossVendors(item.name);
+    
+    if (vendors.length === 0) {
+      return {
+        status: "error",
+        response_type: "item_not_found",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: `Sorry, I couldn't find "${item.name}" at any vendor.`
+      };
+    }
+    
+    // Track which vendors have this item
+    for (const v of vendors) {
+      if (!vendorItemMap.has(v.vendor_id)) {
+        vendorItemMap.set(v.vendor_id, { name: v.vendor_name, items: new Set() });
+      }
+      vendorItemMap.get(v.vendor_id).items.add(item.name);
+    }
+  }
+
+  
+  // Find vendors that have all requested items
+  const itemCount = items.filter(i => i.name).length;
+  const validVendors = Array.from(vendorItemMap.entries())
+    .filter(([_, data]) => data.items.size === itemCount)
+    .map(([id, data]) => data.name);
+  
+  if (validVendors.length === 0) {
+    const itemNames = items.map(i => i.name).join(', ');
+    return {
+      status: "error",
+      response_type: "item_not_found",
+      customer_id: customerId,
+      timestamp: new Date().toISOString(),
+      message: `Sorry, no single vendor has all items: ${itemNames}.\nPlease order from one vendor at a time.`
+    };
+  }
+  
+  const vendorList = validVendors.map((v, i) => `${i + 1}. ${v}`).join('\n');
+  const itemNames = items.map(i => i.name).join(', ');
+  
+  return {
+    status: "success",
+    response_type: "vendor_selection",
+    customer_id: customerId,
+    timestamp: new Date().toISOString(),
+    message: `Found "${itemNames}" at:\n\n${vendorList}\n\nWhich vendor you wan order from?`
+  };
+}
+
+  // Case 3: Complete order - validate
+  if (vendor && items.length > 0) {
+    const vendorData = await getVendorByName(vendor);
+    if (!vendorData) {
+      return {
+        status: "error",
+        response_type: "vendor_not_found",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: `Sorry, "${vendor}" not found.`
+      };
+    }
+
+    // Check if order has only add-ons
+      const onlyAddOns = await hasOnlyAddOns(vendorData.id, items);
+      if (onlyAddOns) {
+        return {
+          status: "error",
+          response_type: "validation_error",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: "❌ You can't order only add-ons (egg, sausage, etc).\nPlease add a main item to your order."
+        };
+      }
+
+    // Check for mixed types
+    const mixedTypes = await hasMixedTypes(vendorData.id, items);
+    if (mixedTypes) {
+      return {
+        status: "error",
+        response_type: "validation_error",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: "❌ You can't mix pack items with per-price/per-piece items.\nPlease place separate orders."
+      };
+    }
+
+    // Validate each item
+    const validationErrors = [];
+    for (const item of items) {
+      const validation = await validateOrderItem(
+        vendorData.id,
+        item.name,
+        item.quantity_type,
+        item.price
+      );
+      if (!validation.valid) {
+        validationErrors.push(validation.error);
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      return {
+        status: "error",
+        response_type: "validation_error",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: `❌ Order validation failed:\n\n${validationErrors.join('\n')}`
+      };
+    }
+
+
+      // Ask for delivery/pickup if not specified
+      if (!delivery_location) {
+        const itemsList = items.map(i => 
+          `${i.quantity_type === 'per_price' ? '₦' + i.price : i.quantity + 'x'} ${i.name}`
+        ).join(', ');
+        
+        return {
+          status: "pending",
+          response_type: "delivery_prompt",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `Order: ${itemsList} from ${vendorData.name}\n\n📍 Pickup or Delivery?`,
+          data: {
+            pending_order: orderSummary,
+            buttons: [
+              { id: "pickup", title: "🏃 Pickup" },
+              { id: "delivery", title: "🚴 Delivery" }
+            ]
+          }
+        };
+      }
+
+      // Complete order confirmation
+      const itemsList = items.map(i => 
+        `${i.quantity_type === 'per_price' ? '₦' + i.price : i.quantity + 'x'} ${i.name}`
       ).join(', ');
       
       return {
@@ -62,21 +262,23 @@ export const intentHandlers = {
         response_type: "order_confirmation",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `🟡 Order Placed\nGot it! Your order has been received 🧾\nWe'll confirm with the restaurant and update you shortly.\n\nItems: ${itemsList}`,
+        message: `🟡 Order Placed\nGot it! Your order has been received 🧾\n\nItems: ${itemsList}\nVendor: ${vendorData.name}\nDelivery: ${delivery_location}\n\nWe'll confirm with the restaurant shortly.`,
         data: {
           order_summary: orderSummary,
+          vendor_id: vendorData.id,
           payment_required: true
         }
       };
-    } else {
-      return {
-        status: "success",
-        response_type: "order_format",
-        customer_id: customerId,
-        timestamp: new Date().toISOString(),
-        message: "Got an order? Say less 😌\nJust drop it in this format so we can process it fast 👇🏾\n\n*Example:*\njollof rice - ₦1,400, 1 meat 1 egg from African Kitchen delivered to my hostel(location)\n\nMake sure to include the 👇🏾\n• Item name + quantity you want\n• Specify the vendor you're buying from\n• Specify the location the food is delivered to"
-      };
     }
+
+    // Fallback
+    return {
+      status: "success",
+      response_type: "order_format",
+      customer_id: customerId,
+      timestamp: new Date().toISOString(),
+      message: "Got an order? Say less 😌\nFormat:\n\n₦800 jollof rice from African Kitchen delivered to my hostel"
+    };
   },
 
   "Re-ordering": async (customerId, message) => ({

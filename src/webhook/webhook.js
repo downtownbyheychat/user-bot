@@ -133,6 +133,16 @@ async function processMessagesAsync(body) {
     for (const entry of body.entry || []) {
         for (const change of entry.changes || []) {
             if (change.field === 'messages') {
+                const value = change.value;
+                const recipientNumber = value.metadata?.display_phone_number;
+                const myPhoneId = "2348055209628";
+
+                if (recipientNumber !== myPhoneId) {
+                console.log("Message not for this bot. Ignoring.");
+                continue; // Skip this message and move to next
+                }
+
+
                 const messages = change.value.messages;
 
                 for (const message of messages || []) {

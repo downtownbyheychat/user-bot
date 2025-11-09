@@ -15,7 +15,7 @@ export function formatForWhatsAppAPI(response, recipientPhoneNumber) {
                     action: {
                         buttons: [
                             {
-                                type: "reply",
+                                type: "url",
                                 url: urlButton.url,
                                 title: urlButton.title
                             }

@@ -1,13 +1,97 @@
+Downtown – User-End Chatbot
+Project Overview
+This document outlines the deliverables and functional workflow for Downtown User-End Chatbot.
+ The chatbot is designed to enable users to send food orders seamlessly through conversational text. The system interprets user input, extracts essential details (vendor, food items, and delivery location), and structures the data in a machine-readable JSON format for backend processing.
+
+System Logic & Flow
+Vendor, Food, and Location Extraction
+The model must accurately extract:
+•	Vendor name
+
+
+•	Food item(s)
+
+
+•	quantity
+
+
+
+If any of these elements are missing, the chatbot will apply conditional logic (outlined below)
+
+Chatbot Decision Logic (Requirements for DO)
+Condition	System Action / Response
+Vendor provided only	Return the vendor’s catalogue (list of available foods, pack limits, and prices).
+Vendor missing, but food + quantity provided	Search for the food item across all vendors in the database, then return a list of vendors offering that item.
+Food item has minimum and maximum limits (e.g., “200-1500 for rice”)	Validate that the requested order falls within price/quantity limits.
+User orders a per pack item and a per price item together	Do not proceed to catalogue or direct order (flag for validation).
+After order validation	Ask the user: “Pickup or Delivery?”
+If Pickup selected	Display Order Summary for confirmation.
+If Delivery selected	Prompt user for delivery location, then confirm summary.
+
+Catalogue & Database Querying
+•	After successfully extracting order details, the system queries the vendor database using the provided vendor ID.
+
+
+•	If the vendor or item lookup fails, the chatbot defaults to using the catalogue system.
+
+
+•	The catalogue defines:
+
+
+o	Each food item
+
+
+Expected Outputs
+Successful Order Parsing
+•	AI returns structured JSON ready for backend.
+
+
+Fallback to Catalogue
+•	If vendor data is incomplete, system fetches food catalogue to guide of that vendor
+
+
+Order Confirmation Stage
+•	Chatbot displays:
+
+
+o	Delivery or pickup options
+
+
+o	Final confirmation prompt
+
+
+o	Order summary (vendor, items, total)
+
+
+Deliverables Summary
+Deliverable	Description
+Chatbot text parsing logic	Extract vendor, food, quantity, and location from user text.
+JSON structuring engine	Converts extracted data into key-value JSON format.
+Catalogue integration	Fallback mechanism for missing vendor/food data.
+Database querying module	Fetch vendor details and item availability.
+Order validation rules	Check per pack vs per price logic, quantity limits, and price range.
+Confirmation workflow	Handles pickup/delivery options and final order confirmation.
+
+
+So basically for things like jollof rice that  are sold at per price, the quantity are usually measured in terms of the price e.g 800 jollof rice, they have starting prices and increase in multiple of 100 naira, we don’t want a  situation when user enter quantities less than the starting amount
+When a user orders a full pack or half pack food it doesn’t need to include pack price again in the order summary
+Sale quantity is 
+1. Per price: the current price of items sold per portion as starting price, mostly used for items sold as quantities 
+2. ⁠per piece: used for things like drink snack and food items.
+3. ⁠full pack: used for things that are sold as combos or food
+4. ⁠half pack : a cheaper and less more alternative for full pack
+
+
 TODO: Intent Handling 
-    TODO: Greeting Response:
+    : Greeting Response:
         Sup {{WhatsApp name}},
         Welcome back to Downtown, where you chat, order, and eat fast.
 
-    TODO: About Company Response:
+    : About Company Response:
         😎 Can’t say much about that one right now, But you can vibe with us on downtown.ng
         or join #thehashtag WhatsApp channel, we drop daily updates there.
 
-    TODO: Customer Service Response:
+    : Customer Service Response:
         Oops 😅 sounds like you need a hand!
         Our support teams got you, just send a quick mail to help@downtown.ng
         and someone will get back to you fast ⚡
