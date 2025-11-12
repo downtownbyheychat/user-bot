@@ -1,5 +1,6 @@
 import { getUserName } from "../db/Utils/users.js";
 import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, validateOrderItem, hasMixedTypes, hasOnlyAddOns } from "../db/Utils/vendor.js";
+import { savePendingOrder, getPendingOrder, removePendingOrder } from "../services/pendingOrders.js";
 
 
 export const intentHandlers = {
@@ -164,20 +165,26 @@ if (!vendor && items.length > 0) {
     response_type: "vendor_selection",
     customer_id: customerId,
     timestamp: new Date().toISOString(),
-    message: `Found "${itemNames}" at:\n\n${vendorList}\n\nWhich vendor you wan order from?`
+    message: `Found "${itemNames}" at:
+
+${vendorList}
+
+Which vendor you wan order from?`
   };
 }
 
   // Case 3: Complete order - validate
   if (vendor && items.length > 0) {
     const vendorData = await getVendorByName(vendor);
+    
+    // Check vendor status - only allow orders if vendor is open
     if (!vendorData) {
       return {
         status: "error",
         response_type: "vendor_not_found",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `Sorry, "${vendor}" not found.`
+        message: `Sorry, "${vendor}" is currently closed or not available.`
       };
     }
 
@@ -236,6 +243,13 @@ if (!vendor && items.length > 0) {
           `${i.quantity_type === 'per_price' ? '₦' + i.price : i.quantity + 'x'} ${i.name}`
         ).join(', ');
         
+        // Save the pending order
+        savePendingOrder(customerId, {
+          vendor: vendor,
+          items: items,
+          vendorData: vendorData
+        });
+        
         return {
           status: "pending",
           response_type: "delivery_prompt",
@@ -246,7 +260,7 @@ if (!vendor && items.length > 0) {
             pending_order: orderSummary,
             buttons: [
               { id: "pickup", title: "🏃 Pickup" },
-              { id: "delivery", title: "🚴 Delivery" }
+              { id: "delivery", title: "🚴 Delivery (₦200)" }
             ]
           }
         };
@@ -257,16 +271,51 @@ if (!vendor && items.length > 0) {
         `${i.quantity_type === 'per_price' ? '₦' + i.price : i.quantity + 'x'} ${i.name}`
       ).join(', ');
       
+      // Add delivery cost if delivery is selected
+      let deliveryInfo = '';
+      let totalCost = 0;
+      if (delivery_location && delivery_location.toLowerCase() !== 'pickup') {
+        deliveryInfo = '\nDelivery Fee: ₦200';
+        // Calculate total cost with delivery
+        totalCost = items.reduce((sum, item) => {
+          if (item.quantity_type === 'per_price') {
+            return sum + (item.price || 0);
+          } else {
+            // For per_piece, full_pack, half_pack items, use the price from validation
+            return sum + (item.price || 0);
+          }
+        }, 0) + 200;
+      } else {
+        // Calculate total cost without delivery
+        totalCost = items.reduce((sum, item) => {
+          if (item.quantity_type === 'per_price') {
+            return sum + (item.price || 0);
+          } else {
+            // For per_piece, full_pack, half_pack items, use the price from validation
+            return sum + (item.price || 0);
+          }
+        }, 0);
+      }
+      
       return {
         status: "success",
         response_type: "order_confirmation",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `🟡 Order Placed\nGot it! Your order has been received 🧾\n\nItems: ${itemsList}\nVendor: ${vendorData.name}\nDelivery: ${delivery_location}\n\nWe'll confirm with the restaurant shortly.`,
+        message: `🟡 Order Placed
+Got it! Your order has been received 🧾
+
+Items: ${itemsList}
+Vendor: ${vendorData.name}${delivery_location && delivery_location !== 'pickup' ? `
+Delivery: ${delivery_location}` : ''}${deliveryInfo}
+Total: ₦${totalCost}
+
+We'll confirm with the restaurant shortly.`,
         data: {
           order_summary: orderSummary,
           vendor_id: vendorData.id,
-          payment_required: true
+          payment_required: true,
+          total_cost: totalCost
         }
       };
     }
@@ -395,6 +444,12 @@ if (!vendor && items.length > 0) {
       message.toLowerCase().includes(keyword)
     );
     
+    // Check if it looks like a delivery address input
+    const deliveryKeywords = ['hostel', 'room', 'address', 'deliver', 'to'];
+    const hasDeliveryKeywords = deliveryKeywords.some(keyword => 
+      message.toLowerCase().includes(keyword)
+    );
+    
     if (hasOrderKeywords) {
       return {
         status: "success",
@@ -402,6 +457,16 @@ if (!vendor && items.length > 0) {
         customer_id: customerId,
         timestamp: new Date().toISOString(),
         message: "Got an order? Say less 😌\nJust drop it in this format so we can process it fast 👇🏾\n\n*Example:*\njollof rice - ₦1,400, 1 meat 1 egg from African Kitchen delivered to my hostel(location)\n\nMake sure to include the 👇🏾\n• Item name + quantity you want\n• Specify the vendor you're buying from\n• Specify the location the food is delivered to"
+      };
+    }
+    
+    if (hasDeliveryKeywords) {
+      return {
+        status: "success",
+        response_type: "delivery_address",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: `📍 Delivery address received: ${message}\n\nProcessing your order with delivery...`
       };
     }
     

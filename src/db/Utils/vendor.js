@@ -18,7 +18,7 @@ export async function getVendorByName(vendorName) {
        AND status = $2 
        ORDER BY similarity(LOWER(name), LOWER($1)) DESC 
        LIMIT 1`,
-      [vendorName, 'active']
+      [vendorName, 'open']
     );
     return result.rows[0] || null;
   } catch (error) {
@@ -36,7 +36,7 @@ export async function getVendorId(vendorName) {
        AND status = $2 
        ORDER BY similarity(LOWER(name), LOWER($1)) DESC 
        LIMIT 1`,
-      [vendorName, 'active']
+      [vendorName, 'open']
     );
     return result.rows[0] || null;
   } catch (error) {
@@ -49,7 +49,7 @@ export async function getVendorById(vendorId) {
   try {
     const result = await pool.query(
       'SELECT * FROM vendors WHERE id = $1 AND status = $2',
-      [vendorId, 'active']
+      [vendorId, 'open']
     );
     return result.rows[0] || null;
   } catch (error) {
@@ -68,7 +68,7 @@ export async function searchItemAcrossVendors(itemName) {
        WHERE similarity(LOWER(m.food_name), LOWER($1)) > 0.3 
        AND v.status = $2
        ORDER BY similarity(LOWER(m.food_name), LOWER($1)) DESC`,
-      [itemName, 'active']
+      [itemName, 'open']
     );
     return result.rows;
   } catch (error) {
@@ -206,7 +206,7 @@ export async function getAllVendors() {
   try {
     const result = await pool.query(
       'SELECT * FROM vendors WHERE status = $1 ORDER BY name',
-      ['active']
+      ['open']
     );
     return result.rows;
   } catch (error) {

@@ -140,6 +140,14 @@ async function processMessagesAsync(body) {
 
                 for (const message of messages || []) {
                     const customerId = message.from; // WhatsApp phone number of the user
+                    
+                    // Fix: Prevent responding to messages not intended for the user
+                    // If the receiving number is not the user but the vendor bot (2349023168568), return early
+                    const toNumber = change.value.metadata?.display_phone_number || '';
+                    if (toNumber === '2349023168568') {
+                        console.log('Message intended for vendor bot, ignoring...');
+                        return;
+                    }
 
                     // Check if the message already exists in the database
                     const existing = await checkMessageExists(message.id);
@@ -203,6 +211,36 @@ async function processMessagesAsync(body) {
                             // Send the button response to the user
                             const buttonButtons = buttonResponse.data?.buttons || null;
                             await sendMessage(customerId, buttonResponse.message, buttonButtons);
+                            
+                            // If this is a delivery/pickup selection, process the order
+                            if (buttonId === 'pickup' || buttonId === 'delivery') {
+                                // Get the pending order
+                                const { getPendingOrder, removePendingOrder } = await import('../services/pendingOrders.js');
+                                const pendingOrder = getPendingOrder(customerId);
+                                
+                                if (pendingOrder) {
+                                    const { vendor, items, vendorData } = pendingOrder;
+                                    
+                                    // Remove the pending order
+                                    removePendingOrder(customerId);
+                                    
+                                    // Create order summary
+                                    const orderSummary = {
+                                        vendor: vendor,
+                                        items: items,
+                                        delivery_location: buttonId === 'pickup' ? 'pickup' : 'delivery'
+                                    };
+                                    
+                                    // Process the order
+                                    const { handleIntent } = await import('../ai/intentHandlers.js');
+                                    const orderResponse = await handleIntent('Food Ordering', customerId, '', orderSummary);
+                                    
+                                    // Save and send the order response
+                                    await saveChatMessage(customerId, orderResponse.message, true);
+                                    const orderButtons = orderResponse.data?.buttons || null;
+                                    await sendMessage(customerId, orderResponse.message, orderButtons);
+                                }
+                            }
                         } catch (error) {
                             console.error('Button handling error:', error);
                             await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");

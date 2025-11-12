@@ -59,6 +59,53 @@ export async function handleButtonClick(buttonId, customerId) {
         message: "👍 Great! Your order is still active.\nWe'll keep you updated on the progress."
       };
 
+    case 'pickup':
+      return {
+        status: "success",
+        message: "🏃 You've selected pickup.\nPlease proceed to the vendor to collect your order.\n\nYour order will be prepared shortly!",
+        data: {
+          delivery_location: "pickup"
+        }
+      };
+
+    case 'delivery':
+      return {
+        status: "success",
+        message: "🚴 You've selected delivery.\nDelivery fee of ₦200 will be added to your order.\n\nPlease provide your delivery address:",
+        data: {
+          awaiting_delivery_address: true
+        }
+      };
+
+    case 'payment_sent':
+      return {
+        status: "success",
+        message: "✅ Payment confirmed!\nYour order is now being processed.\nWe'll update you when it's ready."
+      };
+
+    case 'top_up_wallet':
+      return {
+        status: "success",
+        message: "💸 To fund your Downtown wallet, simply transfer money to the account below:\n\nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint\n\nOnce done, just send me a quick message with the amount funded and I'll update your balance right away!",
+        data: {
+          buttons: [
+            { id: "copy_account", title: "Copy Account Number" }
+          ]
+        }
+      };
+
+    case 'retry_payment':
+      return {
+        status: "success",
+        message: "🔄 Let's try the payment again.\nPlease follow the payment instructions.",
+        data: {
+          buttons: [
+            { id: "copy_account", title: "Copy Account Number" },
+            { id: "payment_sent", title: "Sent" }
+          ]
+        }
+      };
+
     default:
       return {
         status: "error",
