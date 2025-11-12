@@ -87,22 +87,43 @@ export async function getVendorCatalogue(vendorId) {
       [vendorId]
     );
 
-    let catalogue = `🍽️ ${vendor.name} Menu:\n\n`;
-    result.rows.forEach((item, idx) => {
-      catalogue += `${idx + 1}. ${item.food_name}`;
+    // Create list template for menu items
+    const menuItems = result.rows.map((item, idx) => {
+      let priceInfo = '';
       if (item.sale_quantity === 'per_price') {
-        catalogue += ` - from ₦${item.price}\n`;
+        priceInfo = `from ₦${item.price}`;
       } else if (item.sale_quantity === 'per_piece') {
-        catalogue += ` - ₦${item.price} each\n`;
+        priceInfo = `₦${item.price} each`;
       } else if (item.sale_quantity === 'full_pack') {
-        catalogue += ` - ₦${item.price} (Full Pack)\n`;
+        priceInfo = `₦${item.price} (Full Pack)`;
       } else if (item.sale_quantity === 'half_pack') {
-        catalogue += ` - ₦${item.price} (Half Pack)\n`;
+        priceInfo = `₦${item.price} (Half Pack)`;
       } else {
-        catalogue += ` - ₦${item.price}\n`;
+        priceInfo = `₦${item.price}`;
       }
+      
+      return {
+        id: `item_${item.id}`,
+        title: item.food_name,
+        description: priceInfo
+      };
     });
-    return catalogue;
+    
+    return {
+      message: `🍽️ ${vendor.name} Menu:`,
+      data: {
+        list: {
+          header: `${vendor.name} Menu`,
+          button: "View Items",
+          sections: [
+            {
+              title: "Menu Items",
+              rows: menuItems
+            }
+          ]
+        }
+      }
+    };
   } catch (error) {
     console.error('Error getting catalogue:', error);
     return null;

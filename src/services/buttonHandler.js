@@ -24,9 +24,32 @@ export async function handleButtonClick(buttonId, customerId) {
       };
 
     case 'show_restaurants':
+      // Get all available vendors
+      const { getAllVendors } = await import('../db/Utils/vendor.js');
+      const vendors = await getAllVendors();
+      
+      // Create list template data
+      const vendorList = vendors.map((vendor, index) => ({
+        id: `vendor_${vendor.id}`,
+        title: vendor.name,
+        description: vendor.description || 'Popular local vendor'
+      }));
+      
       return {
         status: "success",
-        message: "🍽️ Available Restaurants:\n\n🏪 African Kitchen - Jollof, Rice & Stew\n🏪 Campus Café - Burgers & Snacks  \n🏪 Mama's Place - Local dishes\n🏪 Quick Bites - Fast food\n\nJust mention the restaurant name in your order!"
+        message: "🍽️ Available Restaurants:",
+        data: {
+          list: {
+            header: "Available Restaurants",
+            button: "View Restaurants",
+            sections: [
+              {
+                title: "Campus Vendors",
+                rows: vendorList
+              }
+            ]
+          }
+        }
       };
 
     case 'reorder_last':
@@ -107,6 +130,34 @@ export async function handleButtonClick(buttonId, customerId) {
       };
 
     default:
+      // Handle list selections (vendor selections)
+      if (buttonId.startsWith('vendor_')) {
+        const vendorId = buttonId.replace('vendor_', '');
+        const { getVendorById } = await import('../db/Utils/vendor.js');
+        const vendor = await getVendorById(vendorId);
+        
+        if (vendor) {
+          const { getVendorCatalogue } = await import('../db/Utils/vendor.js');
+          const catalogue = await getVendorCatalogue(vendorId);
+          if (catalogue && catalogue.data && catalogue.data.list) {
+            // Return list template
+            return {
+              status: "success",
+              message: catalogue.message,
+              data: {
+                list: catalogue.data.list
+              }
+            };
+          } else {
+            // Return simple text message
+            return {
+              status: "success",
+              message: catalogue || `🍽️ ${vendor.name} Menu is currently unavailable.`
+            };
+          }
+        }
+      }
+      
       return {
         status: "error",
         message: "🤔 I didn't understand that action. Please try again."

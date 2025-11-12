@@ -76,13 +76,28 @@ export const intentHandlers = {
     }
     
     const catalogue = await getVendorCatalogue(vendorData.id);
-    return {
-      status: "success",
-      response_type: "vendor_catalogue",
-      customer_id: customerId,
-      timestamp: new Date().toISOString(),
-      message: catalogue
-    };
+    if (catalogue && catalogue.data && catalogue.data.list) {
+      // Return list template
+      return {
+        status: "success",
+        response_type: "vendor_catalogue",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: catalogue.message,
+        data: {
+          list: catalogue.data.list
+        }
+      };
+    } else {
+      // Return simple text message
+      return {
+        status: "success",
+        response_type: "vendor_catalogue",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: catalogue
+      };
+    }
   }
 
 //   // Case 2: Items without vendor
@@ -144,7 +159,7 @@ if (!vendor && items.length > 0) {
   const itemCount = items.filter(i => i.name).length;
   const validVendors = Array.from(vendorItemMap.entries())
     .filter(([_, data]) => data.items.size === itemCount)
-    .map(([id, data]) => data.name);
+    .map(([id, data]) => ({ id, name: data.name }));
   
   if (validVendors.length === 0) {
     const itemNames = items.map(i => i.name).join(', ');
@@ -160,16 +175,31 @@ if (!vendor && items.length > 0) {
   const vendorList = validVendors.map((v, i) => `${i + 1}. ${v}`).join('\n');
   const itemNames = items.map(i => i.name).join(', ');
   
+  // Create list template for vendor selection
+  const vendorListRows = validVendors.map((vendor, index) => ({
+    id: `vendor_${vendor.id}`,
+    title: vendor.name,
+    description: 'Available vendor for your selected items'
+  }));
+  
   return {
     status: "success",
     response_type: "vendor_selection",
     customer_id: customerId,
     timestamp: new Date().toISOString(),
-    message: `Found "${itemNames}" at:
-
-${vendorList}
-
-Which vendor you wan order from?`
+    message: `Found your items at multiple vendors. Please select one to order from:`,
+    data: {
+      list: {
+        header: "Available Vendors",
+        button: "Select Vendor",
+        sections: [
+          {
+            title: "Vendors with your items",
+            rows: vendorListRows
+          }
+        ]
+      }
+    }
   };
 }
 
@@ -341,13 +371,38 @@ We'll confirm with the restaurant shortly.`,
     }
   }),
 
-  "Find Restaurant": async (customerId, message) => ({
-    status: "success",
-    response_type: "menu",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: "🍽️ Here are the available restaurants on campus:\n\n1️⃣ Campus Café - Nigerian & Continental\n2️⃣ Mama's Kitchen - Local dishes\n3️⃣ Quick Bites - Fast food & snacks\n\nWhich one catches your eye? 👀"
-  }),
+  "Find Restaurant": async (customerId, message) => {
+    // Get all available vendors
+    const { getAllVendors } = await import('../db/Utils/vendor.js');
+    const vendors = await getAllVendors();
+    
+    // Create list template data
+    const vendorList = vendors.map((vendor, index) => ({
+      id: `vendor_${vendor.id}`,
+      title: vendor.name,
+      description: vendor.description || 'Popular local vendor'
+    }));
+    
+    return {
+      status: "success",
+      response_type: "vendor_list",
+      customer_id: customerId,
+      timestamp: new Date().toISOString(),
+      message: "🍽️ Here are the available restaurants on campus:",
+      data: {
+        list: {
+          header: "Available Restaurants",
+          button: "View Restaurants",
+          sections: [
+            {
+              title: "Campus Vendors",
+              rows: vendorList
+            }
+          ]
+        }
+      }
+    };
+  },
 
   "Track Order": async (customerId, message) => ({
     status: "success",
