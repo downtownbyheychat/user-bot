@@ -1,7 +1,7 @@
 import { getUserName } from "../db/Utils/users.js";
 import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, validateOrderItem, hasMixedTypes, hasOnlyAddOns } from "../db/Utils/vendor.js";
 import { savePendingOrder, getPendingOrder, removePendingOrder } from "../services/pendingOrders.js";
-
+import { trackOrderPlacement, canCancelOrder, cancelOrder } from "../services/orderCancellationService.js";
 
 export const intentHandlers = {
   "Greeting": async (customerId, message) => {
@@ -327,6 +327,10 @@ if (!vendor && items.length > 0) {
         }, 0);
       }
       
+      // Track order placement
+      const orderId = `ORD${Date.now()}`;
+      trackOrderPlacement(customerId, orderId);
+      
       return {
         status: "success",
         response_type: "order_confirmation",
@@ -412,19 +416,39 @@ We'll confirm with the restaurant shortly.`,
     message: "🔵 Out for Delivery\nYour order is on its way! 🚴♂️💨\nRider just picked it up — you can expect delivery in about 7-10 mins."
   }),
 
-  "Cancel Order": async (customerId, message) => ({
-    status: "success",
-    response_type: "order_management",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: "🕒 Got it! You're still within the 2 min 30 sec grace window, so your order can be canceled 👌🏽\nWant me to go ahead and cancel it?",
-    data: {
-      buttons: [
-        { id: "confirm_cancel", title: "Yes, Cancel" },
-        { id: "keep_order", title: "Keep Order" }
-      ]
+  "Cancel Order": async (customerId, message) => {
+    // For demonstration, we'll use a dummy order ID
+    // In a real implementation, you would extract the order ID from the message or context
+    const orderId = `ORD${Date.now()}`;
+    
+    const cancellationStatus = canCancelOrder(orderId);
+    
+    if (cancellationStatus.canCancel) {
+      // Within the cancellation window
+      return {
+        status: "success",
+        response_type: "order_management",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: `🕒 Got it! You're still within the 2 minute window, so your order can be canceled 👌🏽\nWant me to go ahead and cancel it?`,
+        data: {
+          buttons: [
+            { id: "confirm_cancel", title: "Yes, Cancel" },
+            { id: "keep_order", title: "Keep Order" }
+          ]
+        }
+      };
+    } else {
+      // Outside the cancellation window
+      return {
+        status: "success",
+        response_type: "order_management",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: "❌ Sorry, your order is older than 2 minutes and can no longer be cancelled. The money has been redirected to the vendor."
+      };
     }
-  }),
+  },
 
   "Modify Order": async (customerId, message) => ({
     status: "success",

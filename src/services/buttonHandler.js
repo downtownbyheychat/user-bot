@@ -71,10 +71,27 @@ export async function handleButtonClick(buttonId, customerId) {
       };
 
     case 'confirm_cancel':
-      return {
-        status: "success",
-        message: "✅ Done! Your order's been canceled successfully.\nRefund (if paid online) will be processed within 24 hours 💸\nWanna try placing a new one?"
-      };
+      // For demonstration, we'll use a dummy order ID
+      // In a real implementation, you would extract the order ID from the context
+      const orderId = `ORD${Date.now()}`;
+      
+      const { cancelOrder } = await import('./orderCancellationService.js');
+      const cancellationResult = cancelOrder(orderId);
+      
+      if (cancellationResult.success) {
+        return {
+          status: "success",
+          message: "✅ Done! Your order's been canceled successfully.\nRefund (if paid online) will be processed within 24 hours 💸\nWanna try placing a new one?",
+          data: {
+            order_cancelled: true
+          }
+        };
+      } else {
+        return {
+          status: "error",
+          message: `❌ Failed to cancel order: ${cancellationResult.reason}`
+        };
+      }
 
     case 'keep_order':
       return {
