@@ -13,12 +13,14 @@ const PORT = process.env.PORT || 3000;
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 
 console.log('Environment check:');
 console.log('VERIFY_TOKEN loaded:', !!VERIFY_TOKEN);
 console.log('ACCESS_TOKEN loaded:', !!ACCESS_TOKEN);
 console.log('PHONE_NUMBER_ID loaded:', !!PHONE_NUMBER_ID);
+console.log('GEMINI_API_KEY loaded:', !!GEMINI_API_KEY);
 
 
 app.use(express.json());
@@ -141,6 +143,14 @@ async function processMessagesAsync(body) {
                 for (const message of messages || []) {
                     const customerId = message.from; // WhatsApp phone number of the user
 
+                    // Fix: Prevent responding to messages not intended for the user
+                    // If the receiving number is not (2349023168568), return early
+                    const toNumber = change.value.metadata?.display_phone_number || '';
+                    if (toNumber !== '2349023168568') {
+                        console.log('Message intended for vendor bot, ignoring...');
+                        return;
+                    }
+                    
                     // Check if the message already exists in the database
                     const existing = await checkMessageExists(message.id);
                     if (existing) {
