@@ -156,20 +156,19 @@ export async function handleButtonClick(buttonId, customerId) {
         if (vendor) {
           const { getVendorCatalogue } = await import('../db/Utils/vendor.js');
           const catalogue = await getVendorCatalogue(vendorId);
-          if (catalogue && catalogue.data && catalogue.data.list) {
-            // Return list template
+          if (catalogue) {
             return {
               status: "success",
               message: catalogue.message,
               data: {
-                list: catalogue.data.list
+                image_url: catalogue.image_url
               }
             };
           } else {
             // Return simple text message
             return {
               status: "success",
-              message: catalogue || `🍽️ ${vendor.name} Menu is currently unavailable.`
+              message: `🍽️ ${vendor.name} Menu is currently unavailable.`
             };
           }
         }

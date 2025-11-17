@@ -58,3 +58,16 @@ export async function getUserName(whatsappId) {
     throw error;
   }
 }
+
+export async function createUser(name, phoneNumber) {
+  try {
+    const result = await pool.query(
+      'INSERT INTO users (name, phone_number) VALUES ($1, $2) RETURNING *',
+      [name, phoneNumber]
+    );
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error creating user:', error);
+    throw error;
+  }
+}

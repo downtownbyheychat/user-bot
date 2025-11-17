@@ -2,6 +2,28 @@ import { getUserName } from "../db/Utils/users.js";
 import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, validateOrderItem, hasMixedTypes, hasOnlyAddOns } from "../db/Utils/vendor.js";
 import { savePendingOrder, getPendingOrder, removePendingOrder } from "../services/pendingOrders.js";
 import { trackOrderPlacement, canCancelOrder, cancelOrder } from "../services/orderCancellationService.js";
+import { setOrderStatus } from '../services/orderStatusManager.js';
+
+async function getVendorSuggestions(items) {
+    const vendorItemMap = new Map();
+    for (const item of items) {
+        if (!item.name) continue;
+        const vendors = await searchItemAcrossVendors(item.name);
+        for (const v of vendors) {
+            if (!vendorItemMap.has(v.vendor_id)) {
+                vendorItemMap.set(v.vendor_id, { name: v.vendor_name, items: new Set() });
+            }
+            vendorItemMap.get(v.vendor_id).items.add(item.name);
+        }
+    }
+
+    const itemCount = items.filter(i => i.name).length;
+    const validVendors = Array.from(vendorItemMap.entries())
+        .filter(([_, data]) => data.items.size === itemCount)
+        .map(([id, data]) => ({ id, name: data.name }));
+    
+    return validVendors;
+}
 
 export const intentHandlers = {
   "Greeting": async (customerId, message) => {
@@ -76,8 +98,7 @@ export const intentHandlers = {
     }
     
     const catalogue = await getVendorCatalogue(vendorData.id);
-    if (catalogue && catalogue.data && catalogue.data.list) {
-      // Return list template
+    if (catalogue) {
       return {
         status: "success",
         response_type: "vendor_catalogue",
@@ -85,17 +106,17 @@ export const intentHandlers = {
         timestamp: new Date().toISOString(),
         message: catalogue.message,
         data: {
-          list: catalogue.data.list
+          image_url: catalogue.image_url
         }
       };
     } else {
-      // Return simple text message
+      // Handle case where catalogue is null
       return {
-        status: "success",
-        response_type: "vendor_catalogue",
+        status: "error",
+        response_type: "vendor_not_found",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: catalogue
+        message: "Sorry, I couldn't retrieve the menu for this vendor."
       };
     }
   }
@@ -207,15 +228,39 @@ if (!vendor && items.length > 0) {
   if (vendor && items.length > 0) {
     const vendorData = await getVendorByName(vendor);
     
-    // Check vendor status - only allow orders if vendor is open
+    // Check vendor status
     if (!vendorData) {
-      return {
-        status: "error",
-        response_type: "vendor_not_found",
-        customer_id: customerId,
-        timestamp: new Date().toISOString(),
-        message: `Sorry, "${vendor}" is currently closed or not available.`
-      };
+        // Vendor not found in DB
+        const suggestions = await getVendorSuggestions(items);
+        let message = `Sorry, "${vendor}" does not exist in our database.`;
+        if (suggestions.length > 0) {
+            const vendorList = suggestions.map(v => v.name).join('\n');
+            message += `\n\nHowever, you can find these items at:\n${vendorList}`;
+        }
+        return {
+            status: "error",
+            response_type: "vendor_not_found",
+            customer_id: customerId,
+            timestamp: new Date().toISOString(),
+            message: message
+        };
+    }
+
+    if (!vendorData.is_open) {
+        // Vendor is closed
+        const suggestions = await getVendorSuggestions(items);
+        let message = `Sorry, "${vendor}" is currently closed.`;
+        if (suggestions.length > 0) {
+            const vendorList = suggestions.map(v => v.name).join('\n');
+            message += `\n\nHere are some other vendors with the same items:\n${vendorList}`;
+        }
+        return {
+            status: "error",
+            response_type: "vendor_closed",
+            customer_id: customerId,
+            timestamp: new Date().toISOString(),
+            message: message
+        };
     }
 
     // Check if order has only add-ons
@@ -326,10 +371,23 @@ if (!vendor && items.length > 0) {
           }
         }, 0);
       }
+
+      if (totalCost === 0 || (delivery_location && delivery_location.toLowerCase() !== 'pickup' && totalCost === 200)) {
+        // This means no items with prices were found, so it's likely a false positive.
+        // Return a message asking for clarification.
+        return {
+          status: "error",
+          response_type: "validation_error",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: "I'm not sure what you're trying to order. Please be more specific about the items and quantities."
+        };
+      }
       
       // Track order placement
       const orderId = `ORD${Date.now()}`;
       trackOrderPlacement(customerId, orderId);
+      setOrderStatus(orderId, customerId, 'placed');
       
       return {
         status: "success",
@@ -343,6 +401,7 @@ Items: ${itemsList}
 Vendor: ${vendorData.name}${delivery_location && delivery_location !== 'pickup' ? `
 Delivery: ${delivery_location}` : ''}${deliveryInfo}
 Total: ₦${totalCost}
+Order ID: ${orderId}
 
 We'll confirm with the restaurant shortly.`,
         data: {
@@ -452,10 +511,10 @@ We'll confirm with the restaurant shortly.`,
 
   "Modify Order": async (customerId, message) => ({
     status: "success",
-    response_type: "order_management",
+    response_type: "text",
     customer_id: customerId,
     timestamp: new Date().toISOString(),
-    message: "✏️ Sure thing! You're still within your 2 min 30 sec grace window, so we can make changes to your order\nJust tell me what you'd like to update, maybe the meal, how much, or delivery spot?"
+    message: "Sorry, the ability to modify orders is not yet available. You can cancel your order and place a new one if needed."
   }),
 
   "View Order History": async (customerId, message) => ({

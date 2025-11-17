@@ -15,12 +15,22 @@ export async function getVendorByName(vendorName) {
     const result = await pool.query(
       `SELECT * FROM vendors 
        WHERE similarity(LOWER(name), LOWER($1)) > 0.3 
-       AND status = $2 
        ORDER BY similarity(LOWER(name), LOWER($1)) DESC 
        LIMIT 1`,
-      [vendorName, 'open']
+      [vendorName]
     );
-    return result.rows[0] || null;
+    
+    if (!result.rows[0]) {
+      return null; // No similar vendor found
+    }
+
+    const vendor = result.rows[0];
+
+    if (vendor.status !== 'open') {
+      return { ...vendor, is_open: false };
+    }
+
+    return { ...vendor, is_open: true };
   } catch (error) {
     console.error('Error fetching vendor:', error);
     return null;
@@ -87,8 +97,15 @@ export async function getVendorCatalogue(vendorId) {
       [vendorId]
     );
 
-    // Create list template for menu items
-    const menuItems = result.rows.map((item, idx) => {
+    let menuText = `*${vendor.name} Menu*\n\n`;
+    let currentType = '';
+
+    result.rows.forEach(item => {
+      if (item.food_type !== currentType) {
+        currentType = item.food_type;
+        menuText += `*${currentType}*\n`;
+      }
+
       let priceInfo = '';
       if (item.sale_quantity === 'per_price') {
         priceInfo = `from ₦${item.price}`;
@@ -102,27 +119,12 @@ export async function getVendorCatalogue(vendorId) {
         priceInfo = `₦${item.price}`;
       }
       
-      return {
-        id: `item_${item.id}`,
-        title: item.food_name,
-        description: priceInfo
-      };
+      menuText += `_${item.food_name}_ - ${priceInfo}\n`;
     });
     
     return {
-      message: `🍽️ ${vendor.name} Menu:`,
-      data: {
-        list: {
-          header: `${vendor.name} Menu`,
-          button: "View Items",
-          sections: [
-            {
-              title: "Menu Items",
-              rows: menuItems
-            }
-          ]
-        }
-      }
+      message: menuText,
+      image_url: vendor.banner_image_url || null
     };
   } catch (error) {
     console.error('Error getting catalogue:', error);

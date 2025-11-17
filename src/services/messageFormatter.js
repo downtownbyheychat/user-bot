@@ -1,4 +1,45 @@
 export function formatForWhatsAppAPI(response, recipientPhoneNumber) {
+    // Handle flow messages
+    if (response.data && response.data.flow) {
+        return {
+            messaging_product: "whatsapp",
+            to: recipientPhoneNumber,
+            type: "interactive",
+            interactive: {
+                type: "flow",
+                header: {
+                    type: "text",
+                    text: response.data.flow.header
+                },
+                body: {
+                    text: response.message
+                },
+                footer: {
+                    text: response.data.flow.footer
+                },
+                action: {
+                    name: "flow",
+                    parameters: {
+                        ...response.data.flow.parameters
+                    }
+                }
+            }
+        };
+    }
+
+    // Handle image messages
+    if (response.data && response.data.image_url) {
+        return {
+            messaging_product: "whatsapp",
+            to: recipientPhoneNumber,
+            type: "image",
+            image: {
+                link: response.data.image_url,
+                caption: response.message || "" // Use message as caption, or empty string if no message
+            }
+        };
+    }
+
     // Handle list templates
     if (response.data && response.data.list) {
         return {

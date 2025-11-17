@@ -143,6 +143,58 @@ async function processMessagesAsync(body) {
                 for (const message of messages || []) {
                     const customerId = message.from; // WhatsApp phone number of the user
                     
+                    // Check if user is registered
+                    const { getUserName } = await import('../db/Utils/users.js');
+                    const userName = await getUserName(customerId);
+
+                    if (!userName) {
+                        // User is not registered, trigger onboarding flow
+                        const flowData = {
+                            header: "Welcome to Downtown",
+                            footer: "Powered by Downtown",
+                            parameters: {
+                                flow_message_version: "3",
+                                flow_token: `onboarding_${Date.now()}`, // Unique token for the flow
+                                flow_id: "834210229023164",
+                                flow_cta: "Register",
+                                flow_action: "navigate",
+                                flow_action_payload: {
+                                    screen: "SIGN_UP"
+                                }
+                            }
+                        };
+
+                        await sendMessage(customerId, "Please register to continue.", null, null, flowData);
+                        return; // Stop further processing for this message
+                    }
+
+                    // Check for expired OTP
+                    const { getOtp, generateOtp, saveOtp } = await import('../services/pendingOtps.js');
+                    const pendingOtp = getOtp(customerId);
+
+                    if (pendingOtp && Date.now() > pendingOtp.expiry && message.type !== 'interactive' && message.interactive?.type !== 'nfm_reply') {
+                        // OTP has expired, and the user sent a message that is not a flow submission
+                        const newOtp = generateOtp();
+                        saveOtp(customerId, newOtp);
+
+                        const flowData = {
+                            header: "Verify OTP",
+                            footer: "Powered by Downtown",
+                            parameters: {
+                                flow_message_version: "3",
+                                flow_token: `otp_${Date.now()}`,
+                                flow_id: "1206250401558114",
+                                flow_cta: "Verify",
+                                flow_action: "navigate",
+                                flow_action_payload: {
+                                    screen: "VERIFY_OTP"
+                                }
+                            }
+                        };
+                        await sendMessage(customerId, `Your previous OTP has expired. Your new OTP is ${newOtp}`, null, null, flowData);
+                        return; // Stop further processing
+                    }
+
                     // Fix: Prevent responding to messages not intended for the user
                     // If the receiving number is not (2349023168568), return early
                     const toNumber = change.value.metadata?.display_phone_number || '';
@@ -183,7 +235,7 @@ async function processMessagesAsync(body) {
 
                             // Send the response to the user
                             const buttons = responseData.data?.buttons || null;
-                            await sendMessage(customerId, responseData.message, buttons);
+                            await sendMessage(customerId, responseData.message, buttons, null, null);
 
                             // If there's an order summary, generate and send a receipt
                             if (responseData.data?.order_summary?.items?.length > 0) {
@@ -193,7 +245,7 @@ async function processMessagesAsync(body) {
                             console.error('Error processing message:', error);
                             const fallbackMessage = "Sorry, I'm currently overloaded. Please try again shortly.";
                             await saveChatMessage(customerId, fallbackMessage, true);
-                            await sendMessage(customerId, fallbackMessage);
+                            await sendMessage(customerId, fallbackMessage, null, null, null);
                         }
                     }
 
@@ -202,6 +254,30 @@ async function processMessagesAsync(body) {
                         const buttonId = message.interactive.button_reply.id;
 
                         try {
+                            // Handle resend OTP button
+                            if (buttonId === 'resend_otp') {
+                                const { generateOtp, saveOtp } = await import('../services/pendingOtps.js');
+                                const newOtp = generateOtp();
+                                saveOtp(customerId, newOtp);
+
+                                const flowData = {
+                                    header: "Verify OTP",
+                                    footer: "Powered by Downtown",
+                                    parameters: {
+                                        flow_message_version: "3",
+                                        flow_token: `otp_${Date.now()}`,
+                                        flow_id: "1206250401558114",
+                                        flow_cta: "Verify",
+                                        flow_action: "navigate",
+                                        flow_action_payload: {
+                                            screen: "VERIFY_OTP"
+                                        }
+                                    }
+                                };
+                                await sendMessage(customerId, `Your new OTP is ${newOtp}`, null, null, flowData);
+                                return; // Stop further processing
+                            }
+
                             // Process the button click
                             const { handleButtonClick } = await import('../services/buttonHandler.js');
                             const buttonResponse = await handleButtonClick(buttonId, customerId);
@@ -213,7 +289,7 @@ async function processMessagesAsync(body) {
                             // Send the button response to the user
                             const buttonButtons = buttonResponse.data?.buttons || null;
                             const listData = buttonResponse.data?.list || null;
-                            await sendMessage(customerId, buttonResponse.message, buttonButtons, listData);
+                            await sendMessage(customerId, buttonResponse.message, buttonButtons, listData, null);
                             
                             // If this is a delivery/pickup selection, process the order
                             if (buttonId === 'pickup' || buttonId === 'delivery') {
@@ -242,12 +318,12 @@ async function processMessagesAsync(body) {
                                     await saveChatMessage(customerId, orderResponse.message, true);
                                     const orderButtons = orderResponse.data?.buttons || null;
                                     const orderList = orderResponse.data?.list || null;
-                                    await sendMessage(customerId, orderResponse.message, orderButtons, orderList);
+                                    await sendMessage(customerId, orderResponse.message, orderButtons, orderList, null);
                                 }
                             }
                         } catch (error) {
                             console.error('Button handling error:', error);
-                            await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");
+                            await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.", null, null, null);
                         }
                     }
 
@@ -267,17 +343,103 @@ async function processMessagesAsync(body) {
                             // Send the list response to the user
                             const listButtons = listResponse.data?.buttons || null;
                             const listData = listResponse.data?.list || null;
-                            await sendMessage(customerId, listResponse.message, listButtons, listData);
+                            await sendMessage(customerId, listResponse.message, listButtons, listData, null);
                         } catch (error) {
                             console.error('List handling error:', error);
-                            await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");
+                            await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.", null, null, null);
                         }
+                    }
+
+                    // Handle flow submissions
+                    if (message.type === 'interactive' && message.interactive.type === 'nfm_reply') {
+                        await handleFlowSubmission(customerId, message.interactive.nfm_reply);
                     }
                 }
             }
         }
     }
 }
+
+async function handleFlowSubmission(customerId, nfmReply) {
+    const flowResponse = JSON.parse(nfmReply.response_json);
+
+    // Check if this is an OTP submission
+    const { getOtp, removeOtp, generateOtp, saveOtp } = await import('../services/pendingOtps.js');
+    const pendingOtp = getOtp(customerId);
+
+    if (pendingOtp) {
+        // This is an OTP submission
+        const submittedOtp = flowResponse.otp;
+
+        if (Date.now() > pendingOtp.expiry) {
+            // OTP has expired
+            const newOtp = generateOtp();
+            saveOtp(customerId, newOtp);
+
+            const flowData = {
+                header: "Verify OTP",
+                footer: "Powered by Downtown",
+                parameters: {
+                    flow_message_version: "3",
+                    flow_token: `otp_${Date.now()}`,
+                    flow_id: "1206250401558114",
+                    flow_cta: "Verify",
+                    flow_action: "navigate",
+                    flow_action_payload: {
+                        screen: "VERIFY_OTP"
+                    }
+                }
+            };
+            await sendMessage(customerId, `Your previous OTP has expired. Your new OTP is ${newOtp}`, null, null, flowData);
+        } else if (submittedOtp === pendingOtp.otp) {
+            // OTP is correct
+            removeOtp(customerId);
+            await sendMessage(customerId, "✅ Verification successful! You are now registered.", null, null, null);
+        } else {
+            // Invalid OTP
+            await sendMessage(customerId, "❌ Invalid OTP. Please try again.", null, [
+                { id: "resend_otp", title: "Resend OTP" }
+            ], null);
+        }
+    } else {
+        // This is an onboarding flow submission
+        const { name, phone_number } = flowResponse;
+
+        if (name && phone_number) {
+            try {
+                // Create the user
+                const { createUser } = await import('../db/Utils/users.js');
+                await createUser(name, phone_number);
+
+                // Generate and save OTP
+                const newOtp = generateOtp();
+                saveOtp(customerId, newOtp);
+
+                // Send OTP flow
+                const flowData = {
+                    header: "Verify OTP",
+                    footer: "Powered by Downtown",
+                    parameters: {
+                        flow_message_version: "3",
+                        flow_token: `otp_${Date.now()}`,
+                        flow_id: "1206250401558114",
+                        flow_cta: "Verify",
+                        flow_action: "navigate",
+                        flow_action_payload: {
+                            screen: "VERIFY_OTP"
+                        }
+                    }
+                };
+                await sendMessage(customerId, `Your OTP is ${newOtp}`, null, null, flowData);
+
+            } catch (error) {
+                console.error('Error handling flow submission:', error);
+                await sendMessage(customerId, "Sorry, there was an error processing your registration. Please try again.", null, null, null);
+            }
+        }
+    }
+}
+
 
 
 
@@ -366,11 +528,11 @@ async function processMessagesAsync(body) {
 //     }
 // }
 
-async function sendMessage(recipientPhoneNumber, text, buttons = null, list = null) {
+async function sendMessage(recipientPhoneNumber, text, buttons = null, list = null, flow = null) {
     // Create the response object
     const response = {
         message: text,
-        data: { buttons, list }
+        data: { buttons, list, flow }
     };
 
     // Format the message for WhatsApp API
@@ -413,11 +575,54 @@ async function generateAndSendReceipt(customerId, orderSummary) {
     };
 
     await generateReceipt(receiptData);
-    await sendMessage(customerId, `✅ Receipt generated! Order ID: ${receiptData.orderId}`);
+    await sendMessage(customerId, `✅ Receipt generated! Order ID: ${receiptData.orderId}`, null, null, null);
   } catch (error) {
     console.error('Receipt generation failed:', error);
   }
 }
+
+app.post('/order-status', async (req, res) => {
+    try {
+        const { orderId, status, details } = req.body;
+
+        if (!orderId || !status) {
+            return res.status(400).json({ error: 'orderId and status are required' });
+        }
+
+        const { getOrderStatus, setOrderStatus } = await import('../services/orderStatusManager.js');
+        const order = getOrderStatus(orderId);
+
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        setOrderStatus(orderId, order.customerId, status, details);
+
+        let message;
+        switch (status) {
+            case 'delayed':
+                message = `⏳ Your order #${orderId} has been delayed. Reason: ${details || 'No reason provided.'}`;
+                break;
+            case 'picked_up':
+                message = `🚴 Your order #${orderId} has been picked up and is on its way!`;
+                break;
+            case 'delivered':
+                message = `✅ Your order #${orderId} has been delivered. Enjoy your meal!`;
+                break;
+            default:
+                // Don't send a notification for other statuses
+                return res.status(200).json({ status: 'Status updated' });
+        }
+
+        await sendMessage(order.customerId, message, null, null, null);
+
+        res.status(200).json({ status: 'Notification sent' });
+
+    } catch (error) {
+        console.error('Error handling order status update:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 app.listen(PORT, () => {
   console.log(`🚀 Campus AI Bot running on port ${PORT}`);
