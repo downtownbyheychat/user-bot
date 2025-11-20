@@ -55,7 +55,7 @@ export const intentHandlers = {
       response_type: "order_format",
       customer_id: customerId,
       timestamp: new Date().toISOString(),
-      message: "Got an order? Say less 😌\nFormat:\n\n₦800 jollof rice, 2 chicken from African Kitchen delivered to my hostel"
+      message: "Got an order? Say less 😌\nJust drop it in this format so we can process it fast 👇🏾\n\n*Example:*\njollof rice - ₦1,400, 1 meat 1 egg from African Kitchen delivered to my hostel(location)\n\nMake sure to include the 👇🏾\n• Item name + quantity you want\n• Specify the vendor you're buying from\n• Specify the location the food is delivered to"
     };
   }
 
@@ -277,7 +277,7 @@ if (!vendor && items.length > 0) {
       response_type: "order_format",
       customer_id: customerId,
       timestamp: new Date().toISOString(),
-      message: "Got an order? Say less 😌\nFormat:\n\n₦800 jollof rice from African Kitchen delivered to my hostel"
+      message: "Got an order? Say less 😌\nJust drop it in this format so we can process it fast 👇🏾\n\n*Example:*\njollof rice - ₦1,400, 1 meat 1 egg from African Kitchen delivered to my hostel(location)\n\nMake sure to include the 👇🏾\n• Item name + quantity you want\n• Specify the vendor you're buying from\n• Specify the location the food is delivered to"
     };
   },
 

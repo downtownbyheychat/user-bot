@@ -141,6 +141,15 @@ async function processMessagesAsync(body) {
                 for (const message of messages || []) {
                     const customerId = message.from; // WhatsApp phone number of the user
 
+
+                    // Fix: Prevent responding to messages not intended for the user
+                    // If the receiving number is not (2349023168568), return early
+                    const toNumber = change.value.metadata?.display_phone_number || '';
+                    if (toNumber !== '2349023168568') {
+                        console.log('Message intended for vendor bot, ignoring...');
+                        return;
+                    }
+                    
                     // Check if the message already exists in the database
                     const existing = await checkMessageExists(message.id);
                     if (existing) {
