@@ -1,4 +1,24 @@
 export function formatForWhatsAppAPI(response, recipientPhoneNumber) {
+    // Handle list messages
+    if (response.data?.list) {
+        const { header, body, button, sections } = response.data.list;
+        return {
+            messaging_product: "whatsapp",
+            to: recipientPhoneNumber,
+            type: "interactive",
+            interactive: {
+                type: "list",
+                header: { type: "text", text: header },
+                body: { text: body },
+                action: {
+                    button,
+                    sections
+                }
+            }
+        };
+    }
+
+    // Handle button messages
     if (response.data && response.data.buttons) {
         const hasUrlButton = response.data.buttons.some(b => b.type === "url");
 

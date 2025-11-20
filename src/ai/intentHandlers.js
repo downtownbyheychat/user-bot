@@ -156,7 +156,6 @@ if (!vendor && items.length > 0) {
     };
   }
   
-  const vendorList = validVendors.map((v, i) => `${i + 1}. ${v}`).join('\n');
   const itemNames = items.map(i => i.name).join(', ');
   
   return {
@@ -164,7 +163,24 @@ if (!vendor && items.length > 0) {
     response_type: "vendor_selection",
     customer_id: customerId,
     timestamp: new Date().toISOString(),
-    message: `Found "${itemNames}" at:\n\n${vendorList}\n\nWhich vendor you wan order from?`
+    message: `Select a vendor to order "${itemNames}" from:`,
+    data: {
+      list: {
+        header: "Available Vendors",
+        body: `Found "${itemNames}" at these vendors:`,
+        button: "Select Vendor",
+        sections: [
+          {
+            title: "Vendors",
+            rows: validVendors.map((v, i) => ({
+              id: `vendor_${i}_${v.replace(/\s+/g, '_')}`,
+              title: v,
+              description: `Order from ${v}`
+            }))
+          }
+        ]
+      }
+    }
   };
 }
 
@@ -297,7 +313,24 @@ if (!vendor && items.length > 0) {
     response_type: "menu",
     customer_id: customerId,
     timestamp: new Date().toISOString(),
-    message: "🍽️ Here are the available restaurants on campus:\n\n1️⃣ Campus Café - Nigerian & Continental\n2️⃣ Mama's Kitchen - Local dishes\n3️⃣ Quick Bites - Fast food & snacks\n\nWhich one catches your eye? 👀"
+    message: "Select a restaurant to view their menu:",
+    data: {
+      list: {
+        header: "Campus Restaurants",
+        body: "Here are the available restaurants on campus:",
+        button: "View Menu",
+        sections: [
+          {
+            title: "Restaurants",
+            rows: [
+              { id: "campus_cafe", title: "Campus Café", description: "Nigerian & Continental" },
+              { id: "mamas_kitchen", title: "Mama's Kitchen", description: "Local dishes" },
+              { id: "quick_bites", title: "Quick Bites", description: "Fast food & snacks" }
+            ]
+          }
+        ]
+      }
+    }
   }),
 
   "Track Order": async (customerId, message) => ({
@@ -335,7 +368,24 @@ if (!vendor && items.length > 0) {
     response_type: "order_history",
     customer_id: customerId,
     timestamp: new Date().toISOString(),
-    message: "🧾 Reorder (For Multiple Past Orders)\nYou get a few past orders 👀\nWhich one you wan run back?\nPick from your last orders below 👇🏾\n\n1️⃣ 2 packs jollof rice - ₦1,400\n2️⃣ Shawarma + Coke - ₦2,000\n3️⃣ Meat pie + juice - ₦1,200\n\nType the number or name of the order you wan repeat (e.g., '1' or 'jollof rice') 🍽️"
+    message: "Select an order to reorder:",
+    data: {
+      list: {
+        header: "Past Orders",
+        body: "Choose from your recent orders:",
+        button: "Reorder",
+        sections: [
+          {
+            title: "Recent Orders",
+            rows: [
+              { id: "order_1", title: "2 packs jollof rice", description: "₦1,400" },
+              { id: "order_2", title: "Shawarma + Coke", description: "₦2,000" },
+              { id: "order_3", title: "Meat pie + juice", description: "₦1,200" }
+            ]
+          }
+        ]
+      }
+    }
   }),
 
 

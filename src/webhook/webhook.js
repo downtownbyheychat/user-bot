@@ -181,8 +181,7 @@ async function processMessagesAsync(body) {
                             await saveChatMessage(customerId, responseData.message, true);
 
                             // Send the response to the user
-                            const buttons = responseData.data?.buttons || null;
-                            await sendMessage(customerId, responseData.message, buttons);
+                            await sendMessage(customerId, responseData);
 
                             // If there's an order summary, generate and send a receipt
                             if (responseData.data?.order_summary?.items?.length > 0) {
@@ -196,25 +195,29 @@ async function processMessagesAsync(body) {
                         }
                     }
 
-                    // Handle button interactions
-                    if (message.type === 'interactive' && message.interactive.type === 'button_reply') {
-                        const buttonId = message.interactive.button_reply.id;
+                    // Handle interactive messages (buttons and lists)
+                    if (message.type === 'interactive') {
+                        let interactionId, interactionTitle;
+                        
+                        if (message.interactive.type === 'button_reply') {
+                            interactionId = message.interactive.button_reply.id;
+                            interactionTitle = message.interactive.button_reply.title;
+                        } else if (message.interactive.type === 'list_reply') {
+                            interactionId = message.interactive.list_reply.id;
+                            interactionTitle = message.interactive.list_reply.title;
+                        }
 
                         try {
-                            // Process the button click
                             const { handleButtonClick } = await import('../services/buttonHandler.js');
-                            const buttonResponse = await handleButtonClick(buttonId, customerId);
+                            const buttonResponse = await handleButtonClick(interactionId, customerId);
 
-                            // Save the button interaction to the chat log
-                            await saveChatMessage(customerId, `[Button: ${buttonId}]`, false);
+                            await saveChatMessage(customerId, `[Selected: ${interactionTitle}]`, false);
                             await saveChatMessage(customerId, buttonResponse.message, true);
 
-                            // Send the button response to the user
-                            const buttonButtons = buttonResponse.data?.buttons || null;
-                            await sendMessage(customerId, buttonResponse.message, buttonButtons);
+                            await sendMessage(customerId, buttonResponse);
                         } catch (error) {
-                            console.error('Button handling error:', error);
-                            await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");
+                            console.error('Interaction handling error:', error);
+                            await sendMessage(customerId, { message: "Sorry, that action isn't working right now. Please try again." });
                         }
                     }
                 }
@@ -310,14 +313,12 @@ async function processMessagesAsync(body) {
 //     }
 // }
 
-async function sendMessage(recipientPhoneNumber, text, buttons = null) {
-    // Create the response object
-    const response = {
-        message: text,
-        data: { buttons }
-    };
+async function sendMessage(recipientPhoneNumber, responseData) {
+    // Handle both old format (text, buttons) and new format (response object)
+    const response = typeof responseData === 'string' 
+        ? { message: responseData }
+        : responseData;
 
-    // Format the message for WhatsApp API
     const formattedMessage = formatForWhatsAppAPI(response, recipientPhoneNumber);
 
     if (formattedMessage) {
