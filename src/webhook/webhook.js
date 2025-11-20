@@ -181,8 +181,7 @@ async function processMessagesAsync(body) {
                             await saveChatMessage(customerId, responseData.message, true);
 
                             // Send the response to the user
-                            const buttons = responseData.data?.buttons || null;
-                            await sendMessage(customerId, responseData.message, buttons);
+                            await sendMessage(customerId, responseData);
 
                             // If there's an order summary, generate and send a receipt
                             if (responseData.data?.order_summary?.items?.length > 0) {
@@ -210,8 +209,7 @@ async function processMessagesAsync(body) {
                             await saveChatMessage(customerId, buttonResponse.message, true);
 
                             // Send the button response to the user
-                            const buttonButtons = buttonResponse.data?.buttons || null;
-                            await sendMessage(customerId, buttonResponse.message, buttonButtons);
+                            await sendMessage(customerId, buttonResponse);
                         } catch (error) {
                             console.error('Button handling error:', error);
                             await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");
@@ -310,12 +308,11 @@ async function processMessagesAsync(body) {
 //     }
 // }
 
-async function sendMessage(recipientPhoneNumber, text, buttons = null) {
-    // Create the response object
-    const response = {
-        message: text,
-        data: { buttons }
-    };
+async function sendMessage(recipientPhoneNumber, responseData) {
+    // Handle both old format (text string) and new format (response object)
+    const response = typeof responseData === 'string' 
+        ? { message: responseData }
+        : responseData;
 
     // Format the message for WhatsApp API
     const formattedMessage = formatForWhatsAppAPI(response, recipientPhoneNumber);
