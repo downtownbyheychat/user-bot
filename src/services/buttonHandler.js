@@ -41,12 +41,6 @@ export async function handleButtonClick(buttonId, customerId) {
         }
       };
 
-    case 'copy_account':
-      return {
-        status: "success",
-        message: "📋 Account number copied!\n9082 XXXX 372\n\nYou can now paste it in your banking app to make payment."
-      };
-
     case 'confirm_cancel':
       return {
         status: "success",

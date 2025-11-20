@@ -94,13 +94,13 @@ export const intentHandlers = {
       message: `Here's the menu for ${vendorData.name}:`,
       data: {
         list: {
-          header: `${vendorData.name} Menu`,
+          header: `${vendorData.name} Menu`.substring(0, 60),
           body: "Select an item to add to your order:",
           button: "View Items",
           sections: [
             {
               title: "Menu Items",
-              rows: menuItems.map(item => {
+              rows: menuItems.slice(0, 10).map(item => {
                 let priceDesc = '';
                 if (item.sale_quantity === 'per_price') {
                   priceDesc = `from ₦${item.price}`;
@@ -115,8 +115,8 @@ export const intentHandlers = {
                 }
                 return {
                   id: `menu_${item.id}`,
-                  title: item.food_name,
-                  description: priceDesc
+                  title: item.food_name.substring(0, 24),
+                  description: priceDesc.substring(0, 72)
                 };
               })
             }
@@ -434,10 +434,7 @@ if (!vendor && items.length > 0) {
     response_type: "wallet_info",
     customer_id: customerId,
     timestamp: new Date().toISOString(),
-    message: "💳 Here are your wallet details 👇\nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint\n\n💡 You can send money directly here to top up your Downtown balance.",
-    data: {
-      buttons: [{ id: "copy_account", title: "Copy Account Number" }]
-    }
+    message: "💳 Here are your wallet details 👇\nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint\n\n💡 You can send money directly here to top up your Downtown balance."
   }),
 
   "View Balance": async (customerId, message) => ({

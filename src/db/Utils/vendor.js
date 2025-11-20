@@ -175,10 +175,13 @@ export async function validateOrderItem(vendorId, itemName, quantityType, price,
       }
 
       if ((price - minPrice) % 100 !== 0) {
-        return { 
-          valid: false, 
-          error: `${itemName} must be in multiples of ₦100 from ₦${minPrice}` 
-        };
+        if ((price - minPrice) % 50 !== 0 && minPrice % 50 === 0) {
+
+            return { 
+            valid: false, 
+            error: `${itemName} must be in multiples of ₦100 from ₦${minPrice}` 
+            };
+        }
       }
     }
 
