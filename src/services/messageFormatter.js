@@ -1,7 +1,7 @@
 export function formatForWhatsAppAPI(response, recipientPhoneNumber) {
     // Handle list messages
     if (response.data?.list) {
-        const { header, body, button, sections } = response.data.list;
+        const { header, body, button, sections, footer } = response.data.list;
         return {
             messaging_product: "whatsapp",
             to: recipientPhoneNumber,
@@ -10,6 +10,7 @@ export function formatForWhatsAppAPI(response, recipientPhoneNumber) {
                 type: "list",
                 header: { type: "text", text: header },
                 body: { text: body },
+                ...(footer && { footer: { text: footer } }),
                 action: {
                     button,
                     sections

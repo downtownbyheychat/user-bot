@@ -1,5 +1,6 @@
 import { getUserName } from "../db/Utils/users.js";
-import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, validateOrderItem, hasMixedTypes, hasOnlyAddOns } from "../db/Utils/vendor.js";
+import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, validateOrderItem, hasMixedTypes, hasOnlyAddOns, getAllVendors } from "../db/Utils/vendor.js";
+import { getUserOrderHistory } from "../db/Utils/orders.js";
 
 
 export const intentHandlers = {
@@ -308,30 +309,44 @@ if (!vendor && items.length > 0) {
     }
   }),
 
-  "Find Restaurant": async (customerId, message) => ({
-    status: "success",
-    response_type: "menu",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: "Select a restaurant to view their menu:",
-    data: {
-      list: {
-        header: "Campus Restaurants",
-        body: "Here are the available restaurants on campus:",
-        button: "View Menu",
-        sections: [
-          {
-            title: "Restaurants",
-            rows: [
-              { id: "campus_cafe", title: "Campus Café", description: "Nigerian & Continental" },
-              { id: "mamas_kitchen", title: "Mama's Kitchen", description: "Local dishes" },
-              { id: "quick_bites", title: "Quick Bites", description: "Fast food & snacks" }
-            ]
-          }
-        ]
-      }
+  "Find Restaurant": async (customerId, message) => {
+    const vendors = await getAllVendors();
+    
+    if (vendors.length === 0) {
+      return {
+        status: "error",
+        response_type: "menu",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: "Sorry, no restaurants are available at the moment."
+      };
     }
-  }),
+
+    return {
+      status: "success",
+      response_type: "menu",
+      customer_id: customerId,
+      timestamp: new Date().toISOString(),
+      message: "Select a restaurant to view their menu:",
+      data: {
+        list: {
+          header: "Campus Restaurants",
+          body: "Here are the available restaurants on campus:",
+          button: "View Menu",
+          sections: [
+            {
+              title: "Restaurants",
+              rows: vendors.map(v => ({
+                id: `vendor_${v.id}`,
+                title: v.name,
+                description: v.description || "View menu"
+              }))
+            }
+          ]
+        }
+      }
+    };
+  },
 
   "Track Order": async (customerId, message) => ({
     status: "success",
@@ -363,30 +378,49 @@ if (!vendor && items.length > 0) {
     message: "✏️ Sure thing! You're still within your 2 min 30 sec grace window, so we can make changes to your order\nJust tell me what you'd like to update, maybe the meal, how much, or delivery spot?"
   }),
 
-  "View Order History": async (customerId, message) => ({
-    status: "success",
-    response_type: "order_history",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: "Select an order to reorder:",
-    data: {
-      list: {
-        header: "Past Orders",
-        body: "Choose from your recent orders:",
-        button: "Reorder",
-        sections: [
-          {
-            title: "Recent Orders",
-            rows: [
-              { id: "order_1", title: "2 packs jollof rice", description: "₦1,400" },
-              { id: "order_2", title: "Shawarma + Coke", description: "₦2,000" },
-              { id: "order_3", title: "Meat pie + juice", description: "₦1,200" }
-            ]
-          }
-        ]
-      }
+  "View Order History": async (customerId, message) => {
+    const orders = await getUserOrderHistory(customerId, 5);
+    
+    if (orders.length === 0) {
+      return {
+        status: "success",
+        response_type: "order_history",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: "You haven't placed any orders yet. Ready to order something delicious? 🍽️"
+      };
     }
-  }),
+
+    return {
+      status: "success",
+      response_type: "order_history",
+      customer_id: customerId,
+      timestamp: new Date().toISOString(),
+      message: "Select an order to reorder:",
+      data: {
+        list: {
+          header: "Past Orders",
+          body: "Choose from your recent orders:",
+          button: "Reorder",
+          sections: [
+            {
+              title: "Recent Orders",
+              rows: orders.map(order => {
+                const itemsSummary = typeof order.items === 'string' 
+                  ? order.items 
+                  : JSON.parse(order.items).map(i => i.name).join(', ');
+                return {
+                  id: `order_${order.id}`,
+                  title: itemsSummary.substring(0, 24),
+                  description: `₦${order.total_amount} - ${order.vendor_name || 'Unknown'}`
+                };
+              })
+            }
+          ]
+        }
+      }
+    };
+  },
 
 
 
