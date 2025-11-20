@@ -1,6 +1,5 @@
 import { getUserName } from "../db/Utils/users.js";
-import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, validateOrderItem, hasMixedTypes, hasOnlyAddOns, getAllVendors } from "../db/Utils/vendor.js";
-import { getUserOrderHistory } from "../db/Utils/orders.js";
+import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasMixedTypes, hasOnlyAddOns, getAllVendors } from "../db/Utils/vendor.js";
 
 
 export const intentHandlers = {
@@ -75,13 +74,55 @@ export const intentHandlers = {
       };
     }
     
-    const catalogue = await getVendorCatalogue(vendorData.id);
+    const menuItems = await getVendorMenuItems(vendorData.id);
+    
+    if (menuItems.length === 0) {
+      return {
+        status: "error",
+        response_type: "vendor_catalogue",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: `${vendorData.name} has no menu items available at the moment.`
+      };
+    }
+
     return {
       status: "success",
       response_type: "vendor_catalogue",
       customer_id: customerId,
       timestamp: new Date().toISOString(),
-      message: catalogue
+      message: `Here's the menu for ${vendorData.name}:`,
+      data: {
+        list: {
+          header: `${vendorData.name} Menu`,
+          body: "Select an item to add to your order:",
+          button: "View Items",
+          sections: [
+            {
+              title: "Menu Items",
+              rows: menuItems.map(item => {
+                let priceDesc = '';
+                if (item.sale_quantity === 'per_price') {
+                  priceDesc = `from ₦${item.price}`;
+                } else if (item.sale_quantity === 'per_piece') {
+                  priceDesc = `₦${item.price} each`;
+                } else if (item.sale_quantity === 'full_pack') {
+                  priceDesc = `₦${item.price} (Full Pack)`;
+                } else if (item.sale_quantity === 'half_pack') {
+                  priceDesc = `₦${item.price} (Half Pack)`;
+                } else {
+                  priceDesc = `₦${item.price}`;
+                }
+                return {
+                  id: `menu_${item.id}`,
+                  title: item.food_name,
+                  description: priceDesc
+                };
+              })
+            }
+          ]
+        }
+      }
     };
   }
 
@@ -378,49 +419,13 @@ if (!vendor && items.length > 0) {
     message: "✏️ Sure thing! You're still within your 2 min 30 sec grace window, so we can make changes to your order\nJust tell me what you'd like to update, maybe the meal, how much, or delivery spot?"
   }),
 
-  "View Order History": async (customerId, message) => {
-    const orders = await getUserOrderHistory(customerId, 5);
-    
-    if (orders.length === 0) {
-      return {
-        status: "success",
-        response_type: "order_history",
-        customer_id: customerId,
-        timestamp: new Date().toISOString(),
-        message: "You haven't placed any orders yet. Ready to order something delicious? 🍽️"
-      };
-    }
-
-    return {
-      status: "success",
-      response_type: "order_history",
-      customer_id: customerId,
-      timestamp: new Date().toISOString(),
-      message: "Select an order to reorder:",
-      data: {
-        list: {
-          header: "Past Orders",
-          body: "Choose from your recent orders:",
-          button: "Reorder",
-          sections: [
-            {
-              title: "Recent Orders",
-              rows: orders.map(order => {
-                const itemsSummary = typeof order.items === 'string' 
-                  ? order.items 
-                  : JSON.parse(order.items).map(i => i.name).join(', ');
-                return {
-                  id: `order_${order.id}`,
-                  title: itemsSummary.substring(0, 24),
-                  description: `₦${order.total_amount} - ${order.vendor_name || 'Unknown'}`
-                };
-              })
-            }
-          ]
-        }
-      }
-    };
-  },
+  "View Order History": async (customerId, message) => ({
+    status: "success",
+    response_type: "order_history",
+    customer_id: customerId,
+    timestamp: new Date().toISOString(),
+    message: "🧾 Reorder (For Multiple Past Orders)\nYou get a few past orders 👀\nWhich one you wan run back?\nPick from your last orders below 👇🏾\n\n1️⃣ 2 packs jollof rice - ₦1,400\n2️⃣ Shawarma + Coke - ₦2,000\n3️⃣ Meat pie + juice - ₦1,200\n\nType the number or name of the order you wan repeat (e.g., '1' or 'jollof rice') 🍽️"
+  }),
 
 
 

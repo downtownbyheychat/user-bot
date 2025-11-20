@@ -77,6 +77,19 @@ export async function searchItemAcrossVendors(itemName) {
   }
 }
 
+export async function getVendorMenuItems(vendorId) {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM menus WHERE vendor_id = $1 ORDER BY food_type, food_name',
+      [vendorId]
+    );
+    return result.rows;
+  } catch (error) {
+    console.error('Error getting menu items:', error);
+    return [];
+  }
+}
+
 export async function getVendorCatalogue(vendorId) {
   try {
     const vendor = await getVendorById(vendorId);
@@ -205,7 +218,10 @@ export async function validateOrderItem(vendorId, itemName, quantityType, price,
 export async function getAllVendors() {
   try {
     const result = await pool.query(
-      'SELECT * FROM vendors WHERE status = $1 ORDER BY name',
+      `SELECT * FROM vendors 
+       WHERE status = $1 
+       AND EXISTS (SELECT 1 FROM menus WHERE menus.vendor_id = vendors.id)
+       ORDER BY name`,
       ['active']
     );
     return result.rows;
