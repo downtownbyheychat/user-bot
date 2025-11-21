@@ -15,8 +15,11 @@ export async function processMessage(customerId, message) {
     
     const response = await handleIntent(classification.intent, customerId, message, orderSummary);
     
-    // Add payment handling for orders
-    if (orderSummary?.items?.length > 0 && classification.intent === "Food Ordering") {
+    // Add payment handling ONLY for successful orders
+    if (orderSummary?.items?.length > 0 && 
+        classification.intent === "Food Ordering" && 
+        response.status === "success" &&
+        response.response_type === "order_confirmation") {
       const paymentInfo = paymentMessages.firstTimePayment(
         orderSummary.total_estimated || "2500",
         "9182 XXXX 645"

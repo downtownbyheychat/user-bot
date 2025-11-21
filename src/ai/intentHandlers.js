@@ -126,7 +126,7 @@ export const intentHandlers = {
         data: {
           list: {
             header: "Available Now",
-            body: "Select a restaurant to order from:",
+            body: `Sorry, ${vendorStatus.name} is currently closed. Try these instead:`,
             button: "View Restaurants",
             sections: [{
               title: "Open Restaurants",
@@ -146,13 +146,39 @@ export const intentHandlers = {
     const menuItems = await getVendorMenuItems(vendorData.id);
     
     if (menuItems.length === 0) {
-      return {
-        status: "error",
-        response_type: "vendor_catalogue",
-        customer_id: customerId,
-        timestamp: new Date().toISOString(),
-        message: `${vendorData.name} has no menu items available at the moment.`
-      };
+        const alternatives = await getAllVendors();
+        if (alternatives.length > 10) {
+            const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
+            return {
+                status: "error",
+                response_type: "vendor_catalogue",
+                customer_id: customerId,
+                timestamp: new Date().toISOString(),
+                message: `${vendorData.name} has no menu items available at the moment.\n\n🍽️ Available Restaurants:\n\n${altList}`
+            };
+        }
+        return {
+            status: "error",
+            response_type: "vendor_catalogue",
+            customer_id: customerId,
+            timestamp: new Date().toISOString(),
+            message: `${vendorData.name} has no menu items available at the moment. Try these instead:`,
+            data: {
+                list: {
+                    header: "Available Restaurants",
+                    body: "Select a restaurant to view their menu:",
+                    button: "View Restaurants",
+                    sections: [{
+                        title: "Restaurants",
+                        rows: alternatives.map(v => ({
+                            id: `vendor_${v.id}`,
+                            title: v.name.substring(0, 24),
+                            description: (v.description || "View menu").substring(0, 72)
+                        }))
+                    }]
+                }
+            }
+        };
     }
 
     if (menuItems.length > 10) {

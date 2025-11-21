@@ -176,6 +176,45 @@ export async function handleButtonClick(buttonId, customerId) {
         };
       }
 
+      // Handle menu item selection
+      if (buttonId.startsWith('menu_') && !buttonId.includes('_next_')) {
+        console.log('🍽️ Handling menu item selection:', buttonId);
+        const menuItemId = parseInt(buttonId.split('_')[1]);
+        
+        const pool = (await import('../db/database.js')).default;
+        const result = await pool.query(
+          'SELECT m.*, v.name as vendor_name FROM menus m JOIN vendors v ON m.vendor_id = v.id WHERE m.id = $1',
+          [menuItemId]
+        );
+        
+        if (result.rows.length === 0) {
+          return {
+            status: "error",
+            message: "Sorry, I couldn't find that menu item."
+          };
+        }
+        
+        const item = result.rows[0];
+        let priceInfo = '';
+        
+        if (item.sale_quantity === 'per_price') {
+          priceInfo = `from ₦${item.price}`;
+        } else if (item.sale_quantity === 'per_piece') {
+          priceInfo = `₦${item.price} each`;
+        } else if (item.sale_quantity === 'full_pack') {
+          priceInfo = `₦${item.price} (Full Pack)`;
+        } else if (item.sale_quantity === 'half_pack') {
+          priceInfo = `₦${item.price} (Half Pack)`;
+        } else {
+          priceInfo = `₦${item.price}`;
+        }
+        
+        return {
+          status: "success",
+          message: `Great choice! 🍽️\n\n${item.food_name} - ${priceInfo}\nFrom: ${item.vendor_name}\n\nTo order, just say:\n"${item.food_name} from ${item.vendor_name} delivered to [your location]"`
+        };
+      }
+
       // Handle vendor selection from restaurant list
       if (buttonId.startsWith('vendor_')) {
         console.log('🏪 Handling vendor selection:', buttonId);
@@ -201,40 +240,30 @@ export async function handleButtonClick(buttonId, customerId) {
           };
         }
 
-        const totalItems = menuItems.length;
-        const pageSize = totalItems > 10 ? 9 : 10;
-        const currentPage = 1;
-        const totalPages = Math.ceil(totalItems / pageSize);
-        const startIdx = 0;
-        const endIdx = pageSize;
-        const currentItems = menuItems.slice(startIdx, endIdx);
-
-        const rows = currentItems.map(item => {
-          let priceDesc = '';
-          if (item.sale_quantity === 'per_price') {
-            priceDesc = `from ₦${item.price}`;
-          } else if (item.sale_quantity === 'per_piece') {
-            priceDesc = `₦${item.price} each`;
-          } else if (item.sale_quantity === 'full_pack') {
-            priceDesc = `₦${item.price} (Full Pack)`;
-          } else if (item.sale_quantity === 'half_pack') {
-            priceDesc = `₦${item.price} (Half Pack)`;
-          } else {
-            priceDesc = `₦${item.price}`;
-          }
+        if (menuItems.length > 10) {
+          const menuList = menuItems.map((item, i) => {
+            let priceDesc = '';
+            if (item.sale_quantity === 'per_price') {
+              priceDesc = `from ₦${item.price}`;
+            } else if (item.sale_quantity === 'per_piece') {
+              priceDesc = `₦${item.price} each`;
+            } else if (item.sale_quantity === 'full_pack') {
+              priceDesc = `₦${item.price} (Full Pack)`;
+            } else if (item.sale_quantity === 'half_pack') {
+              priceDesc = `₦${item.price} (Half Pack)`;
+            } else {
+              priceDesc = `₦${item.price}`;
+            }
+            return `${i + 1}. ${item.food_name} - ${priceDesc}`;
+          }).join('\n');
+          
           return {
-            id: `menu_${item.id}`,
-            title: item.food_name.substring(0, 24),
-            description: priceDesc.substring(0, 72)
+            status: "success",
+            response_type: "vendor_catalogue",
+            customer_id: customerId,
+            timestamp: new Date().toISOString(),
+            message: `📋 ${vendor.name} Menu:\n\n${menuList}\n\nJust tell me what you'd like to order!`
           };
-        });
-
-        if (currentPage < totalPages) {
-          rows.push({
-            id: `menu_next_${vendorId}_${currentPage + 1}`,
-            title: "Next Page →",
-            description: `View page ${currentPage + 1} of ${totalPages}`
-          });
         }
 
         return {
@@ -242,17 +271,34 @@ export async function handleButtonClick(buttonId, customerId) {
           response_type: "vendor_catalogue",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: totalItems > 10 
-            ? `Here's the menu for ${vendor.name} (Page ${currentPage}/${totalPages}):`
-            : `Here's the menu for ${vendor.name}:`,
+          message: `Here's the menu for ${vendor.name}:`,
           data: {
             list: {
               header: `${vendor.name} Menu`.substring(0, 60),
-              body: totalItems > 10 
-                ? `Showing ${startIdx + 1}-${Math.min(endIdx, totalItems)} of ${totalItems} items`
-                : "Select an item to add to your order:",
+              body: "Select an item to add to your order:",
               button: "View Items",
-              sections: [{ title: "Menu Items", rows }]
+              sections: [{
+                title: "Menu Items",
+                rows: menuItems.map(item => {
+                  let priceDesc = '';
+                  if (item.sale_quantity === 'per_price') {
+                    priceDesc = `from ₦${item.price}`;
+                  } else if (item.sale_quantity === 'per_piece') {
+                    priceDesc = `₦${item.price} each`;
+                  } else if (item.sale_quantity === 'full_pack') {
+                    priceDesc = `₦${item.price} (Full Pack)`;
+                  } else if (item.sale_quantity === 'half_pack') {
+                    priceDesc = `₦${item.price} (Half Pack)`;
+                  } else {
+                    priceDesc = `₦${item.price}`;
+                  }
+                  return {
+                    id: `menu_${item.id}`,
+                    title: item.food_name.substring(0, 24),
+                    description: priceDesc.substring(0, 72)
+                  };
+                })
+              }]
             }
           }
         };
