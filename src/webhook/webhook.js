@@ -180,7 +180,7 @@ async function processMessagesAsync(body) {
                         const userMessage = message.text.body;
 
                         // Check if user exists
-                        const userCheck = await checkUserExists(customerId);
+                        let userCheck = await checkUserExists(customerId);
                         
                         if (!userCheck.exists) {
                             // User not registered, trigger onboarding
@@ -195,7 +195,12 @@ async function processMessagesAsync(body) {
                                 const result = await verifyOTP(userMessage.trim());
                                 
                                 if (result.success) {
-                                    await sendMessage(customerId, '✅ Email verified successfully!\n\nWelcome to Downtown! You can now start ordering food. 🍽️');
+                                    // Re-check user to confirm verification
+                                    userCheck = await checkUserExists(customerId);
+                                    if (userCheck.verified) {
+                                        await sendMessage(customerId, '✅ Email verified successfully!\n\nWelcome to Downtown! You can now start ordering food. 🍽️');
+                                        continue;
+                                    }
                                 } else {
                                     await sendInvalidOTPMessage(customerId);
                                 }

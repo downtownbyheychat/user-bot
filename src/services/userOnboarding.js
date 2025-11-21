@@ -128,8 +128,8 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
       name: flowData.screen_1_Full_name_0,
       phone_number: phoneNumber,
       email: flowData.screen_1_Email_2,
-      hostel: hostel,
-      university: null
+      hostel: hostel || '',
+      university: ''
     };
 
     const response = await axios.post(`${BASE_URL}users`, payload, {
