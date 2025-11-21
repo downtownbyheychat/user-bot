@@ -53,6 +53,54 @@ export async function handleButtonClick(buttonId, customerId) {
         message: "👍 Great! Your order is still active.\nWe'll keep you updated on the progress."
       };
 
+    case 'proceed_payment':
+      const { getOrderStack } = await import('./orderStack.js');
+      const orderStack = getOrderStack(customerId);
+      
+      if (orderStack.length === 0) {
+        return {
+          status: "error",
+          message: "No orders in your cart. Please add items first."
+        };
+      }
+      
+      let orderDetails = '';
+      orderStack.forEach((pack, i) => {
+        const packItems = pack.items.map(item => 
+          `${item.quantity_type === 'per_price' ? '₦' + item.price : item.quantity + 'x'} ${item.name}`
+        ).join(', ');
+        orderDetails += `\nPack ${i + 1}: ${packItems} from ${pack.vendor}`;
+      });
+      
+      return {
+        status: "success",
+        response_type: "payment",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: `💳 Payment Details\n\nYour Order:${orderDetails}\n\nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint\n\nSend payment and reply with confirmation.`
+      };
+
+    case 'add_new_pack':
+      return {
+        status: "success",
+        response_type: "order_format",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: "Got an order? Say less 😌\nJust drop it in this format so we can process it fast 👇🏾\n\n*Example:*\njollof rice - ₦1,400, 1 meat 1 egg from African Kitchen delivered to my hostel(location)\n\nMake sure to include the 👇🏾\n• Item name + quantity you want\n• Specify the vendor you're buying from\n• Specify the location the food is delivered to"
+      };
+
+    case 'cancel_order':
+      const { clearOrderStack: clearStack } = await import('./orderStack.js');
+      clearStack(customerId);
+      
+      return {
+        status: "success",
+        response_type: "order_cancelled",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: "✅ Order Cancelled\nYour order has been cancelled successfully.\n\nReady to order again? Just drop your order in this format:\n\n*Example:*\njollof rice - ₦1,400, 1 meat 1 egg from African Kitchen delivered to my hostel(location)"
+      };
+
     default:
       // Handle pickup button
       if (buttonId.startsWith('pickup_')) {

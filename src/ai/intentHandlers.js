@@ -507,17 +507,29 @@ if (!vendor && items.length > 0) {
         };
       }
 
-      // Order summary with delivery location
+      // Push validated order to stack
+      const { pushOrderPack, getStackSummary } = await import('../services/orderStack.js');
+      pushOrderPack(customerId, {
+        items,
+        vendor: vendorData.name,
+        vendorId: vendorData.id,
+        delivery_location
+      });
+      
+      const stackSummary = getStackSummary(customerId);
+
       return {
         status: "success",
-        response_type: "order_confirmation",
+        response_type: "order_summary",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `🟡 Order Placed\nGot it! Your order has been received 🧾\n\nItems: ${itemsList}\nVendor: ${vendorData.name}\nDelivery: ${delivery_location}\n\nWe'll confirm with the restaurant shortly.`,
+        message: `📦 Pack Added to Cart\n\nItems: ${itemsList}\nVendor: ${vendorData.name}\nDelivery: ${delivery_location}\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
         data: {
-          order_summary: orderSummary,
-          vendor_id: vendorData.id,
-          payment_required: true
+          buttons: [
+            { id: "proceed_payment", title: "💳 Proceed to Payment" },
+            { id: "add_new_pack", title: "➕ Add New Pack" },
+            { id: "cancel_order", title: "❌ Cancel Order" }
+          ]
         }
       };
     }
