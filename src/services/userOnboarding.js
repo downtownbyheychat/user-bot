@@ -43,7 +43,7 @@ export async function sendUserOnboardingFlow(phoneNumber) {
               flow_cta: 'Get Started',
               flow_action: 'navigate',
               flow_action_payload: {
-                screen: 'onboarding_screen',
+                screen: 'privacy_policy_terms_of_use',
                 data: {
                   type: 'dynamic_object',
                   value: {}
@@ -73,51 +73,9 @@ export async function sendOTPVerificationFlow(phoneNumber, email) {
       expiresAt: Date.now() + 15 * 60 * 1000 // 15 minutes
     });
 
-    await axios({
-      url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
-      method: 'post',
-      headers: {
-        'Authorization': `Bearer ${ACCESS_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      data: {
-        recipient_type: 'individual',
-        messaging_product: 'whatsapp',
-        to: phoneNumber,
-        type: 'interactive',
-        interactive: {
-          type: 'flow',
-          header: {
-            type: 'text',
-            text: 'Verify Your Email'
-          },
-          body: {
-            text: `📧 An OTP has been sent to ${email}\n\nPlease enter the code to verify your account.`
-          },
-          action: {
-            name: 'flow',
-            parameters: {
-              flow_message_version: '3',
-              flow_token: 'unused',
-              flow_id: '1206250401558114',
-              flow_cta: 'Verify',
-              flow_action: 'navigate',
-              flow_action_payload: {
-                screen: 'otp_screen',
-                data: {
-                  type: 'dynamic_object',
-                  value: {}
-                }
-              }
-            }
-          }
-        }
-      }
-    });
-
-    console.log('✅ OTP verification flow sent');
+    console.log('✅ OTP sent to email');
   } catch (error) {
-    console.error('❌ Error sending OTP flow:', error.response?.data || error.message);
+    console.error('❌ Error sending OTP:', error.response?.data || error.message);
   }
 }
 
