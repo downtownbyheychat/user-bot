@@ -86,40 +86,30 @@ export const intentHandlers = {
       };
     }
 
-    const totalItems = menuItems.length;
-    const pageSize = totalItems > 10 ? 9 : 10;
-    const currentPage = 1;
-    const totalPages = Math.ceil(totalItems / pageSize);
-    const startIdx = (currentPage - 1) * pageSize;
-    const endIdx = startIdx + pageSize;
-    const currentItems = menuItems.slice(startIdx, endIdx);
-
-    const rows = currentItems.map(item => {
-      let priceDesc = '';
-      if (item.sale_quantity === 'per_price') {
-        priceDesc = `from ₦${item.price}`;
-      } else if (item.sale_quantity === 'per_piece') {
-        priceDesc = `₦${item.price} each`;
-      } else if (item.sale_quantity === 'full_pack') {
-        priceDesc = `₦${item.price} (Full Pack)`;
-      } else if (item.sale_quantity === 'half_pack') {
-        priceDesc = `₦${item.price} (Half Pack)`;
-      } else {
-        priceDesc = `₦${item.price}`;
-      }
+    if (menuItems.length > 10) {
+      const menuList = menuItems.map((item, i) => {
+        let priceDesc = '';
+        if (item.sale_quantity === 'per_price') {
+          priceDesc = `from ₦${item.price}`;
+        } else if (item.sale_quantity === 'per_piece') {
+          priceDesc = `₦${item.price} each`;
+        } else if (item.sale_quantity === 'full_pack') {
+          priceDesc = `₦${item.price} (Full Pack)`;
+        } else if (item.sale_quantity === 'half_pack') {
+          priceDesc = `₦${item.price} (Half Pack)`;
+        } else {
+          priceDesc = `₦${item.price}`;
+        }
+        return `${i + 1}. ${item.food_name} - ${priceDesc}`;
+      }).join('\n');
+      
       return {
-        id: `menu_${item.id}`,
-        title: item.food_name.substring(0, 24),
-        description: priceDesc.substring(0, 72)
+        status: "success",
+        response_type: "vendor_catalogue",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: `📋 ${vendorData.name} Menu:\n\n${menuList}\n\nJust tell me what you'd like to order!`
       };
-    });
-
-    if (currentPage < totalPages) {
-      rows.push({
-        id: `menu_next_${vendorData.id}_${currentPage + 1}`,
-        title: "Next Page →",
-        description: `View page ${currentPage + 1} of ${totalPages}`
-      });
     }
 
     return {
@@ -127,17 +117,34 @@ export const intentHandlers = {
       response_type: "vendor_catalogue",
       customer_id: customerId,
       timestamp: new Date().toISOString(),
-      message: totalItems > 10 
-        ? `Here's the menu for ${vendorData.name} (Page ${currentPage}/${totalPages}):`
-        : `Here's the menu for ${vendorData.name}:`,
+      message: `Here's the menu for ${vendorData.name}:`,
       data: {
         list: {
           header: `${vendorData.name} Menu`.substring(0, 60),
-          body: totalItems > 10 
-            ? `Showing ${startIdx + 1}-${Math.min(endIdx, totalItems)} of ${totalItems} items`
-            : "Select an item to add to your order:",
+          body: "Select an item to add to your order:",
           button: "View Items",
-          sections: [{ title: "Menu Items", rows }]
+          sections: [{
+            title: "Menu Items",
+            rows: menuItems.map(item => {
+              let priceDesc = '';
+              if (item.sale_quantity === 'per_price') {
+                priceDesc = `from ₦${item.price}`;
+              } else if (item.sale_quantity === 'per_piece') {
+                priceDesc = `₦${item.price} each`;
+              } else if (item.sale_quantity === 'full_pack') {
+                priceDesc = `₦${item.price} (Full Pack)`;
+              } else if (item.sale_quantity === 'half_pack') {
+                priceDesc = `₦${item.price} (Half Pack)`;
+              } else {
+                priceDesc = `₦${item.price}`;
+              }
+              return {
+                id: `menu_${item.id}`,
+                title: item.food_name.substring(0, 24),
+                description: priceDesc.substring(0, 72)
+              };
+            })
+          }]
         }
       }
     };
@@ -216,26 +223,16 @@ if (!vendor && items.length > 0) {
   }
   
   const itemNames = items.map(i => i.name).join(', ');
-  const totalVendors = validVendors.length;
-  const pageSize = totalVendors > 10 ? 9 : 10;
-  const currentPage = 1;
-  const totalPages = Math.ceil(totalVendors / pageSize);
-  const startIdx = (currentPage - 1) * pageSize;
-  const endIdx = startIdx + pageSize;
-  const currentVendors = validVendors.slice(startIdx, endIdx);
-  
-  const rows = currentVendors.map((v, i) => ({
-    id: `vendor_${i}_${v.replace(/\s+/g, '_')}`,
-    title: v.substring(0, 24),
-    description: `Order from ${v}`.substring(0, 72)
-  }));
 
-  if (currentPage < totalPages) {
-    rows.push({
-      id: `vendor_select_next_${currentPage + 1}`,
-      title: "Next Page →",
-      description: `View page ${currentPage + 1} of ${totalPages}`
-    });
+  if (validVendors.length > 10) {
+    const vendorList = validVendors.map((v, i) => `${i + 1}. ${v}`).join('\n');
+    return {
+      status: "success",
+      response_type: "vendor_selection",
+      customer_id: customerId,
+      timestamp: new Date().toISOString(),
+      message: `Found "${itemNames}" at:\n\n${vendorList}\n\nWhich vendor you wan order from?`
+    };
   }
 
   return {
@@ -243,17 +240,20 @@ if (!vendor && items.length > 0) {
     response_type: "vendor_selection",
     customer_id: customerId,
     timestamp: new Date().toISOString(),
-    message: totalVendors > 10
-      ? `Select a vendor to order "${itemNames}" from (Page ${currentPage}/${totalPages}):`
-      : `Select a vendor to order "${itemNames}" from:`,
+    message: `Select a vendor to order "${itemNames}" from:`,
     data: {
       list: {
         header: "Available Vendors",
-        body: totalVendors > 10
-          ? `Showing ${startIdx + 1}-${Math.min(endIdx, totalVendors)} of ${totalVendors} vendors`
-          : `Found "${itemNames}" at these vendors:`,
+        body: `Found "${itemNames}" at these vendors:`,
         button: "Select Vendor",
-        sections: [{ title: "Vendors", rows }]
+        sections: [{
+          title: "Vendors",
+          rows: validVendors.map((v, i) => ({
+            id: `vendor_${i}_${v.replace(/\s+/g, '_')}`,
+            title: v.substring(0, 24),
+            description: `Order from ${v}`.substring(0, 72)
+          }))
+        }]
       }
     }
   };
@@ -396,26 +396,15 @@ if (!vendor && items.length > 0) {
       };
     }
 
-    const totalItems = vendors.length;
-    const pageSize = totalItems > 10 ? 9 : 10;
-    const currentPage = 1;
-    const totalPages = Math.ceil(totalItems / pageSize);
-    const startIdx = (currentPage - 1) * pageSize;
-    const endIdx = startIdx + pageSize;
-    const currentItems = vendors.slice(startIdx, endIdx);
-
-    const rows = currentItems.map(v => ({
-      id: `vendor_${v.id}`,
-      title: v.name.substring(0, 24),
-      description: (v.description || "View menu").substring(0, 72)
-    }));
-
-    if (currentPage < totalPages) {
-      rows.push({
-        id: `restaurants_next_${currentPage + 1}`,
-        title: "Next Page →",
-        description: `View page ${currentPage + 1} of ${totalPages}`
-      });
+    if (vendors.length > 10) {
+      const vendorList = vendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
+      return {
+        status: "success",
+        response_type: "menu",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: `🍽️ Available Restaurants:\n\n${vendorList}\n\nJust mention the restaurant name to view their menu!`
+      };
     }
 
     return {
@@ -423,17 +412,20 @@ if (!vendor && items.length > 0) {
       response_type: "menu",
       customer_id: customerId,
       timestamp: new Date().toISOString(),
-      message: totalItems > 10
-        ? `Campus Restaurants (Page ${currentPage}/${totalPages}):`
-        : "Select a restaurant to view their menu:",
+      message: "Select a restaurant to view their menu:",
       data: {
         list: {
           header: "Campus Restaurants",
-          body: totalItems > 10
-            ? `Showing ${startIdx + 1}-${Math.min(endIdx, totalItems)} of ${totalItems} restaurants`
-            : "Here are the available restaurants on campus:",
+          body: "Here are the available restaurants on campus:",
           button: "View Restaurants",
-          sections: [{ title: "Restaurants", rows }]
+          sections: [{
+            title: "Restaurants",
+            rows: vendors.map(v => ({
+              id: `vendor_${v.id}`,
+              title: v.name.substring(0, 24),
+              description: (v.description || "View menu").substring(0, 72)
+            }))
+          }]
         }
       }
     };
