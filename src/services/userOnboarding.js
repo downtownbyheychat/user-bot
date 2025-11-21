@@ -128,7 +128,7 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
       name: flowData.screen_1_Full_name_0.trim(),
       phone_number: phoneNumber,
       email: flowData.screen_1_Email_2,
-      hostel: hostel || 'Silver 2',
+      hostel: hostelData || 'Silver 2',
       university: 'Bells Tech'
     };
 
