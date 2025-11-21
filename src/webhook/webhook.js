@@ -4,6 +4,15 @@ import { saveMessage, checkMessageExists, saveChatMessage } from '../db/mongodb.
 import { processMessage } from '../services/messageProcessor.js';
 import { generateReceipt } from '../services/receiptGenerator.js';
 import { formatForWhatsAppAPI } from '../services/messageFormatter.js';
+import { checkUserExists } from '../db/Utils/users.js';
+import { 
+  sendUserOnboardingFlow, 
+  sendOTPVerificationFlow, 
+  verifyOTP, 
+  checkAndResendOTP,
+  handleUserOnboardingSubmission,
+  sendInvalidOTPMessage
+} from '../services/userOnboarding.js';
 
 dotenv.config();
 
@@ -170,6 +179,26 @@ async function processMessagesAsync(body) {
                     if (message.type === 'text') {
                         const userMessage = message.text.body;
 
+                        // Check if user exists
+                        const userCheck = await checkUserExists(customerId);
+                        
+                        if (!userCheck.exists) {
+                            // User not registered, trigger onboarding
+                            await sendUserOnboardingFlow(customerId);
+                            continue;
+                        }
+                        
+                        if (!userCheck.verified) {
+                            // User registered but not verified, check OTP expiry
+                            const otpCheck = await checkAndResendOTP(customerId);
+                            if (otpCheck.expired) {
+                                await sendMessage(customerId, otpCheck.message);
+                            } else {
+                                await sendOTPVerificationFlow(customerId, userCheck.user.email);
+                            }
+                            continue;
+                        }
+
                         // Save the user message to the chat log
                         await saveChatMessage(customerId, userMessage, false);
 
@@ -199,6 +228,15 @@ async function processMessagesAsync(body) {
                     if (message.type === 'interactive' && message.interactive.type === 'button_reply') {
                         const buttonId = message.interactive.button_reply.id;
 
+                        // Handle resend OTP button
+                        if (buttonId === 'resend_otp') {
+                            const userCheck = await checkUserExists(customerId);
+                            if (userCheck.exists && !userCheck.verified) {
+                                await sendOTPVerificationFlow(customerId, userCheck.user.email);
+                            }
+                            continue;
+                        }
+
                         try {
                             // Process the button click
                             const { handleButtonClick } = await import('../services/buttonHandler.js');
@@ -218,6 +256,35 @@ async function processMessagesAsync(body) {
                         } catch (error) {
                             console.error('Button handling error:', error);
                             await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");
+                        }
+                    }
+
+                    // Handle flow submissions (user onboarding & OTP)
+                    if (message.type === 'interactive' && message.interactive.type === 'nfm_reply') {
+                        const flowData = message.interactive.nfm_reply;
+                        const userInput = JSON.parse(flowData.response_json);
+
+                        console.log('📥 Flow Data:', userInput);
+
+                        // Handle user onboarding flow submission
+                        if (userInput.name && userInput.email) {
+                            const result = await handleUserOnboardingSubmission(customerId, userInput);
+                            if (!result.success) {
+                                await sendMessage(customerId, `❌ Registration failed: ${result.error}`);
+                            }
+                            continue;
+                        }
+
+                        // Handle OTP verification flow submission
+                        if (userInput.otp) {
+                            const result = await verifyOTP(customerId, userInput.otp);
+                            
+                            if (result.success) {
+                                await sendMessage(customerId, '✅ Email verified successfully!\n\nWelcome to Downtown! You can now start ordering food. 🍽️');
+                            } else {
+                                await sendInvalidOTPMessage(customerId);
+                            }
+                            continue;
                         }
                     }
 
