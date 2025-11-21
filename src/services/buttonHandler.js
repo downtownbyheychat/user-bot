@@ -105,16 +105,46 @@ export async function handleButtonClick(buttonId, customerId) {
       // Handle pickup button
       if (buttonId.startsWith('pickup_')) {
         const vendorId = buttonId.substring(7);
+        const { getPendingOrder, clearPendingOrder } = await import('./sessionManager.js');
+        const pendingOrder = getPendingOrder(customerId);
+        
+        if (!pendingOrder?.orderSummary) {
+          return {
+            status: "error",
+            message: "No pending order found. Please place a new order."
+          };
+        }
+        
+        const { pushOrderPack, getStackSummary } = await import('./orderStack.js');
+        const { getAllVendors } = await import('../db/Utils/vendor.js');
+        const vendors = await getAllVendors();
+        const vendor = vendors.find(v => v.id === vendorId);
+        
+        pushOrderPack(customerId, {
+          items: pendingOrder.orderSummary.items,
+          vendor: vendor?.name || 'Unknown',
+          vendorId,
+          delivery_location: 'Pickup'
+        });
+        
+        clearPendingOrder(customerId);
+        const stackSummary = getStackSummary(customerId);
+        const itemsList = pendingOrder.orderSummary.items.map(i => 
+          `${i.quantity_type === 'per_price' ? '₦' + i.price : i.quantity + 'x'} ${i.name}`
+        ).join(', ');
+        
         return {
           status: "success",
-          response_type: "order_confirmation",
+          response_type: "order_summary",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: "🟡 Order Placed\nGot it! Your order has been received 🧾\n\nPickup: You'll collect from the restaurant\n\nWe'll confirm with the restaurant shortly.",
+          message: `📦 Pack Added to Cart\n\nItems: ${itemsList}\nVendor: ${vendor?.name}\nPickup: You'll collect from restaurant\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
           data: {
-            vendor_id: vendorId,
-            delivery_type: "pickup",
-            payment_required: true
+            buttons: [
+              { id: "proceed_payment", title: "💳 Proceed to Payment" },
+              { id: "add_new_pack", title: "➕ Add New Pack" },
+              { id: "cancel_order", title: "❌ Cancel Order" }
+            ]
           }
         };
       }
@@ -122,8 +152,21 @@ export async function handleButtonClick(buttonId, customerId) {
       // Handle delivery button
       if (buttonId.startsWith('delivery_')) {
         const vendorId = buttonId.substring(9);
-        const { setPendingOrder } = await import('./sessionManager.js');
-        setPendingOrder(customerId, { vendorId, awaitingAddress: true });
+        const { getPendingOrder, setPendingOrder } = await import('./sessionManager.js');
+        const pendingOrder = getPendingOrder(customerId);
+        
+        if (!pendingOrder?.orderSummary) {
+          return {
+            status: "error",
+            message: "No pending order found. Please place a new order."
+          };
+        }
+        
+        setPendingOrder(customerId, { 
+          ...pendingOrder,
+          vendorId, 
+          awaitingAddress: true 
+        });
         
         return {
           status: "pending",

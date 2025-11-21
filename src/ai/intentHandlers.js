@@ -491,6 +491,9 @@ if (!vendor && items.length > 0) {
 
       // Ask for delivery/pickup if not specified
       if (!delivery_location) {
+        const { setPendingOrder } = await import('../services/sessionManager.js');
+        setPendingOrder(customerId, { orderSummary });
+        
         return {
           status: "pending",
           response_type: "delivery_prompt",
@@ -498,7 +501,6 @@ if (!vendor && items.length > 0) {
           timestamp: new Date().toISOString(),
           message: `Order: ${itemsList} from ${vendorData.name}\n\n📍 Pickup or Delivery?`,
           data: {
-            pending_order: orderSummary,
             buttons: [
               { id: `pickup_${vendorData.id}`, title: "🏃 Pickup" },
               { id: `delivery_${vendorData.id}`, title: "🚴 Delivery" }
