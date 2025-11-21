@@ -138,7 +138,6 @@ export async function handleButtonClick(buttonId, customerId) {
         total += pack.total;
       });
       
-      const { generateReceipt } = await import('./receiptGenerator.js');
       const receiptData = {
         orderId: `ORD${Date.now()}`,
         items: allItems,
@@ -148,19 +147,33 @@ export async function handleButtonClick(buttonId, customerId) {
         deliveryAddress: stack[0].delivery_location
       };
       
-      const { filePath } = await generateReceipt(receiptData);
-      clearOrderStack(customerId);
-      
-      return {
-        status: "success",
-        response_type: "payment_confirmed",
-        customer_id: customerId,
-        timestamp: new Date().toISOString(),
-        message: `✅ Payment Confirmed!\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}\n\nYour receipt has been generated. We'll confirm with the restaurant shortly!`,
-        data: {
-          receipt_path: filePath
-        }
-      };
+      try {
+        const { generateReceipt } = await import('./receiptGenerator.js');
+        const { filePath } = await generateReceipt(receiptData);
+        clearOrderStack(customerId);
+        
+        return {
+          status: "success",
+          response_type: "payment_confirmed",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `✅ Payment Confirmed!\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}\n\nYour receipt has been generated. We'll confirm with the restaurant shortly!`,
+          data: {
+            receipt_path: filePath
+          }
+        };
+      } catch (error) {
+        console.error('Receipt generation failed:', error);
+        clearOrderStack(customerId);
+        
+        return {
+          status: "success",
+          response_type: "payment_confirmed",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `✅ Payment Confirmed!\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}\n\nReceipt generation failed, but your order is confirmed. We'll confirm with the restaurant shortly!`
+        };
+      }
 
     default:
       // Handle pickup button
