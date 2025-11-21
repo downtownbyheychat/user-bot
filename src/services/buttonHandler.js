@@ -54,17 +54,124 @@ export async function handleButtonClick(buttonId, customerId) {
       };
 
     default:
-      // Handle pagination buttons
-      if (buttonId.includes('_next_') || buttonId.includes('_prev_')) {
+      // Handle pagination for restaurants list
+      if (buttonId.startsWith('restaurants_next_')) {
         const page = parseInt(buttonId.split('_').pop());
+        const { getAllVendors } = await import('../db/Utils/vendor.js');
+        const vendors = await getAllVendors();
+        
+        const totalItems = vendors.length;
+        const pageSize = totalItems > 10 ? 9 : 10;
+        const totalPages = Math.ceil(totalItems / pageSize);
+        const startIdx = (page - 1) * pageSize;
+        const endIdx = startIdx + pageSize;
+        const currentItems = vendors.slice(startIdx, endIdx);
+
+        const rows = currentItems.map(v => ({
+          id: `vendor_${v.id}`,
+          title: v.name.substring(0, 24),
+          description: (v.description || "View menu").substring(0, 72)
+        }));
+
+        if (page < totalPages) {
+          rows.push({
+            id: `restaurants_next_${page + 1}`,
+            title: "Next Page →",
+            description: `View page ${page + 1} of ${totalPages}`
+          });
+        }
+
         return {
           status: "success",
-          message: `Loading page ${page}...`,
+          response_type: "menu",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `Campus Restaurants (Page ${page}/${totalPages}):`,
           data: {
-            action: "pagination",
-            button_id: buttonId,
-            page: page
+            list: {
+              header: "Campus Restaurants",
+              body: `Showing ${startIdx + 1}-${Math.min(endIdx, totalItems)} of ${totalItems} restaurants`,
+              button: "View Restaurants",
+              sections: [{ title: "Restaurants", rows }]
+            }
           }
+        };
+      }
+
+      // Handle pagination for vendor menu
+      if (buttonId.startsWith('menu_next_')) {
+        const parts = buttonId.split('_');
+        const vendorId = parseInt(parts[2]);
+        const page = parseInt(parts[3]);
+        
+        const { getVendorMenuItems, getVendorByName } = await import('../db/Utils/vendor.js');
+        const menuItems = await getVendorMenuItems(vendorId);
+        
+        const totalItems = menuItems.length;
+        const pageSize = totalItems > 10 ? 9 : 10;
+        const totalPages = Math.ceil(totalItems / pageSize);
+        const startIdx = (page - 1) * pageSize;
+        const endIdx = startIdx + pageSize;
+        const currentItems = menuItems.slice(startIdx, endIdx);
+
+        const rows = currentItems.map(item => {
+          let priceDesc = '';
+          if (item.sale_quantity === 'per_price') {
+            priceDesc = `from ₦${item.price}`;
+          } else if (item.sale_quantity === 'per_piece') {
+            priceDesc = `₦${item.price} each`;
+          } else if (item.sale_quantity === 'full_pack') {
+            priceDesc = `₦${item.price} (Full Pack)`;
+          } else if (item.sale_quantity === 'half_pack') {
+            priceDesc = `₦${item.price} (Half Pack)`;
+          } else {
+            priceDesc = `₦${item.price}`;
+          }
+          return {
+            id: `menu_${item.id}`,
+            title: item.food_name.substring(0, 24),
+            description: priceDesc.substring(0, 72)
+          };
+        });
+
+        if (page < totalPages) {
+          rows.push({
+            id: `menu_next_${vendorId}_${page + 1}`,
+            title: "Next Page →",
+            description: `View page ${page + 1} of ${totalPages}`
+          });
+        }
+
+        // Get vendor name for the message
+        const allVendors = await import('../db/Utils/vendor.js').then(m => m.getAllVendors());
+        const vendor = allVendors.find(v => v.id === vendorId);
+        const vendorName = vendor ? vendor.name : 'Vendor';
+
+        return {
+          status: "success",
+          response_type: "vendor_catalogue",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `Here's the menu for ${vendorName} (Page ${page}/${totalPages}):`,
+          data: {
+            list: {
+              header: `${vendorName} Menu`.substring(0, 60),
+              body: `Showing ${startIdx + 1}-${Math.min(endIdx, totalItems)} of ${totalItems} items`,
+              button: "View Items",
+              sections: [{ title: "Menu Items", rows }]
+            }
+          }
+        };
+      }
+
+      // Handle pagination for vendor selection
+      if (buttonId.startsWith('vendor_select_next_')) {
+        const page = parseInt(buttonId.split('_').pop());
+        // This would need context about which items were being searched
+        // For now, return a message asking user to search again
+        return {
+          status: "success",
+          message: "Please search for the items again to continue browsing vendors."
         };
       }
       

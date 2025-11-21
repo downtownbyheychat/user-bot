@@ -215,6 +215,27 @@ async function processMessagesAsync(body) {
                             await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");
                         }
                     }
+
+                    // Handle list interactions
+                    if (message.type === 'interactive' && message.interactive.type === 'list_reply') {
+                        const listItemId = message.interactive.list_reply.id;
+
+                        try {
+                            // Process the list selection
+                            const { handleButtonClick } = await import('../services/buttonHandler.js');
+                            const listResponse = await handleButtonClick(listItemId, customerId);
+
+                            // Save the list interaction to the chat log
+                            await saveChatMessage(customerId, `[List: ${listItemId}]`, false);
+                            await saveChatMessage(customerId, listResponse.message, true);
+
+                            // Send the list response to the user
+                            await sendMessage(customerId, listResponse);
+                        } catch (error) {
+                            console.error('List handling error:', error);
+                            await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");
+                        }
+                    }
                 }
             }
         }
