@@ -67,25 +67,77 @@ export const intentHandlers = {
     
     if (!vendorStatus) {
       const alternatives = await getAllVendors();
-      const altList = alternatives.slice(0, 5).map(v => v.name).join(', ');
+      
+      if (alternatives.length > 10) {
+        const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
+        return {
+          status: "error",
+          response_type: "vendor_not_found",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `Sorry, "${vendor}" is not in our system.\n\n🍽️ Available Restaurants:\n\n${altList}`
+        };
+      }
+      
       return {
         status: "error",
         response_type: "vendor_not_found",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `Sorry, "${vendor}" is not in our system.\n\nTry these instead: ${altList}`
+        message: `Sorry, "${vendor}" is not in our system. Try these instead:`,
+        data: {
+          list: {
+            header: "Available Restaurants",
+            body: "Select a restaurant to view their menu:",
+            button: "View Restaurants",
+            sections: [{
+              title: "Restaurants",
+              rows: alternatives.map(v => ({
+                id: `vendor_${v.id}`,
+                title: v.name.substring(0, 24),
+                description: (v.description || "View menu").substring(0, 72)
+              }))
+            }]
+          }
+        }
       };
     }
     
     if (vendorStatus.status !== 'active') {
       const alternatives = await getAllVendors();
-      const altList = alternatives.slice(0, 5).map(v => v.name).join(', ');
+      
+      if (alternatives.length > 10) {
+        const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
+        return {
+          status: "error",
+          response_type: "vendor_closed",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `Sorry, ${vendorStatus.name} is currently closed.\n\n🍽️ Available Now:\n\n${altList}`
+        };
+      }
+      
       return {
         status: "error",
         response_type: "vendor_closed",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `Sorry, ${vendorStatus.name} is currently closed.\n\nAvailable now: ${altList}`
+        message: `Sorry, ${vendorStatus.name} is currently closed. Try these instead:`,
+        data: {
+          list: {
+            header: "Available Now",
+            body: "Select a restaurant to order from:",
+            button: "View Restaurants",
+            sections: [{
+              title: "Open Restaurants",
+              rows: alternatives.map(v => ({
+                id: `vendor_${v.id}`,
+                title: v.name.substring(0, 24),
+                description: (v.description || "View menu").substring(0, 72)
+              }))
+            }]
+          }
+        }
       };
     }
     
@@ -282,25 +334,77 @@ if (!vendor && items.length > 0) {
     
     if (!vendorStatus) {
       const alternatives = await getAllVendors();
-      const altList = alternatives.slice(0, 5).map(v => v.name).join(', ');
+      
+      if (alternatives.length > 10) {
+        const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
+        return {
+          status: "error",
+          response_type: "vendor_not_found",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `Sorry, "${vendor}" is not in our system.\n\n🍽️ Available Restaurants:\n\n${altList}`
+        };
+      }
+      
       return {
         status: "error",
         response_type: "vendor_not_found",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `Sorry, "${vendor}" is not in our system.\n\nTry these instead: ${altList}`
+        message: `Sorry, "${vendor}" is not in our system. Try these instead:`,
+        data: {
+          list: {
+            header: "Available Restaurants",
+            body: "Select a restaurant to view their menu:",
+            button: "View Restaurants",
+            sections: [{
+              title: "Restaurants",
+              rows: alternatives.map(v => ({
+                id: `vendor_${v.id}`,
+                title: v.name.substring(0, 24),
+                description: (v.description || "View menu").substring(0, 72)
+              }))
+            }]
+          }
+        }
       };
     }
     
     if (vendorStatus.status !== 'active') {
       const alternatives = await getAllVendors();
-      const altList = alternatives.slice(0, 5).map(v => v.name).join(', ');
+      
+      if (alternatives.length > 10) {
+        const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
+        return {
+          status: "error",
+          response_type: "vendor_closed",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `Sorry, ${vendorStatus.name} is currently closed.\n\n🍽️ Available Now:\n\n${altList}`
+        };
+      }
+      
       return {
         status: "error",
         response_type: "vendor_closed",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `Sorry, ${vendorStatus.name} is currently closed.\n\nAvailable now: ${altList}`
+        message: `Sorry, ${vendorStatus.name} is currently closed. Try these instead:`,
+        data: {
+          list: {
+            header: "Available Now",
+            body: "Select a restaurant to order from:",
+            button: "View Restaurants",
+            sections: [{
+              title: "Open Restaurants",
+              rows: alternatives.map(v => ({
+                id: `vendor_${v.id}`,
+                title: v.name.substring(0, 24),
+                description: (v.description || "View menu").substring(0, 72)
+              }))
+            }]
+          }
+        }
       };
     }
     
