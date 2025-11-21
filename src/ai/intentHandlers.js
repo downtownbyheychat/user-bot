@@ -100,7 +100,7 @@ export const intentHandlers = {
           sections: [
             {
               title: "Menu Items",
-              rows: menuItems.slice(0, 10).map(item => {
+              rows: menuItems.slice(0, 100).map(item => {
                 let priceDesc = '';
                 if (item.sale_quantity === 'per_price') {
                   priceDesc = `from ₦${item.price}`;
@@ -214,10 +214,10 @@ if (!vendor && items.length > 0) {
         sections: [
           {
             title: "Vendors",
-            rows: validVendors.map((v, i) => ({
+            rows: validVendors.slice(0, 100).map((v, i) => ({
               id: `vendor_${i}_${v.replace(/\s+/g, '_')}`,
-              title: v,
-              description: `Order from ${v}`
+              title: v.substring(0, 24),
+              description: `Order from ${v}`.substring(0, 72)
             }))
           }
         ]
@@ -377,10 +377,10 @@ if (!vendor && items.length > 0) {
           sections: [
             {
               title: "Restaurants",
-              rows: vendors.map(v => ({
+              rows: vendors.slice(0, 100).map(v => ({
                 id: `vendor_${v.id}`,
-                title: v.name,
-                description: v.description || "View menu"
+                title: v.name.substring(0, 24),
+                description: (v.description || "View menu").substring(0, 72)
               }))
             }
           ]
