@@ -54,6 +54,38 @@ export async function handleButtonClick(buttonId, customerId) {
       };
 
     default:
+      // Handle pickup button
+      if (buttonId.startsWith('pickup_')) {
+        const vendorId = buttonId.substring(7);
+        return {
+          status: "success",
+          response_type: "order_confirmation",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: "🟡 Order Placed\nGot it! Your order has been received 🧾\n\nPickup: You'll collect from the restaurant\n\nWe'll confirm with the restaurant shortly.",
+          data: {
+            vendor_id: vendorId,
+            delivery_type: "pickup",
+            payment_required: true
+          }
+        };
+      }
+
+      // Handle delivery button
+      if (buttonId.startsWith('delivery_')) {
+        const vendorId = buttonId.substring(9);
+        const { setPendingOrder } = await import('./sessionManager.js');
+        setPendingOrder(customerId, { vendorId, awaitingAddress: true });
+        
+        return {
+          status: "pending",
+          response_type: "address_prompt",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: "📍 Where should we deliver your order?\n\nPlease provide your delivery address:"
+        };
+      }
+
       // Handle pagination for restaurants list
       if (buttonId.startsWith('restaurants_next_')) {
         console.log('🍴 Handling restaurants pagination:', buttonId);
@@ -103,7 +135,7 @@ export async function handleButtonClick(buttonId, customerId) {
       if (buttonId.startsWith('menu_next_')) {
         console.log('📝 Handling menu pagination:', buttonId);
         const parts = buttonId.split('_');
-        const vendorId = parseInt(parts[2]);
+        const vendorId = parts[2];
         const page = parseInt(parts[3]);
         console.log('Parsed vendorId:', vendorId, 'page:', page);
         
@@ -179,7 +211,7 @@ export async function handleButtonClick(buttonId, customerId) {
       // Handle menu item selection
       if (buttonId.startsWith('menu_') && !buttonId.includes('_next_')) {
         console.log('🍽️ Handling menu item selection:', buttonId);
-        const menuItemId = parseInt(buttonId.split('_')[1]);
+        const menuItemId = buttonId.split('_')[1];
         
         const pool = (await import('../db/database.js')).default;
         const result = await pool.query(
@@ -218,7 +250,7 @@ export async function handleButtonClick(buttonId, customerId) {
       // Handle vendor selection from restaurant list
       if (buttonId.startsWith('vendor_')) {
         console.log('🏪 Handling vendor selection:', buttonId);
-        const vendorId = parseInt(buttonId.split('_')[1]);
+        const vendorId = buttonId.split('_')[1];
         
         const { getVendorMenuItems, getAllVendors } = await import('../db/Utils/vendor.js');
         const allVendors = await getAllVendors();

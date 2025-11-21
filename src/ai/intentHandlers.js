@@ -485,12 +485,12 @@ if (!vendor && items.length > 0) {
     }
 
 
+      const itemsList = items.map(i => 
+        `${i.quantity_type === 'per_price' ? '₦' + i.price : i.quantity + 'x'} ${i.name}`
+      ).join(', ');
+
       // Ask for delivery/pickup if not specified
       if (!delivery_location) {
-        const itemsList = items.map(i => 
-          `${i.quantity_type === 'per_price' ? '₦' + i.price : i.quantity + 'x'} ${i.name}`
-        ).join(', ');
-        
         return {
           status: "pending",
           response_type: "delivery_prompt",
@@ -500,18 +500,14 @@ if (!vendor && items.length > 0) {
           data: {
             pending_order: orderSummary,
             buttons: [
-              { id: "pickup", title: "🏃 Pickup" },
-              { id: "delivery", title: "🚴 Delivery" }
+              { id: `pickup_${vendorData.id}`, title: "🏃 Pickup" },
+              { id: `delivery_${vendorData.id}`, title: "🚴 Delivery" }
             ]
           }
         };
       }
 
-      // Complete order confirmation
-      const itemsList = items.map(i => 
-        `${i.quantity_type === 'per_price' ? '₦' + i.price : i.quantity + 'x'} ${i.name}`
-      ).join(', ');
-      
+      // Order summary with delivery location
       return {
         status: "success",
         response_type: "order_confirmation",

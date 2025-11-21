@@ -5,6 +5,27 @@ import { orderStatusMessages, paymentMessages } from './orderStatusManager.js';
 
 export async function processMessage(customerId, message) {
   try {
+    // Check if user is providing delivery address
+    const { getPendingOrder, clearPendingOrder } = await import('./sessionManager.js');
+    const pendingOrder = getPendingOrder(customerId);
+    
+    if (pendingOrder?.awaitingAddress) {
+      clearPendingOrder(customerId);
+      return {
+        status: "success",
+        response_type: "order_confirmation",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: `🟡 Order Placed\nGot it! Your order has been received 🧾\n\nDelivery: ${message}\n\nWe'll confirm with the restaurant shortly.`,
+        data: {
+          vendor_id: pendingOrder.vendorId,
+          delivery_location: message,
+          delivery_type: "delivery",
+          payment_required: true
+        }
+      };
+    }
+    
     const classification = await classifyIntent(message);
     console.log(`[processMessage] Classified intent: ${classification.intent} (Confidence: ${classification.confidence})`);
     let orderSummary = null;
