@@ -6,6 +6,7 @@ import { orderStatusMessages, paymentMessages } from './orderStatusManager.js';
 export async function processMessage(customerId, message) {
   try {
     const classification = await classifyIntent(message);
+    console.log(`[processMessage] Classified intent: ${classification.intent} (Confidence: ${classification.confidence})`);
     let orderSummary = null;
     
     if (ORDER_SUMMARY_INTENTS.includes(classification.intent)) {

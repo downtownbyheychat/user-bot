@@ -159,6 +159,15 @@ export async function validateOrderItem(vendorId, itemName, quantityType, price,
 
     if (item.sale_quantity === 'per_price') {
       const minPrice = parseFloat(item.price);
+      
+      // Check if price is not provided or is null/undefined
+      if (!price || price === null || price === undefined) {
+        return { 
+          valid: false, 
+          error: `Please specify the price for ${itemName}. Minimum price is ₦${minPrice}` 
+        };
+      }
+      
       if (price < minPrice) {
         return { 
           valid: false, 
@@ -187,6 +196,14 @@ export async function validateOrderItem(vendorId, itemName, quantityType, price,
 
     // set the quantity type and price manually for others
     else{
+        // Check if quantity is not provided for per_piece items
+        if (item.sale_quantity === 'per_piece' && (!quantity || quantity === null || quantity === undefined || quantity === 0)) {
+          return { 
+            valid: false, 
+            error: `Please specify how many ${itemName} you want (e.g., "2 ${itemName}")` 
+          };
+        }
+        
         quantityType = item.sale_quantity;
         price = item.price * quantity;
         result.rows[0].price = price;

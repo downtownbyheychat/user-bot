@@ -24,9 +24,9 @@ General Interaction:
 - Customer Service
 
 Food Ordering & Delivery:
-- Food Ordering
+- Food Ordering (includes: placing orders, viewing specific vendor menus, asking about menu items)
 - Re-ordering
-- Find Restaurant
+- Find Restaurant (only for: browsing all restaurants, asking "what restaurants are available")
 - Track Order
 - Delivery Time
 - Cancel Order
