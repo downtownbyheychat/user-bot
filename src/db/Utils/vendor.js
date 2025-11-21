@@ -243,6 +243,23 @@ export async function getAllVendors() {
   }
 }
 
+export async function checkVendorStatus(vendorName) {
+  await enableSimilarity();
+  try {
+    const result = await pool.query(
+      `SELECT id, name, status FROM vendors 
+       WHERE similarity(LOWER(name), LOWER($1)) > 0.3 
+       ORDER BY similarity(LOWER(name), LOWER($1)) DESC 
+       LIMIT 1`,
+      [vendorName]
+    );
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error('Error checking vendor status:', error);
+    return null;
+  }
+}
+
 // checks if the food items have mixed quantity types (per price/per piece with full pack/half pack)
 export async function hasMixedTypes(vendorId, items) {
   const quantityTypes = new Set();

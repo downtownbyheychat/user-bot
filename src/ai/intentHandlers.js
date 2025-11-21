@@ -1,5 +1,5 @@
 import { getUserName } from "../db/Utils/users.js";
-import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasMixedTypes, hasOnlyAddOns, getAllVendors } from "../db/Utils/vendor.js";
+import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasMixedTypes, hasOnlyAddOns, getAllVendors, checkVendorStatus } from "../db/Utils/vendor.js";
 
 
 export const intentHandlers = {
@@ -63,16 +63,33 @@ export const intentHandlers = {
 
   // Case 1: Vendor only, no items
   if (vendor && items.length === 0) {
-    const vendorData = await getVendorByName(vendor);
-    if (!vendorData) {
+    const vendorStatus = await checkVendorStatus(vendor);
+    
+    if (!vendorStatus) {
+      const alternatives = await getAllVendors();
+      const altList = alternatives.slice(0, 5).map(v => v.name).join(', ');
       return {
         status: "error",
         response_type: "vendor_not_found",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `Sorry, I couldn't find "${vendor}".`
+        message: `Sorry, "${vendor}" is not in our system.\n\nTry these instead: ${altList}`
       };
     }
+    
+    if (vendorStatus.status !== 'active') {
+      const alternatives = await getAllVendors();
+      const altList = alternatives.slice(0, 5).map(v => v.name).join(', ');
+      return {
+        status: "error",
+        response_type: "vendor_closed",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: `Sorry, ${vendorStatus.name} is currently closed.\n\nAvailable now: ${altList}`
+      };
+    }
+    
+    const vendorData = await getVendorByName(vendor);
     
     const menuItems = await getVendorMenuItems(vendorData.id);
     
@@ -261,16 +278,33 @@ if (!vendor && items.length > 0) {
 
   // Case 3: Complete order - validate
   if (vendor && items.length > 0) {
-    const vendorData = await getVendorByName(vendor);
-    if (!vendorData) {
+    const vendorStatus = await checkVendorStatus(vendor);
+    
+    if (!vendorStatus) {
+      const alternatives = await getAllVendors();
+      const altList = alternatives.slice(0, 5).map(v => v.name).join(', ');
       return {
         status: "error",
         response_type: "vendor_not_found",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `Sorry, "${vendor}" not found.`
+        message: `Sorry, "${vendor}" is not in our system.\n\nTry these instead: ${altList}`
       };
     }
+    
+    if (vendorStatus.status !== 'active') {
+      const alternatives = await getAllVendors();
+      const altList = alternatives.slice(0, 5).map(v => v.name).join(', ');
+      return {
+        status: "error",
+        response_type: "vendor_closed",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: `Sorry, ${vendorStatus.name} is currently closed.\n\nAvailable now: ${altList}`
+      };
+    }
+    
+    const vendorData = await getVendorByName(vendor);
 
     // Check if order has only add-ons
       const onlyAddOns = await hasOnlyAddOns(vendorData.id, items);
