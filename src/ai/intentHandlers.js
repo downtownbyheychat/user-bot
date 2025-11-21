@@ -86,21 +86,33 @@ export const intentHandlers = {
       };
     }
 
-    return {
+    const totalItems = menuItems.length;
+    const pageSize = 10;
+    const currentPage = 1;
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const startIdx = (currentPage - 1) * pageSize;
+    const endIdx = startIdx + pageSize;
+    const currentItems = menuItems.slice(startIdx, endIdx);
+
+    const response = {
       status: "success",
       response_type: "vendor_catalogue",
       customer_id: customerId,
       timestamp: new Date().toISOString(),
-      message: `Here's the menu for ${vendorData.name}:`,
+      message: totalItems > 10 
+        ? `Here's the menu for ${vendorData.name} (Page ${currentPage}/${totalPages}):`
+        : `Here's the menu for ${vendorData.name}:`,
       data: {
         list: {
           header: `${vendorData.name} Menu`.substring(0, 60),
-          body: "Select an item to add to your order:",
+          body: totalItems > 10 
+            ? `Showing ${startIdx + 1}-${Math.min(endIdx, totalItems)} of ${totalItems} items`
+            : "Select an item to add to your order:",
           button: "View Items",
           sections: [
             {
               title: "Menu Items",
-              rows: menuItems.slice(0, 100).map(item => {
+              rows: currentItems.map(item => {
                 let priceDesc = '';
                 if (item.sale_quantity === 'per_price') {
                   priceDesc = `from ₦${item.price}`;
@@ -124,6 +136,16 @@ export const intentHandlers = {
         }
       }
     };
+
+    // Add pagination buttons if more than 10 items
+    if (totalItems > 10) {
+      response.data.buttons = [];
+      if (currentPage < totalPages) {
+        response.data.buttons.push({ id: `menu_next_${vendorData.id}_2`, title: "Next →" });
+      }
+    }
+
+    return response;
   }
 
 //   // Case 2: Items without vendor
@@ -199,22 +221,33 @@ if (!vendor && items.length > 0) {
   }
   
   const itemNames = items.map(i => i.name).join(', ');
+  const totalVendors = validVendors.length;
+  const pageSize = 10;
+  const currentPage = 1;
+  const totalPages = Math.ceil(totalVendors / pageSize);
+  const startIdx = (currentPage - 1) * pageSize;
+  const endIdx = startIdx + pageSize;
+  const currentVendors = validVendors.slice(startIdx, endIdx);
   
-  return {
+  const response = {
     status: "success",
     response_type: "vendor_selection",
     customer_id: customerId,
     timestamp: new Date().toISOString(),
-    message: `Select a vendor to order "${itemNames}" from:`,
+    message: totalVendors > 10
+      ? `Select a vendor to order "${itemNames}" from (Page ${currentPage}/${totalPages}):`
+      : `Select a vendor to order "${itemNames}" from:`,
     data: {
       list: {
         header: "Available Vendors",
-        body: `Found "${itemNames}" at these vendors:`,
+        body: totalVendors > 10
+          ? `Showing ${startIdx + 1}-${Math.min(endIdx, totalVendors)} of ${totalVendors} vendors`
+          : `Found "${itemNames}" at these vendors:`,
         button: "Select Vendor",
         sections: [
           {
             title: "Vendors",
-            rows: validVendors.slice(0, 100).map((v, i) => ({
+            rows: currentVendors.map((v, i) => ({
               id: `vendor_${i}_${v.replace(/\s+/g, '_')}`,
               title: v.substring(0, 24),
               description: `Order from ${v}`.substring(0, 72)
@@ -224,6 +257,15 @@ if (!vendor && items.length > 0) {
       }
     }
   };
+
+  if (totalVendors > 10) {
+    response.data.buttons = [];
+    if (currentPage < totalPages) {
+      response.data.buttons.push({ id: `vendor_select_next_2`, title: "Next →" });
+    }
+  }
+
+  return response;
 }
 
   // Case 3: Complete order - validate
@@ -363,21 +405,33 @@ if (!vendor && items.length > 0) {
       };
     }
 
-    return {
+    const totalItems = vendors.length;
+    const pageSize = 10;
+    const currentPage = 1;
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const startIdx = (currentPage - 1) * pageSize;
+    const endIdx = startIdx + pageSize;
+    const currentItems = vendors.slice(startIdx, endIdx);
+
+    const response = {
       status: "success",
       response_type: "menu",
       customer_id: customerId,
       timestamp: new Date().toISOString(),
-      message: "Select a restaurant to view their menu:",
+      message: totalItems > 10
+        ? `Campus Restaurants (Page ${currentPage}/${totalPages}):`
+        : "Select a restaurant to view their menu:",
       data: {
         list: {
           header: "Campus Restaurants",
-          body: "Here are the available restaurants on campus:",
-          button: "View Menu",
+          body: totalItems > 10
+            ? `Showing ${startIdx + 1}-${Math.min(endIdx, totalItems)} of ${totalItems} restaurants`
+            : "Here are the available restaurants on campus:",
+          button: "View Restaurants",
           sections: [
             {
               title: "Restaurants",
-              rows: vendors.slice(0, 100).map(v => ({
+              rows: currentItems.map(v => ({
                 id: `vendor_${v.id}`,
                 title: v.name.substring(0, 24),
                 description: (v.description || "View menu").substring(0, 72)
@@ -387,6 +441,15 @@ if (!vendor && items.length > 0) {
         }
       }
     };
+
+    if (totalItems > 10) {
+      response.data.buttons = [];
+      if (currentPage < totalPages) {
+        response.data.buttons.push({ id: `restaurants_next_2`, title: "Next →" });
+      }
+    }
+
+    return response;
   },
 
   "Track Order": async (customerId, message) => ({

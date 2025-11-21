@@ -54,6 +54,20 @@ export async function handleButtonClick(buttonId, customerId) {
       };
 
     default:
+      // Handle pagination buttons
+      if (buttonId.includes('_next_') || buttonId.includes('_prev_')) {
+        const page = parseInt(buttonId.split('_').pop());
+        return {
+          status: "success",
+          message: `Loading page ${page}...`,
+          data: {
+            action: "pagination",
+            button_id: buttonId,
+            page: page
+          }
+        };
+      }
+      
       return {
         status: "error",
         message: "🤔 I didn't understand that action. Please try again."
