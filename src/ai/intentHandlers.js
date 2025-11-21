@@ -460,17 +460,28 @@ if (!vendor && items.length > 0) {
       };
     }
 
-    // Validate each item
+    // Validate each item and update prices from database
     const validationErrors = [];
+    const validatedItems = [];
+    
     for (const item of items) {
       const validation = await validateOrderItem(
         vendorData.id,
         item.name,
         item.quantity_type,
-        item.price
+        item.price,
+        item.quantity
       );
+      
       if (!validation.valid) {
         validationErrors.push(validation.error);
+      } else {
+        // Store validated item with database price
+        validatedItems.push({
+          ...item,
+          price: validation.item.price,
+          dbName: validation.item.food_name
+        });
       }
     }
 
@@ -484,19 +495,18 @@ if (!vendor && items.length > 0) {
       };
     }
 
-
-      const itemsList = items.map(i => {
+      const itemsList = validatedItems.map(i => {
         if (i.quantity_type === 'per_price') {
-          return `${i.name} -- ₦${i.price}`;
+          return `${i.dbName} -- ₦${i.price}`;
         } else {
-          return `${i.name} (x${i.quantity}) -- ₦${i.price * i.quantity}`;
+          return `${i.dbName} (x${i.quantity}) -- ₦${i.price}`;
         }
       }).join('\n');
 
       // Ask for delivery/pickup if not specified
       if (!delivery_location) {
         const { setPendingOrder } = await import('../services/sessionManager.js');
-        setPendingOrder(customerId, { orderSummary });
+        setPendingOrder(customerId, { orderSummary: { ...orderSummary, items: validatedItems } });
         
         return {
           status: "pending",
@@ -516,16 +526,12 @@ if (!vendor && items.length > 0) {
       // Push validated order to stack
       const { pushOrderPack, getStackSummary } = await import('../services/orderStack.js');
       
-      const packTotal = items.reduce((sum, item) => {
-        if (item.quantity_type === 'per_price') {
-          return sum + parseFloat(item.price);
-        } else {
-          return sum + (parseFloat(item.price) * item.quantity);
-        }
+      const packTotal = validatedItems.reduce((sum, item) => {
+        return sum + parseFloat(item.price);
       }, 0);
       
       pushOrderPack(customerId, {
-        items,
+        items: validatedItems,
         vendor: vendorData.name,
         vendorId: vendorData.id,
         delivery_location,

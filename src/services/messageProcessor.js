@@ -16,11 +16,7 @@ export async function processMessage(customerId, message) {
       const vendor = vendors.find(v => v.id === pendingOrder.vendorId);
       
       const packTotal = pendingOrder.orderSummary.items.reduce((sum, item) => {
-        if (item.quantity_type === 'per_price') {
-          return sum + parseFloat(item.price);
-        } else {
-          return sum + (parseFloat(item.price) * item.quantity);
-        }
+        return sum + parseFloat(item.price);
       }, 0);
       
       pushOrderPack(customerId, {
@@ -35,9 +31,9 @@ export async function processMessage(customerId, message) {
       const stackSummary = getStackSummary(customerId);
       const itemsList = pendingOrder.orderSummary.items.map(i => {
         if (i.quantity_type === 'per_price') {
-          return `${i.name} -- ₦${i.price}`;
+          return `${i.dbName || i.name} -- ₦${i.price}`;
         } else {
-          return `${i.name} (x${i.quantity}) -- ₦${i.price * i.quantity}`;
+          return `${i.dbName || i.name} (x${i.quantity}) -- ₦${i.price}`;
         }
       }).join('\n');
       
