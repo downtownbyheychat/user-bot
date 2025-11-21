@@ -219,11 +219,13 @@ async function processMessagesAsync(body) {
                     // Handle list interactions
                     if (message.type === 'interactive' && message.interactive.type === 'list_reply') {
                         const listItemId = message.interactive.list_reply.id;
+                        console.log('📋 List item selected:', listItemId);
 
                         try {
                             // Process the list selection
                             const { handleButtonClick } = await import('../services/buttonHandler.js');
                             const listResponse = await handleButtonClick(listItemId, customerId);
+                            console.log('✅ List response generated:', listResponse.message?.substring(0, 50));
 
                             // Save the list interaction to the chat log
                             await saveChatMessage(customerId, `[List: ${listItemId}]`, false);

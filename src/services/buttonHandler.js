@@ -56,6 +56,7 @@ export async function handleButtonClick(buttonId, customerId) {
     default:
       // Handle pagination for restaurants list
       if (buttonId.startsWith('restaurants_next_')) {
+        console.log('🍴 Handling restaurants pagination:', buttonId);
         const page = parseInt(buttonId.split('_').pop());
         const { getAllVendors } = await import('../db/Utils/vendor.js');
         const vendors = await getAllVendors();
@@ -100,9 +101,11 @@ export async function handleButtonClick(buttonId, customerId) {
 
       // Handle pagination for vendor menu
       if (buttonId.startsWith('menu_next_')) {
+        console.log('📝 Handling menu pagination:', buttonId);
         const parts = buttonId.split('_');
         const vendorId = parseInt(parts[2]);
         const page = parseInt(parts[3]);
+        console.log('Parsed vendorId:', vendorId, 'page:', page);
         
         const { getVendorMenuItems, getVendorByName } = await import('../db/Utils/vendor.js');
         const menuItems = await getVendorMenuItems(vendorId);
@@ -167,11 +170,91 @@ export async function handleButtonClick(buttonId, customerId) {
       // Handle pagination for vendor selection
       if (buttonId.startsWith('vendor_select_next_')) {
         const page = parseInt(buttonId.split('_').pop());
-        // This would need context about which items were being searched
-        // For now, return a message asking user to search again
         return {
           status: "success",
           message: "Please search for the items again to continue browsing vendors."
+        };
+      }
+
+      // Handle vendor selection from restaurant list
+      if (buttonId.startsWith('vendor_')) {
+        console.log('🏪 Handling vendor selection:', buttonId);
+        const vendorId = parseInt(buttonId.split('_')[1]);
+        
+        const { getVendorMenuItems, getAllVendors } = await import('../db/Utils/vendor.js');
+        const allVendors = await getAllVendors();
+        const vendor = allVendors.find(v => v.id === vendorId);
+        
+        if (!vendor) {
+          return {
+            status: "error",
+            message: "Sorry, I couldn't find that restaurant."
+          };
+        }
+        
+        const menuItems = await getVendorMenuItems(vendorId);
+        
+        if (menuItems.length === 0) {
+          return {
+            status: "error",
+            message: `${vendor.name} has no menu items available at the moment.`
+          };
+        }
+
+        const totalItems = menuItems.length;
+        const pageSize = totalItems > 10 ? 9 : 10;
+        const currentPage = 1;
+        const totalPages = Math.ceil(totalItems / pageSize);
+        const startIdx = 0;
+        const endIdx = pageSize;
+        const currentItems = menuItems.slice(startIdx, endIdx);
+
+        const rows = currentItems.map(item => {
+          let priceDesc = '';
+          if (item.sale_quantity === 'per_price') {
+            priceDesc = `from ₦${item.price}`;
+          } else if (item.sale_quantity === 'per_piece') {
+            priceDesc = `₦${item.price} each`;
+          } else if (item.sale_quantity === 'full_pack') {
+            priceDesc = `₦${item.price} (Full Pack)`;
+          } else if (item.sale_quantity === 'half_pack') {
+            priceDesc = `₦${item.price} (Half Pack)`;
+          } else {
+            priceDesc = `₦${item.price}`;
+          }
+          return {
+            id: `menu_${item.id}`,
+            title: item.food_name.substring(0, 24),
+            description: priceDesc.substring(0, 72)
+          };
+        });
+
+        if (currentPage < totalPages) {
+          rows.push({
+            id: `menu_next_${vendorId}_${currentPage + 1}`,
+            title: "Next Page →",
+            description: `View page ${currentPage + 1} of ${totalPages}`
+          });
+        }
+
+        return {
+          status: "success",
+          response_type: "vendor_catalogue",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: totalItems > 10 
+            ? `Here's the menu for ${vendor.name} (Page ${currentPage}/${totalPages}):`
+            : `Here's the menu for ${vendor.name}:`,
+          data: {
+            list: {
+              header: `${vendor.name} Menu`.substring(0, 60),
+              body: totalItems > 10 
+                ? `Showing ${startIdx + 1}-${Math.min(endIdx, totalItems)} of ${totalItems} items`
+                : "Select an item to add to your order:",
+              button: "View Items",
+              sections: [{ title: "Menu Items", rows }]
+            }
+          }
         };
       }
       
