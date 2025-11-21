@@ -304,7 +304,7 @@ if (!vendor && items.length > 0) {
   const itemCount = items.filter(i => i.name).length;
   const validVendors = Array.from(vendorItemMap.entries())
     .filter(([_, data]) => data.items.size === itemCount)
-    .map(([id, data]) => data.name);
+    .map(([id, data]) => ({ id, name: data.name }));
   
   if (validVendors.length === 0) {
     const itemNames = items.map(i => i.name).join(', ');
@@ -320,7 +320,7 @@ if (!vendor && items.length > 0) {
   const itemNames = items.map(i => i.name).join(', ');
 
   if (validVendors.length > 10) {
-    const vendorList = validVendors.map((v, i) => `${i + 1}. ${v}`).join('\n');
+    const vendorList = validVendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
     return {
       status: "success",
       response_type: "vendor_selection",
@@ -343,10 +343,10 @@ if (!vendor && items.length > 0) {
         button: "Select Vendor",
         sections: [{
           title: "Vendors",
-          rows: validVendors.map((v, i) => ({
-            id: `vendor_${i}_${v.replace(/\s+/g, '_')}`,
-            title: v.substring(0, 24),
-            description: `Order from ${v}`.substring(0, 72)
+          rows: validVendors.map(v => ({
+            id: `vendor_${v.id}`,
+            title: v.name.substring(0, 24),
+            description: `Order from ${v.name}`.substring(0, 72)
           }))
         }]
       }
