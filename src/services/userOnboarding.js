@@ -125,11 +125,11 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
     const hostel = hostelParts.length >= 3 ? `${hostelParts[2]} ${hostelParts[3] || ''}`.trim() : null;
 
     const payload = {
-      name: flowData.screen_1_Full_name_0,
+      name: flowData.screen_1_Full_name_0.trim(),
       phone_number: phoneNumber,
       email: flowData.screen_1_Email_2,
-      hostel: hostel || '',
-      university: ''
+      hostel: hostel || 'Silver 2',
+      university: 'Bells Tech'
     };
 
     const response = await axios.post(`${BASE_URL}users`, payload, {
