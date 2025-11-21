@@ -189,12 +189,25 @@ async function processMessagesAsync(body) {
                         }
                         
                         if (!userCheck.verified) {
-                            // User registered but not verified, check OTP expiry
+                            // User registered but not verified, check if message is OTP
+                            const otpPattern = /^\d{4,6}$/;
+                            if (otpPattern.test(userMessage.trim())) {
+                                const result = await verifyOTP(userMessage.trim());
+                                
+                                if (result.success) {
+                                    await sendMessage(customerId, '✅ Email verified successfully!\n\nWelcome to Downtown! You can now start ordering food. 🍽️');
+                                } else {
+                                    await sendInvalidOTPMessage(customerId);
+                                }
+                                continue;
+                            }
+                            
+                            // Check OTP expiry
                             const otpCheck = await checkAndResendOTP(customerId);
                             if (otpCheck.expired) {
                                 await sendMessage(customerId, otpCheck.message);
                             } else {
-                                await sendOTPVerificationFlow(customerId, userCheck.user.email);
+                                await sendMessage(customerId, '🔒 Please verify your email first.\n\nReply with the OTP code sent to your email.');
                             }
                             continue;
                         }
@@ -267,22 +280,12 @@ async function processMessagesAsync(body) {
                         console.log('📥 Flow Data:', userInput);
 
                         // Handle user onboarding flow submission
-                        if (userInput.name && userInput.email) {
+                        if (userInput.screen_1_Full_name_0 && userInput.screen_1_Email_2) {
                             const result = await handleUserOnboardingSubmission(customerId, userInput);
-                            if (!result.success) {
-                                await sendMessage(customerId, `❌ Registration failed: ${result.error}`);
-                            }
-                            continue;
-                        }
-
-                        // Handle OTP verification flow submission
-                        if (userInput.otp) {
-                            const result = await verifyOTP(customerId, userInput.otp);
-                            
                             if (result.success) {
-                                await sendMessage(customerId, '✅ Email verified successfully!\n\nWelcome to Downtown! You can now start ordering food. 🍽️');
+                                await sendMessage(customerId, '📧 An OTP has been sent to your email.\n\nPlease reply with the OTP code to verify your account.');
                             } else {
-                                await sendInvalidOTPMessage(customerId);
+                                await sendMessage(customerId, `❌ Registration failed: ${result.error}`);
                             }
                             continue;
                         }

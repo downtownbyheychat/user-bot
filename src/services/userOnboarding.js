@@ -80,13 +80,11 @@ export async function sendOTPVerificationFlow(phoneNumber, email) {
 }
 
 // Verify OTP
-export async function verifyOTP(phoneNumber, otp) {
+export async function verifyOTP(otp) {
   try {
     const response = await axios.post(`${BASE_URL}auth/verify-email`, { otp });
     
     if (response.status === 200) {
-      // Clear OTP session
-      otpSessions.delete(phoneNumber);
       return { success: true };
     }
     
@@ -121,11 +119,17 @@ export async function checkAndResendOTP(phoneNumber) {
 // Handle user onboarding flow submission
 export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
   try {
+    // Parse hostel from Label field (format: "2_Male_Silver_3")
+    const hostelData = flowData.screen_1_Label_1 || '';
+    const hostelParts = hostelData.split('_');
+    const hostel = hostelParts.length >= 3 ? `${hostelParts[2]} ${hostelParts[3] || ''}`.trim() : null;
+
     const payload = {
-      name: flowData.name,
+      name: flowData.screen_1_Full_name_0,
       phone_number: phoneNumber,
-      email: flowData.email,
-      hostel: flowData.hostel || null
+      email: flowData.screen_1_Email_2,
+      hostel: hostel,
+      university: null
     };
 
     const response = await axios.post(`${BASE_URL}users`, payload, {
@@ -134,8 +138,8 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
 
     console.log('✅ User created:', response.data);
     
-    // Send OTP verification flow
-    await sendOTPVerificationFlow(phoneNumber, flowData.email);
+    // Send OTP to email
+    await sendOTPVerificationFlow(phoneNumber, payload.email);
     
     return { success: true };
   } catch (error) {
