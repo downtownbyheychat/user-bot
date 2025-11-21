@@ -65,11 +65,18 @@ export async function handleButtonClick(buttonId, customerId) {
       }
       
       let orderDetails = '';
+      let grandTotal = 0;
+      
       orderStack.forEach((pack, i) => {
-        const packItems = pack.items.map(item => 
-          `${item.quantity_type === 'per_price' ? '₦' + item.price : item.quantity + 'x'} ${item.name}`
-        ).join(', ');
-        orderDetails += `\nPack ${i + 1}: ${packItems} from ${pack.vendor}`;
+        const packItems = pack.items.map(item => {
+          if (item.quantity_type === 'per_price') {
+            return `  ${item.name} -- ₦${item.price}`;
+          } else {
+            return `  ${item.name} (x${item.quantity}) -- ₦${item.price * item.quantity}`;
+          }
+        }).join('\n');
+        orderDetails += `\n\nPack ${i + 1} from ${pack.vendor}:\n${packItems}\nPack Total: ₦${pack.total}`;
+        grandTotal += pack.total;
       });
       
       return {
@@ -77,7 +84,12 @@ export async function handleButtonClick(buttonId, customerId) {
         response_type: "payment",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `💳 Payment Details\n\nYour Order:${orderDetails}\n\nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint\n\nSend payment and reply with confirmation.`
+        message: `💳 Payment Details\n\nYour Order:${orderDetails}\n\n===================\nGrand Total: ₦${grandTotal}\n===================\n\nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint\n\nClick below after payment:`,
+        data: {
+          buttons: [
+            { id: "payment_sent", title: "✅ Payment Sent" }
+          ]
+        }
       };
 
     case 'add_new_pack':
@@ -101,6 +113,55 @@ export async function handleButtonClick(buttonId, customerId) {
         message: "✅ Order Cancelled\nYour order has been cancelled successfully.\n\nReady to order again? Just drop your order in this format:\n\n*Example:*\njollof rice - ₦1,400, 1 meat 1 egg from African Kitchen delivered to my hostel(location)"
       };
 
+    case 'payment_sent':
+      const { getOrderStack: getStack, clearOrderStack } = await import('./orderStack.js');
+      const stack = getStack(customerId);
+      
+      if (stack.length === 0) {
+        return {
+          status: "error",
+          message: "No orders found. Please place an order first."
+        };
+      }
+      
+      const allItems = [];
+      let total = 0;
+      
+      stack.forEach(pack => {
+        pack.items.forEach(item => {
+          allItems.push({
+            name: item.name,
+            quantity: item.quantity || 1,
+            price: item.quantity_type === 'per_price' ? item.price : item.price * item.quantity
+          });
+        });
+        total += pack.total;
+      });
+      
+      const { generateReceipt } = await import('./receiptGenerator.js');
+      const receiptData = {
+        orderId: `ORD${Date.now()}`,
+        items: allItems,
+        amount: total,
+        vendor: stack.map(p => p.vendor).join(', '),
+        customerName: 'Customer',
+        deliveryAddress: stack[0].delivery_location
+      };
+      
+      const { filePath } = await generateReceipt(receiptData);
+      clearOrderStack(customerId);
+      
+      return {
+        status: "success",
+        response_type: "payment_confirmed",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: `✅ Payment Confirmed!\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}\n\nYour receipt has been generated. We'll confirm with the restaurant shortly!`,
+        data: {
+          receipt_path: filePath
+        }
+      };
+
     default:
       // Handle pickup button
       if (buttonId.startsWith('pickup_')) {
@@ -120,25 +181,38 @@ export async function handleButtonClick(buttonId, customerId) {
         const vendors = await getAllVendors();
         const vendor = vendors.find(v => v.id === vendorId);
         
+        const packTotal = pendingOrder.orderSummary.items.reduce((sum, item) => {
+          if (item.quantity_type === 'per_price') {
+            return sum + parseFloat(item.price);
+          } else {
+            return sum + (parseFloat(item.price) * item.quantity);
+          }
+        }, 0);
+        
         pushOrderPack(customerId, {
           items: pendingOrder.orderSummary.items,
           vendor: vendor?.name || 'Unknown',
           vendorId,
-          delivery_location: 'Pickup'
+          delivery_location: 'Pickup',
+          total: packTotal
         });
         
         clearPendingOrder(customerId);
         const stackSummary = getStackSummary(customerId);
-        const itemsList = pendingOrder.orderSummary.items.map(i => 
-          `${i.quantity_type === 'per_price' ? '₦' + i.price : i.quantity + 'x'} ${i.name}`
-        ).join(', ');
+        const itemsList = pendingOrder.orderSummary.items.map(i => {
+          if (i.quantity_type === 'per_price') {
+            return `${i.name} -- ₦${i.price}`;
+          } else {
+            return `${i.name} (x${i.quantity}) -- ₦${i.price * i.quantity}`;
+          }
+        }).join('\n');
         
         return {
           status: "success",
           response_type: "order_summary",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: `📦 Pack Added to Cart\n\nItems: ${itemsList}\nVendor: ${vendor?.name}\nPickup: You'll collect from restaurant\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
+          message: `📦 Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nPickup: You'll collect from restaurant\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
           data: {
             buttons: [
               { id: "proceed_payment", title: "💳 Proceed to Payment" },

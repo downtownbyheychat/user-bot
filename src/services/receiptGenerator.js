@@ -1,4 +1,6 @@
 import puppeteer from 'puppeteer';
+import fs from 'fs';
+import path from 'path';
 
 export async function generateReceipt(orderData) {
   const { orderId, items, amount, vendor, customerName, deliveryAddress } = orderData;
@@ -30,7 +32,7 @@ export async function generateReceipt(orderData) {
         <div class="field">Address: ${deliveryAddress}</div>
         <hr>
         <div class="field">Items:</div>
-        ${items.map(item => `<div>• ${item.quantity}x ${item.name}</div>`).join('')}
+        ${items.map(item => `<div>• ${item.quantity}x ${item.name} - ₦${item.price}</div>`).join('')}
         <hr>
         <div class="total">Total: ₦${amount}</div>
       </div>
@@ -45,7 +47,15 @@ export async function generateReceipt(orderData) {
     const pdf = await page.pdf({ format: 'A4', printBackground: true });
     await browser.close();
     
-    return pdf;
+    const receiptsDir = path.join(process.cwd(), 'receipts');
+    if (!fs.existsSync(receiptsDir)) {
+      fs.mkdirSync(receiptsDir, { recursive: true });
+    }
+    
+    const filePath = path.join(receiptsDir, `${orderId}.pdf`);
+    fs.writeFileSync(filePath, pdf);
+    
+    return { pdf, filePath };
   } catch (error) {
     console.error('Receipt generation error:', error);
     throw error;

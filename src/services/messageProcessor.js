@@ -15,25 +15,38 @@ export async function processMessage(customerId, message) {
       const vendors = await getAllVendors();
       const vendor = vendors.find(v => v.id === pendingOrder.vendorId);
       
+      const packTotal = pendingOrder.orderSummary.items.reduce((sum, item) => {
+        if (item.quantity_type === 'per_price') {
+          return sum + parseFloat(item.price);
+        } else {
+          return sum + (parseFloat(item.price) * item.quantity);
+        }
+      }, 0);
+      
       pushOrderPack(customerId, {
         items: pendingOrder.orderSummary.items,
         vendor: vendor?.name || 'Unknown',
         vendorId: pendingOrder.vendorId,
-        delivery_location: message
+        delivery_location: message,
+        total: packTotal
       });
       
       clearPendingOrder(customerId);
       const stackSummary = getStackSummary(customerId);
-      const itemsList = pendingOrder.orderSummary.items.map(i => 
-        `${i.quantity_type === 'per_price' ? '₦' + i.price : i.quantity + 'x'} ${i.name}`
-      ).join(', ');
+      const itemsList = pendingOrder.orderSummary.items.map(i => {
+        if (i.quantity_type === 'per_price') {
+          return `${i.name} -- ₦${i.price}`;
+        } else {
+          return `${i.name} (x${i.quantity}) -- ₦${i.price * i.quantity}`;
+        }
+      }).join('\n');
       
       return {
         status: "success",
         response_type: "order_summary",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `📦 Pack Added to Cart\n\nItems: ${itemsList}\nVendor: ${vendor?.name}\nDelivery: ${message}\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
+        message: `📦 Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nDelivery: ${message}\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
         data: {
           buttons: [
             { id: "proceed_payment", title: "💳 Proceed to Payment" },

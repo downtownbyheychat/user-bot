@@ -485,9 +485,13 @@ if (!vendor && items.length > 0) {
     }
 
 
-      const itemsList = items.map(i => 
-        `${i.quantity_type === 'per_price' ? '₦' + i.price : i.quantity + 'x'} ${i.name}`
-      ).join(', ');
+      const itemsList = items.map(i => {
+        if (i.quantity_type === 'per_price') {
+          return `${i.name} -- ₦${i.price}`;
+        } else {
+          return `${i.name} (x${i.quantity}) -- ₦${i.price * i.quantity}`;
+        }
+      }).join('\n');
 
       // Ask for delivery/pickup if not specified
       if (!delivery_location) {
@@ -511,11 +515,21 @@ if (!vendor && items.length > 0) {
 
       // Push validated order to stack
       const { pushOrderPack, getStackSummary } = await import('../services/orderStack.js');
+      
+      const packTotal = items.reduce((sum, item) => {
+        if (item.quantity_type === 'per_price') {
+          return sum + parseFloat(item.price);
+        } else {
+          return sum + (parseFloat(item.price) * item.quantity);
+        }
+      }, 0);
+      
       pushOrderPack(customerId, {
         items,
         vendor: vendorData.name,
         vendorId: vendorData.id,
-        delivery_location
+        delivery_location,
+        total: packTotal
       });
       
       const stackSummary = getStackSummary(customerId);
@@ -525,7 +539,7 @@ if (!vendor && items.length > 0) {
         response_type: "order_summary",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `📦 Pack Added to Cart\n\nItems: ${itemsList}\nVendor: ${vendorData.name}\nDelivery: ${delivery_location}\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
+        message: `📦 Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack Total: ₦${packTotal}\nVendor: ${vendorData.name}\nDelivery: ${delivery_location}\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
         data: {
           buttons: [
             { id: "proceed_payment", title: "💳 Proceed to Payment" },

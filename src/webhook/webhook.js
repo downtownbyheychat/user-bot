@@ -210,6 +210,11 @@ async function processMessagesAsync(body) {
 
                             // Send the button response to the user
                             await sendMessage(customerId, buttonResponse);
+                            
+                            // Send receipt if available
+                            if (buttonResponse.data?.receipt_path) {
+                                await sendDocument(customerId, buttonResponse.data.receipt_path, 'receipt.pdf');
+                            }
                         } catch (error) {
                             console.error('Button handling error:', error);
                             await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");
@@ -233,6 +238,11 @@ async function processMessagesAsync(body) {
 
                             // Send the list response to the user
                             await sendMessage(customerId, listResponse);
+                            
+                            // Send receipt if available
+                            if (listResponse.data?.receipt_path) {
+                                await sendDocument(customerId, listResponse.data.receipt_path, 'receipt.pdf');
+                            }
                         } catch (error) {
                             console.error('List handling error:', error);
                             await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");
@@ -361,6 +371,34 @@ async function sendMessage(recipientPhoneNumber, responseData) {
         }
     } else {
         console.error('Failed to format message for WhatsApp API.');
+    }
+}
+
+async function sendDocument(recipientPhoneNumber, filePath, filename) {
+    try {
+        const fs = await import('fs');
+        const FormData = (await import('form-data')).default;
+        
+        const formData = new FormData();
+        formData.append('messaging_product', 'whatsapp');
+        formData.append('to', recipientPhoneNumber);
+        formData.append('type', 'document');
+        formData.append('document', fs.createReadStream(filePath), { filename });
+        
+        const apiResponse = await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                ...formData.getHeaders()
+            },
+            body: formData
+        });
+
+        if (!apiResponse.ok) {
+            console.error('WhatsApp Document Send Error:', apiResponse.status, await apiResponse.text());
+        }
+    } catch (error) {
+        console.error('Error sending document:', error.message);
     }
 }
 
