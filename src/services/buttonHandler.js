@@ -222,6 +222,9 @@ export async function handleButtonClick(buttonId, customerId) {
         
         const { getVendorMenuItems, getAllVendors } = await import('../db/Utils/vendor.js');
         const allVendors = await getAllVendors();
+        console.log('All vendors fetched:', allVendors.length);
+        console.log('Vendor ID parsed:', vendorId);
+        console.log('Vendor found:', allVendors.find(v => v.id === vendorId));
         const vendor = allVendors.find(v => v.id === vendorId);
         
         if (!vendor) {
