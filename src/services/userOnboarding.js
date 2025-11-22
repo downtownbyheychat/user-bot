@@ -76,6 +76,7 @@ export async function sendOTPVerificationFlow(phoneNumber, email) {
     console.log('✅ OTP sent to email');
   } catch (error) {
     console.error('❌ Error sending OTP:', error.response?.data || error.message);
+    throw error;
   }
 }
 

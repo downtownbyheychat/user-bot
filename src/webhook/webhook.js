@@ -155,7 +155,7 @@ async function processMessagesAsync(body) {
                     // If the receiving number is not (2349023168568), return early
                     const toNumber = change.value.metadata?.display_phone_number || '';
                     if (toNumber !== '2349023168568') {
-                        console.log('Message intended for vendor bot, ignoring...');
+                        // console.log('Message intended for vendor bot, ignoring...');
                         return;
                     }
                     
@@ -251,6 +251,7 @@ async function processMessagesAsync(body) {
                             const userCheck = await checkUserExists(customerId);
                             if (userCheck.exists && !userCheck.verified) {
                                 await sendOTPVerificationFlow(customerId, userCheck.user.email);
+                                await sendMessage(customerId, '📧 A new OTP has been sent to your email.\n\nPlease reply with the OTP code to verify your account.');
                             }
                             continue;
                         }
