@@ -88,9 +88,11 @@ export async function sendOTPVerificationFlow(phoneNumber, email, name) {
 // Verify OTP
 export async function verifyOTP(otp) {
   try {
-    const response = await axios.post(`${BASE_URL}auth/verify-email`, { otp });
+    console.log('🔍 Verifying OTP:', otp);
+    const response = await axios.post(`${BASE_URL}auth/verify-email`, { otp: otp.toString() });
     
     if (response.status === 200) {
+      console.log('✅ OTP verified successfully');
       return { success: true };
     }
     
