@@ -195,10 +195,18 @@ async function processMessagesAsync(body) {
                                 const result = await verifyOTP(userMessage.trim());
                                 
                                 if (result.success) {
+                                    console.log('🔄 Re-checking user verification status...');
                                     // Re-check user to confirm verification
                                     userCheck = await checkUserExists(customerId);
+                                    console.log('👤 User verified status:', userCheck.verified);
+                                    
                                     if (userCheck.verified) {
+                                        console.log('✅ Sending success message to user');
                                         await sendMessage(customerId, '✅ Email verified successfully!\n\nWelcome to Downtown! You can now start ordering food. 🍽️');
+                                        continue;
+                                    } else {
+                                        console.log('⚠️ User still showing as unverified in database');
+                                        await sendMessage(customerId, '✅ Verification successful! Please send any message to start ordering.');
                                         continue;
                                     }
                                 } else {
