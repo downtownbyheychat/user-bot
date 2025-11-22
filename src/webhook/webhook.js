@@ -212,7 +212,14 @@ async function processMessagesAsync(body) {
                             if (otpCheck.expired) {
                                 await sendMessage(customerId, otpCheck.message);
                             } else {
-                                await sendMessage(customerId, '🔒 Please verify your email first.\n\nReply with the OTP code sent to your email.');
+                                await sendMessage(customerId, {
+                                    message: '🔒 Please verify your email first.\n\nReply with the OTP code sent to your email.',
+                                    data: {
+                                        buttons: [
+                                            { id: 'resend_otp', title: '🔄 Resend OTP' }
+                                        ]
+                                    }
+                                });
                             }
                             continue;
                         }
