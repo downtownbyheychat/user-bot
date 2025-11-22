@@ -62,14 +62,15 @@ export async function sendUserOnboardingFlow(phoneNumber) {
 }
 
 // Send OTP verification flow
-export async function sendOTPVerificationFlow(phoneNumber, email) {
+export async function sendOTPVerificationFlow(phoneNumber, email, name) {
   try {
     // Generate OTP via backend
-    const otpResponse = await axios.post(`${BASE_URL}auth/send-otp/${phoneNumber}`, { email });
+    const otpResponse = await axios.post(`${BASE_URL}auth/send-otp/${phoneNumber}`, { email, name });
     
     // Store OTP session with 15 min expiry
     otpSessions.set(phoneNumber, {
       email,
+      name,
       expiresAt: Date.now() + 15 * 60 * 1000 // 15 minutes
     });
 
@@ -106,7 +107,7 @@ export async function checkAndResendOTP(phoneNumber) {
   
   if (Date.now() > session.expiresAt) {
     // OTP expired, resend
-    await sendOTPVerificationFlow(phoneNumber, session.email);
+    await sendOTPVerificationFlow(phoneNumber, session.email, session.name);
     
     return {
       expired: true,
@@ -140,7 +141,7 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
     console.log('✅ User created:', response.data);
     
     // Send OTP to email
-    await sendOTPVerificationFlow(phoneNumber, payload.email);
+    await sendOTPVerificationFlow(phoneNumber, payload.email, payload.name);
     
     return { success: true };
   } catch (error) {
