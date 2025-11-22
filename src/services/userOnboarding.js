@@ -65,7 +65,11 @@ export async function sendUserOnboardingFlow(phoneNumber) {
 export async function sendOTPVerificationFlow(phoneNumber, email, name) {
   try {
     // Generate OTP via backend
-    const otpResponse = await axios.post(`${BASE_URL}auth/send-otp/${phoneNumber}`, { email, name });
+    const otpResponse = await axios.post(`${BASE_URL}auth/send-otp/${phoneNumber}`, { 
+      email, 
+      name,
+      recipient_type: 'user'
+    });
     
     // Store OTP session with 15 min expiry
     otpSessions.set(phoneNumber, {
