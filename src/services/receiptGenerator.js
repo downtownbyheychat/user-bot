@@ -5,7 +5,7 @@ import path from 'path';
 export async function generateReceipt(orderData) {
   const { orderId, packs, amount, customerName } = orderData;
 
-  // Convert assets to base64 (skip background to prevent memory overflow)
+  // Convert assets to base64
   const rootDir = process.cwd();
   const logoSvg = fs.readFileSync(path.join(rootDir, 'assests/downtown.svg'), 'utf8');
   const jesusPng = fs.readFileSync(path.join(rootDir, 'assests/jesus_loves_you.png')).toString('base64');
@@ -14,6 +14,9 @@ export async function generateReceipt(orderData) {
   const logoPath = `data:image/svg+xml;base64,${Buffer.from(logoSvg).toString('base64')}`;
   const jesusPath = `data:image/png;base64,${jesusPng}`;
   const eatPath = `data:image/png;base64,${eatPng}`;
+  
+  // Use solid color instead of large background image
+  const bgColor = '#f0f0f0';
 
   const packsHtml = packs.map(pack => `
     <div style="margin: 15px 0; padding: 10px; background: #f9f9f9; border-radius: 8px;">
@@ -56,7 +59,7 @@ export async function generateReceipt(orderData) {
   <style>
     body {
       font-family: 'Courier New', monospace;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: ${bgColor};
       display: flex;
       justify-content: center;
       align-items: center;
@@ -202,7 +205,7 @@ export async function generateReceipt(orderData) {
       printBackground: true,
       margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' },
       path: filePath,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     };
     
     const file = { content: html };
