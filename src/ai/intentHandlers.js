@@ -327,38 +327,38 @@ if (!vendor && items.length > 0) {
     errorType: 'no_vendor'
   });
 
-  if (validVendors.length > 10) {
-    const vendorList = validVendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
+  if (validVendors.length <= 10) {
     return {
       status: "success",
       response_type: "vendor_selection",
       customer_id: customerId,
       timestamp: new Date().toISOString(),
-      message: `Found "${itemNames}" at:\n\n${vendorList}\n\nWhich vendor you wan order from?`
+      message: `Select a vendor to order "${itemNames}" from:`,
+      data: {
+        list: {
+          header: "Available Vendors",
+          body: `Found "${itemNames}" at these vendors:`,
+          button: "Select Vendor",
+          sections: [{
+            title: "Vendors",
+            rows: validVendors.map(v => ({
+              id: `vendor_${v.id}`,
+              title: v.name.substring(0, 24),
+              description: `Order from ${v.name}`.substring(0, 72)
+            }))
+          }]
+        }
+      }
     };
   }
 
+  const vendorList = validVendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
   return {
     status: "success",
     response_type: "vendor_selection",
     customer_id: customerId,
     timestamp: new Date().toISOString(),
-    message: `Select a vendor to order "${itemNames}" from:`,
-    data: {
-      list: {
-        header: "Available Vendors",
-        body: `Found "${itemNames}" at these vendors:`,
-        button: "Select Vendor",
-        sections: [{
-          title: "Vendors",
-          rows: validVendors.map(v => ({
-            id: `vendor_${v.id}`,
-            title: v.name.substring(0, 24),
-            description: `Order from ${v.name}`.substring(0, 72)
-          }))
-        }]
-      }
-    }
+    message: `Found "${itemNames}" at:\n\n${vendorList}\n\nWhich vendor you wan order from?`
   };
 }
 
