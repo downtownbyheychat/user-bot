@@ -439,30 +439,49 @@ if (!vendor && items.length > 0) {
     // Check if order has only add-ons
       const onlyAddOns = await hasOnlyAddOns(vendorData.id, items);
       if (onlyAddOns) {
+        const { setFailedOrder } = await import('../services/sessionManager.js');
+        setFailedOrder(customerId, {
+          validatedItems: [],
+          failedItems: items.map(i => i.name),
+          vendor: vendorData.name,
+          vendorId: vendorData.id,
+          delivery_location,
+          errorType: 'only_addons'
+        });
         return {
           status: "error",
           response_type: "validation_error",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: "❌ You can't order only add-ons (egg, sausage, etc).\nPlease add a main item to your order."
+          message: "❌ You can't order only add-ons (egg, sausage, etc).\n\n💡 Reply with a main item to add, or type 'cancel' to start over."
         };
       }
 
     // Check for mixed types
     const mixedTypes = await hasMixedTypes(vendorData.id, items);
     if (mixedTypes) {
+      const { setFailedOrder } = await import('../services/sessionManager.js');
+      setFailedOrder(customerId, {
+        validatedItems: [],
+        failedItems: items.map(i => i.name),
+        vendor: vendorData.name,
+        vendorId: vendorData.id,
+        delivery_location,
+        errorType: 'mixed_types'
+      });
       return {
         status: "error",
         response_type: "validation_error",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: "❌ You can't mix pack items with per-price/per-piece items.\nPlease place separate orders."
+        message: "❌ You can't mix pack items with per-price/per-piece items.\n\n💡 Reply with items of the same type, or type 'cancel' to start over."
       };
     }
 
     // Validate each item and update prices from database
     const validationErrors = [];
     const validatedItems = [];
+    const failedItems = [];
     
     for (const item of items) {
       const validation = await validateOrderItem(
@@ -475,6 +494,7 @@ if (!vendor && items.length > 0) {
       
       if (!validation.valid) {
         validationErrors.push(validation.error);
+        failedItems.push(item.name);
       } else {
         // Store validated item with database price
         validatedItems.push({
@@ -486,15 +506,32 @@ if (!vendor && items.length > 0) {
     }
 
     if (validationErrors.length > 0) {
+      const { setFailedOrder } = await import('../services/sessionManager.js');
+      setFailedOrder(customerId, {
+        validatedItems,
+        failedItems,
+        vendor: vendorData.name,
+        vendorId: vendorData.id,
+        delivery_location
+      });
+      
+      const validList = validatedItems.length > 0 
+        ? `\n\n✅ Valid items:\n${validatedItems.map(i => `• ${i.dbName}`).join('\n')}`
+        : '';
+      
       return {
         status: "error",
         response_type: "validation_error",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `❌ Order validation failed:\n\n${validationErrors.join('\n')}`
+        message: `❌ Order validation failed:\n\n${validationErrors.join('\n')}${validList}\n\n💡 Reply with corrected items only, or type 'cancel' to start over.`
       };
     }
 
+      // Clear any failed order state on success
+      const { clearFailedOrder } = await import('../services/sessionManager.js');
+      clearFailedOrder(customerId);
+      
       const itemsList = validatedItems.map(i => {
         if (i.quantity_type === 'per_price') {
           return `${i.dbName} -- ₦${i.price}`;

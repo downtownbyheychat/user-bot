@@ -5,6 +5,62 @@ import { orderStatusMessages, paymentMessages } from './orderStatusManager.js';
 
 export async function processMessage(customerId, message) {
   try {
+    // Check for cancel command
+    if (message.toLowerCase().trim() === 'cancel') {
+      const { clearPendingOrder, clearFailedOrder } = await import('./sessionManager.js');
+      clearPendingOrder(customerId);
+      clearFailedOrder(customerId);
+      return {
+        status: "success",
+        response_type: "order_cancelled",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: "Order cancelled. Start fresh whenever you're ready! 😊"
+      };
+    }
+    
+    // Check if user is correcting a failed order
+    const { getFailedOrder, clearFailedOrder } = await import('./sessionManager.js');
+    const failedOrder = getFailedOrder(customerId);
+    
+    if (failedOrder) {
+      const correctionSummary = await generateOrderSummary(message);
+      
+      // Handle vendor selection for items without vendor
+      if (correctionSummary?.vendor && failedOrder.errorType === 'no_vendor') {
+        const mergedSummary = {
+          vendor: correctionSummary.vendor,
+          items: failedOrder.items || [],
+          delivery_location: correctionSummary.delivery_location || failedOrder.delivery_location
+        };
+        clearFailedOrder(customerId);
+        const response = await handleIntent('Food Ordering', customerId, message, mergedSummary);
+        return {
+          ...response,
+          classification: { intent: 'Food Ordering', confidence: 1.0 },
+          data: { ...response.data }
+        };
+      }
+      
+      if (correctionSummary?.items?.length > 0) {
+        // Merge validated items with new corrections
+        const mergedItems = [...failedOrder.validatedItems, ...correctionSummary.items];
+        const mergedSummary = {
+          vendor: correctionSummary.vendor || failedOrder.vendor,
+          items: mergedItems,
+          delivery_location: correctionSummary.delivery_location || failedOrder.delivery_location
+        };
+        
+        clearFailedOrder(customerId);
+        const response = await handleIntent('Food Ordering', customerId, message, mergedSummary);
+        return {
+          ...response,
+          classification: { intent: 'Food Ordering', confidence: 1.0 },
+          data: { ...response.data }
+        };
+      }
+    }
+    
     // Check if user is providing delivery address
     const { getPendingOrder, clearPendingOrder } = await import('./sessionManager.js');
     const pendingOrder = getPendingOrder(customerId);

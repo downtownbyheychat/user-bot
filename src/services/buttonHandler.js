@@ -444,6 +444,24 @@ export async function handleButtonClick(buttonId, customerId) {
           };
         }
         
+        // Check if user has failed order waiting for vendor selection
+        const { getFailedOrder, clearFailedOrder } = await import('./sessionManager.js');
+        const failedOrder = getFailedOrder(customerId);
+        
+        if (failedOrder?.items) {
+          // User selected vendor for previously failed order
+          const { handleIntent } = await import('../ai/intentHandlers.js');
+          const mergedSummary = {
+            vendor: vendor.name,
+            items: failedOrder.items,
+            delivery_location: failedOrder.delivery_location
+          };
+          
+          clearFailedOrder(customerId);
+          return await handleIntent('Food Ordering', customerId, '', mergedSummary);
+        }
+        
+        // Normal vendor menu display
         const menuItems = await getVendorMenuItems(vendorId);
         
         if (menuItems.length === 0) {
