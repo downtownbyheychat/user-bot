@@ -2,7 +2,6 @@ import express from 'express';
 import dotenv from 'dotenv';
 import { saveMessage, checkMessageExists, saveChatMessage } from '../db/mongodb.js';
 import { processMessage } from '../services/messageProcessor.js';
-import { generateReceipt } from '../services/receiptGenerator.js';
 import { formatForWhatsAppAPI } from '../services/messageFormatter.js';
 import { checkUserExists } from '../db/Utils/users.js';
 import { 
@@ -233,11 +232,6 @@ async function processMessagesAsync(body) {
 
                             // Send the response to the user
                             await sendMessage(customerId, responseData);
-
-                            // If there's an order summary, generate and send a receipt
-                            if (responseData.data?.order_summary?.items?.length > 0) {
-                                await generateAndSendReceipt(customerId, responseData.data.order_summary);
-                            }
                         } catch (error) {
                             console.error('Error processing message:', error);
                             const fallbackMessage = "Sorry, I'm currently overloaded. Please try again shortly.";
@@ -483,23 +477,7 @@ async function sendDocument(recipientPhoneNumber, filePath, filename) {
 }
 
 
-async function generateAndSendReceipt(customerId, orderSummary) {
-  try {
-    const receiptData = {
-      orderId: `ORD${Date.now()}`,
-      items: orderSummary.items,
-      amount: orderSummary.total_estimated || '2500',
-      vendor: 'Campus Café',
-      customerName: 'Student',
-      deliveryAddress: orderSummary.delivery_location || 'Campus'
-    };
 
-    await generateReceipt(receiptData);
-    await sendMessage(customerId, `✅ Receipt generated! Order ID: ${receiptData.orderId}`);
-  } catch (error) {
-    console.error('Receipt generation failed:', error);
-  }
-}
 
 app.listen(PORT, () => {
   console.log(`🚀 Campus AI Bot running on port ${PORT}`);

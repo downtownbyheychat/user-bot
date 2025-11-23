@@ -124,27 +124,27 @@ export async function handleButtonClick(buttonId, customerId) {
         };
       }
       
-      const allItems = [];
       let total = 0;
-      
-      stack.forEach(pack => {
-        pack.items.forEach(item => {
-          allItems.push({
+      const packs = stack.map((pack, index) => {
+        total += pack.total;
+        return {
+          packNumber: index + 1,
+          vendor: pack.vendor,
+          deliveryLocation: pack.delivery_location,
+          items: pack.items.map(item => ({
             name: item.name,
             quantity: item.quantity || 1,
-            price: item.quantity_type === 'per_price' ? item.price : item.price * item.quantity
-          });
-        });
-        total += pack.total;
+            price: item.quantity_type === 'per_price' ? item.price : item.price
+          })),
+          total: pack.total
+        };
       });
       
       const receiptData = {
         orderId: `ORD${Date.now()}`,
-        items: allItems,
+        packs: packs,
         amount: total,
-        vendor: stack.map(p => p.vendor).join(', '),
-        customerName: 'Customer',
-        deliveryAddress: stack[0].delivery_location
+        customerName: 'Customer'
       };
       
       try {
