@@ -448,8 +448,8 @@ export async function handleButtonClick(buttonId, customerId) {
         const { getFailedOrder, clearFailedOrder } = await import('./sessionManager.js');
         const failedOrder = getFailedOrder(customerId);
         
-        if (failedOrder?.items) {
-          // User selected vendor for previously failed order
+        if (failedOrder?.errorType === 'no_vendor') {
+          // User selected vendor for order without vendor specified
           const { handleIntent } = await import('../ai/intentHandlers.js');
           const mergedSummary = {
             vendor: vendor.name,
