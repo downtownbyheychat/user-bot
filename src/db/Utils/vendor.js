@@ -197,29 +197,16 @@ export async function validateOrderItem(vendorId, itemName, quantityType, price,
       }
     }
 
-    // set the quantity type and price manually for others
-    else{
-        quantityType = item.sale_quantity;
-        price = item.price * quantity;
-        result.rows[0].price = price;
+    // For per_price items, use the validated user price
+    if (item.sale_quantity === 'per_price') {
+      result.rows[0].price = price;
     }
-
-    // // if per piece, the price must match exactly or be a multiple of the item price
-    // if (item.sale_quantity === 'per_piece') {
-    //   const unitPrice = parseFloat(item.price);
-    //     if (price < unitPrice) {
-    //         return {
-    //             valid: false,
-    //             error: `Minimum price for ${itemName} is ₦${unitPrice}`
-    //         };
-    //     }
-    //     if ((price - unitPrice) % unitPrice !== 0) {
-    //         return {
-    //             valid: false,
-    //             error: `${itemName} must be in multiples of ₦${unitPrice} from ₦${unitPrice}`
-    //         };
-    //     }
-    // }
+    // For other types, calculate price based on quantity
+    else {
+      quantityType = item.sale_quantity;
+      price = item.price * quantity;
+      result.rows[0].price = price;
+    }
 
     return { valid: true, item: result.rows[0] };
   } catch (error) {
