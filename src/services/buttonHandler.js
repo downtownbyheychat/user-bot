@@ -147,33 +147,21 @@ export async function handleButtonClick(buttonId, customerId) {
         customerName: 'Customer'
       };
       
-      try {
-        const { generateReceipt } = await import('./receiptGenerator.js');
-        const { filePath } = await generateReceipt(receiptData);
-        clearOrderStack(customerId);
-        
-        return {
-          status: "success",
-          response_type: "payment_confirmed",
-          customer_id: customerId,
-          timestamp: new Date().toISOString(),
-          message: `✅ Payment Confirmed!\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}\n\nYour receipt has been generated. We'll confirm with the restaurant shortly!`,
-          data: {
-            receipt_path: filePath
-          }
-        };
-      } catch (error) {
-        console.error('Receipt generation failed:', error);
-        clearOrderStack(customerId);
-        
-        return {
-          status: "success",
-          response_type: "payment_confirmed",
-          customer_id: customerId,
-          timestamp: new Date().toISOString(),
-          message: `✅ Payment Confirmed!\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}\n\nReceipt generation failed, but your order is confirmed. We'll confirm with the restaurant shortly!`
-        };
-      }
+      // Generate receipt in background (don't block order confirmation)
+      const { generateReceipt } = await import('./receiptGenerator.js');
+      generateReceipt(receiptData).catch(err => {
+        console.error('Background receipt generation failed:', err);
+      });
+      
+      clearOrderStack(customerId);
+      
+      return {
+        status: "success",
+        response_type: "payment_confirmed",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: `✅ Payment Confirmed!\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}\n\nWe'll confirm with the restaurant shortly!`
+      };
 
     default:
       // Handle pickup button

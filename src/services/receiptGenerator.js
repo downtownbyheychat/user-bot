@@ -5,7 +5,7 @@ import path from 'path';
 export async function generateReceipt(orderData) {
   const { orderId, packs, amount, customerName } = orderData;
 
-  // Convert assets to base64
+  // Convert small assets to base64 (skip large background)
   const rootDir = process.cwd();
   const logoSvg = fs.readFileSync(path.join(rootDir, 'assests/downtown.svg'), 'utf8');
   const jesusPng = fs.readFileSync(path.join(rootDir, 'assests/jesus_loves_you.png')).toString('base64');
@@ -14,9 +14,6 @@ export async function generateReceipt(orderData) {
   const logoPath = `data:image/svg+xml;base64,${Buffer.from(logoSvg).toString('base64')}`;
   const jesusPath = `data:image/png;base64,${jesusPng}`;
   const eatPath = `data:image/png;base64,${eatPng}`;
-  
-  // Use solid color instead of large background image
-  const bgColor = '#f0f0f0';
 
   const packsHtml = packs.map(pack => `
     <div style="margin: 15px 0; padding: 10px; background: #f9f9f9; border-radius: 8px;">
@@ -59,7 +56,7 @@ export async function generateReceipt(orderData) {
   <style>
     body {
       font-family: 'Courier New', monospace;
-      background: ${bgColor};
+      background: #f0f0f0;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -182,9 +179,9 @@ export async function generateReceipt(orderData) {
     </div>
     
     <div class="footer">
-      <img src="${jesusPath}" alt="Jesus Loves You" style="width: 100px; height: auto; transform: scale(0.5); transform-origin: center;">
+      <img src="${jesusPath}" alt="Jesus Loves You" style="width: 80px; height: auto;">
       <div class="circle">
-        <img src="${eatPath}" alt="Eat Print Repeat" style="width: 100px; height: auto; transform: scale(0.5); transform-origin: center;">
+        <img src="${eatPath}" alt="Eat Print Repeat" style="width: 60px; height: auto;">
       </div>
     </div>
   </div>
@@ -205,7 +202,8 @@ export async function generateReceipt(orderData) {
       printBackground: true,
       margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' },
       path: filePath,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      timeout: 600000,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
     };
     
     const file = { content: html };
