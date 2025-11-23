@@ -30,9 +30,15 @@ console.log('PHONE_NUMBER_ID loaded:', !!PHONE_NUMBER_ID);
 
 
 app.use(express.json());
+app.use('/assests', express.static('assests'));
+app.use('/codec-pro-cufonfonts', express.static('codec-pro-cufonfonts'));
 
 app.get('/', (req, res) => {
   res.send('Campus AI Bot - WhatsApp Webhook');
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 app.get('/webhook', (req, res) => {

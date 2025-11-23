@@ -5,15 +5,11 @@ import path from 'path';
 export async function generateReceipt(orderData) {
   const { orderId, packs, amount, customerName } = orderData;
 
-  // Convert small assets to base64 (skip large background)
-  const rootDir = process.cwd();
-  const logoSvg = fs.readFileSync(path.join(rootDir, 'assests/downtown.svg'), 'utf8');
-  const jesusPng = fs.readFileSync(path.join(rootDir, 'assests/jesus_loves_you.png')).toString('base64');
-  const eatPng = fs.readFileSync(path.join(rootDir, 'assests/eat_print_repeat.png')).toString('base64');
-  
-  const logoPath = `data:image/svg+xml;base64,${Buffer.from(logoSvg).toString('base64')}`;
-  const jesusPath = `data:image/png;base64,${jesusPng}`;
-  const eatPath = `data:image/png;base64,${eatPng}`;
+  // Use deployed app URLs (replace YOUR_APP_URL with your Render URL)
+  const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+  const logoPath = `${baseUrl}/assests/downtown.svg`;
+  const jesusPath = `${baseUrl}/assests/jesus_loves_you.png`;
+  const eatPath = `${baseUrl}/assests/eat_print_repeat.png`;
 
   const packsHtml = packs.map(pack => `
     <div style="margin: 15px 0; padding: 10px; background: #f9f9f9; border-radius: 8px;">
