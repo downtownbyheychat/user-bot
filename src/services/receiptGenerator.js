@@ -5,16 +5,12 @@ import path from 'path';
 export async function generateReceipt(orderData) {
   const { orderId, packs, amount, customerName } = orderData;
 
-  // Convert assets to base64 data URLs
+  // Convert assets to base64 (skip background to prevent memory overflow)
   const rootDir = process.cwd();
-  const fontBase64 = fs.readFileSync(path.join(rootDir, 'codec-pro-cufonfonts/CodecPro-Regular.ttf')).toString('base64');
-  const bgBase64 = fs.readFileSync(path.join(rootDir, 'assests/background.png')).toString('base64');
   const logoSvg = fs.readFileSync(path.join(rootDir, 'assests/downtown.svg'), 'utf8');
   const jesusPng = fs.readFileSync(path.join(rootDir, 'assests/jesus_loves_you.png')).toString('base64');
   const eatPng = fs.readFileSync(path.join(rootDir, 'assests/eat_print_repeat.png')).toString('base64');
   
-  const fontPath = `data:font/truetype;base64,${fontBase64}`;
-  const bgPath = `data:image/png;base64,${bgBase64}`;
   const logoPath = `data:image/svg+xml;base64,${Buffer.from(logoSvg).toString('base64')}`;
   const jesusPath = `data:image/png;base64,${jesusPng}`;
   const eatPath = `data:image/png;base64,${eatPng}`;
@@ -58,16 +54,9 @@ export async function generateReceipt(orderData) {
   <title>Order Ticket</title>
   <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    @font-face {
-      font-family: 'Codec Pro';
-      src: url('${fontPath}') format('truetype');
-      font-weight: normal;
-      font-style: normal;
-    }
     body {
-      font-family: 'Codec Pro', 'Courier New', monospace;
-      background: url('${bgPath}') no-repeat center center;
-      background-size: cover;
+      font-family: 'Courier New', monospace;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -107,7 +96,7 @@ export async function generateReceipt(orderData) {
     }
     .ticket .field-label {
       color: #000;
-      font-family: 'Codec Pro', 'Courier New', monospace;
+      font-family: 'Courier New', monospace;
       font-weight: normal;
     }
     .ticket .field-value {
