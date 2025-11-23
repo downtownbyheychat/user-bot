@@ -482,6 +482,7 @@ if (!vendor && items.length > 0) {
     const validationErrors = [];
     const validatedItems = [];
     const failedItems = [];
+    let hasItemNotFoundAnywhere = false;
     
     for (const item of items) {
       const validation = await validateOrderItem(
@@ -495,6 +496,9 @@ if (!vendor && items.length > 0) {
       if (!validation.valid) {
         validationErrors.push(validation.error);
         failedItems.push(item.name);
+        if (validation.notFoundAnywhere) {
+          hasItemNotFoundAnywhere = true;
+        }
       } else {
         // Store validated item with database price
         validatedItems.push({
@@ -505,6 +509,73 @@ if (!vendor && items.length > 0) {
       }
     }
 
+    if (validationErrors.length > 0 && hasItemNotFoundAnywhere) {
+      const menuItems = await getVendorMenuItems(vendorData.id);
+      
+      if (menuItems.length > 10) {
+        const menuList = menuItems.map((item, i) => {
+          let priceDesc = '';
+          if (item.sale_quantity === 'per_price') {
+            priceDesc = `from ₦${item.price}`;
+          } else if (item.sale_quantity === 'per_piece') {
+            priceDesc = `₦${item.price} each`;
+          } else if (item.sale_quantity === 'full_pack') {
+            priceDesc = `₦${item.price} (Full Pack)`;
+          } else if (item.sale_quantity === 'half_pack') {
+            priceDesc = `₦${item.price} (Half Pack)`;
+          } else {
+            priceDesc = `₦${item.price}`;
+          }
+          return `${i + 1}. ${item.food_name} - ${priceDesc}`;
+        }).join('\n');
+        
+        return {
+          status: "error",
+          response_type: "validation_error",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `❌ ${validationErrors.join('\n')}\n\n📋 ${vendorData.name} Menu:\n\n${menuList}\n\nJust tell me what you'd like to order!`
+        };
+      }
+      
+      return {
+        status: "error",
+        response_type: "validation_error",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: `❌ ${validationErrors.join('\n')}\n\nHere's what ${vendorData.name} has:`,
+        data: {
+          list: {
+            header: `${vendorData.name} Menu`.substring(0, 60),
+            body: "Select an item to order:",
+            button: "View Items",
+            sections: [{
+              title: "Menu Items",
+              rows: menuItems.map(item => {
+                let priceDesc = '';
+                if (item.sale_quantity === 'per_price') {
+                  priceDesc = `from ₦${item.price}`;
+                } else if (item.sale_quantity === 'per_piece') {
+                  priceDesc = `₦${item.price} each`;
+                } else if (item.sale_quantity === 'full_pack') {
+                  priceDesc = `₦${item.price} (Full Pack)`;
+                } else if (item.sale_quantity === 'half_pack') {
+                  priceDesc = `₦${item.price} (Half Pack)`;
+                } else {
+                  priceDesc = `₦${item.price}`;
+                }
+                return {
+                  id: `menu_${item.id}`,
+                  title: item.food_name.substring(0, 24),
+                  description: priceDesc.substring(0, 72)
+                };
+              })
+            }]
+          }
+        }
+      };
+    }
+    
     if (validationErrors.length > 0) {
       const { setFailedOrder } = await import('../services/sessionManager.js');
       setFailedOrder(customerId, {

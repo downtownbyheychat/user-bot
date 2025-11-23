@@ -136,8 +136,11 @@ export async function validateOrderItem(vendorId, itemName, quantityType, price,
 
     if (result.rows.length === 0) {
         const vendors = await searchItemAcrossVendors(itemName);
+        if (vendors.length === 0) {
+          return { valid: false, error: `${itemName} not available at any vendor`, notFoundAnywhere: true };
+        }
         const vendorList = vendors.map(v => `${v.vendor_name} (${v.food_name})`).join(', ');
-      return { valid: false, error: `${itemName} not available at this vendor, you can find it at: ${vendorList}` };
+        return { valid: false, error: `${itemName} not available at this vendor, you can find it at: ${vendorList}` };
     }
 
     const item = result.rows[0];
@@ -221,7 +224,7 @@ export async function validateOrderItem(vendorId, itemName, quantityType, price,
     return { valid: true, item: result.rows[0] };
   } catch (error) {
     console.error('Error validating item:', error);
-    return { valid: false, error: 'Validation error occurred' };
+    return { valid: false, error: 'Validation error occurred', notFoundAnywhere: false };
   }
 }
 
