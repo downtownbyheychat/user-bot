@@ -20,7 +20,7 @@ RULES:
 INTENTS:
 General Interaction:
 - Greeting
-- Information About Company
+- Information About Company (when asked information about Downtown e.g., "What is Downtown?", "Tell me about Downtown")
 - Customer Service
 
 Food Ordering & Delivery:

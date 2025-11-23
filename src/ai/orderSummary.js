@@ -87,7 +87,7 @@ RULES:
 - per_piece: items sold by count (e.g., "2 bottles of coke")
 - full_pack/half_pack: combo meals
 - Extract vendor from phrases like "from [vendor]"
-- For delivery_location: if user says "my hostel", "hostel", "my room", return "USER_HOSTEL" as placeholder
+- For delivery_location: if user says "my hostel" or "my room", return "USER_HOSTEL" as placeholder
 
 OUTPUT FORMAT:
 {
