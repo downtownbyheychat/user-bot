@@ -68,8 +68,19 @@ export async function processMessage(customerId, message) {
     if (pendingOrder?.awaitingAddress) {
       const { pushOrderPack, getStackSummary } = await import('./orderStack.js');
       const { getAllVendors } = await import('../db/Utils/vendor.js');
+      const { getUserHostel } = await import('../db/Utils/users.js');
       const vendors = await getAllVendors();
       const vendor = vendors.find(v => v.id === pendingOrder.vendorId);
+      
+      // Replace 'my hostel' with actual hostel
+      let deliveryLocation = message;
+      const hostelKeywords = /\b(my hostel|my room)\b/i;
+      if (hostelKeywords.test(message)) {
+        const userHostel = await getUserHostel(customerId);
+        if (userHostel) {
+          deliveryLocation = message.replace(hostelKeywords, userHostel);
+        }
+      }
       
       const packTotal = pendingOrder.orderSummary.items.reduce((sum, item) => {
         return sum + parseFloat(item.price);
@@ -79,7 +90,7 @@ export async function processMessage(customerId, message) {
         items: pendingOrder.orderSummary.items,
         vendor: vendor?.name || 'Unknown',
         vendorId: pendingOrder.vendorId,
-        delivery_location: message,
+        delivery_location: deliveryLocation,
         total: packTotal
       });
       
@@ -98,7 +109,7 @@ export async function processMessage(customerId, message) {
         response_type: "order_summary",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `📦 Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nDelivery: ${message}\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
+        message: `📦 Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nDelivery: ${deliveryLocation}\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
         data: {
           buttons: [
             { id: "proceed_payment", title: "💳 Proceed to Payment" },
