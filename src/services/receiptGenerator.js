@@ -1,4 +1,5 @@
-import htmlPdf from 'html-pdf-node';
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 import fs from 'fs';
 import path from 'path';
 
@@ -193,18 +194,23 @@ export async function generateReceipt(orderData) {
     
     const filePath = path.join(receiptsDir, `${orderId}.pdf`);
     
-    const options = { 
+    const browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless
+    });
+    
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.pdf({
+      path: filePath,
       format: 'A4',
       printBackground: true,
-      margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' },
-      path: filePath,
-      timeout: 600000,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
-    };
+      margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' }
+    });
     
-    const file = { content: html };
-    
-    await htmlPdf.generatePdf(file, options);
+    await browser.close();
     
     return { filePath };
   } catch (error) {
