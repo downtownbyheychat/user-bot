@@ -86,13 +86,26 @@ export async function sendOTPVerificationFlow(phoneNumber, email, name) {
 }
 
 // Verify OTP
-export async function verifyOTP(otp) {
+export async function verifyOTP(otp, phoneNumber) {
   try {
     console.log('🔍 Verifying OTP:', otp);
     const response = await axios.post(`${BASE_URL}auth/verify-email`, { otp: otp.toString() });
     
     if (response.status === 200) {
       console.log('✅ OTP verified successfully');
+      
+      // Manually update email_verified in database
+      try {
+        const pool = (await import('../db/database.js')).default;
+        await pool.query(
+          'UPDATE users SET email_verified = true WHERE phone_number = $1',
+          [phoneNumber]
+        );
+        console.log('✅ Database updated: email_verified = true');
+      } catch (dbError) {
+        console.error('❌ Failed to update database:', dbError.message);
+      }
+      
       return { success: true };
     }
     
@@ -129,8 +142,6 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
   try {
     // Parse hostel from Label field (format: "2_Male_Silver_3")
     const hostelData = flowData.screen_1_Label_1 || '';
-    const hostelParts = hostelData.split('_');
-    const hostel = hostelParts.length >= 3 ? `${hostelParts[2]} ${hostelParts[3] || ''}`.trim() : null;
 
     const payload = {
       name: flowData.screen_1_Full_name_0.trim(),
