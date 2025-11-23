@@ -185,7 +185,7 @@ export async function generateReceipt(orderData) {
     </div>
     
     <div class="field highlight" style="margin-top: 20px;">
-      <span class="field-label">Grand Total:</span>
+      <span class="field-label">Total:</span>
       <span class="field-value">₦${amount.toLocaleString()}</span>
     </div>
     
