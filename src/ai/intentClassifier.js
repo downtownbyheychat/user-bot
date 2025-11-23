@@ -20,8 +20,8 @@ RULES:
 INTENTS:
 General Interaction:
 - Greeting
-- Information About Company (when asked information about Downtown e.g., "What is Downtown?", "Tell me about Downtown")
-- Customer Service (any complaints or service-related inquiries, it should not be specific to only orders, e.g., "I have an issue with the app", "How do I contact support?")
+- Information About Company (when asked information about Downtown or the project/app e.g., "What is Downtown?", "Tell me about Downtown")
+- Customer Service (any complaints or service-related inquiries, it should include complaints about orders or service provided, e.g., "I have an issue with the app", "How do I contact support?")
 
 Food Ordering & Delivery:
 - Food Ordering (includes: placing orders, viewing specific vendor menus, asking about menu items)
