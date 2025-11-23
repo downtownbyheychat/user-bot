@@ -313,8 +313,8 @@ export async function handleButtonClick(buttonId, customerId) {
       if (buttonId.startsWith('menu_next_')) {
         console.log('📝 Handling menu pagination:', buttonId);
         const parts = buttonId.split('_');
-        const vendorId = parts[2];
-        const page = parseInt(parts[3]);
+        const vendorId = parts.slice(2, -1).join('_');
+        const page = parseInt(parts[parts.length - 1]);
         console.log('Parsed vendorId:', vendorId, 'page:', page);
         
         const { getVendorMenuItems, getVendorByName } = await import('../db/Utils/vendor.js');
@@ -389,7 +389,7 @@ export async function handleButtonClick(buttonId, customerId) {
       // Handle menu item selection
       if (buttonId.startsWith('menu_') && !buttonId.includes('_next_')) {
         console.log('🍽️ Handling menu item selection:', buttonId);
-        const menuItemId = buttonId.split('_')[1];
+        const menuItemId = buttonId.substring(5);
         
         const pool = (await import('../db/database.js')).default;
         const result = await pool.query(
@@ -428,7 +428,7 @@ export async function handleButtonClick(buttonId, customerId) {
       // Handle vendor selection from restaurant list
       if (buttonId.startsWith('vendor_')) {
         console.log('🏪 Handling vendor selection:', buttonId);
-        const vendorId = buttonId.split('_')[1];
+        const vendorId = buttonId.substring(7);
         
         const { getVendorMenuItems, getAllVendors } = await import('../db/Utils/vendor.js');
         const allVendors = await getAllVendors();
