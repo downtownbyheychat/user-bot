@@ -59,7 +59,7 @@ export async function getUserName(whatsappId) {
 export async function checkUserExists(phoneNumber) {
   try {
     const result = await pool.query(
-      'SELECT id, name, email, email_verified FROM users WHERE phone_number = $1',
+      'SELECT id, name, email, email_verified, hostel FROM users WHERE phone_number = $1',
       [String(phoneNumber)]
     );
 
@@ -75,5 +75,24 @@ export async function checkUserExists(phoneNumber) {
   } catch (error) {
     console.error('Error checking user existence:', error);
     return { exists: false, verified: false, user: null };
+  }
+}
+
+// Get user's hostel
+export async function getUserHostel(phoneNumber) {
+  try {
+    const result = await pool.query(
+      'SELECT hostel FROM users WHERE phone_number = $1',
+      [String(phoneNumber)]
+    );
+
+    if (result.rows.length > 0) {
+      return result.rows[0].hostel;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error fetching user hostel:', error);
+    return null;
   }
 }

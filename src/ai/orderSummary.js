@@ -74,7 +74,7 @@ dotenv.config();
 const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = gemini.getGenerativeModel({model: "gemini-2.5-flash-lite"});
 
-export async function generateOrderSummary(message) {
+export async function generateOrderSummary(message, customerId = null) {
   const prompt = `Extract order details and return structured JSON.
 
 EXTRACT:
@@ -87,6 +87,7 @@ RULES:
 - per_piece: items sold by count (e.g., "2 bottles of coke")
 - full_pack/half_pack: combo meals
 - Extract vendor from phrases like "from [vendor]"
+- For delivery_location: if user says "my hostel", "hostel", "my room", return "USER_HOSTEL" as placeholder
 
 OUTPUT FORMAT:
 {
@@ -99,7 +100,7 @@ OUTPUT FORMAT:
       "price": price_if_mentioned
     }
   ],
-  "delivery_location": "location or null",
+  "delivery_location": "location or USER_HOSTEL or null",
 }
 
 Message: "${message}"
@@ -111,7 +112,16 @@ Return ONLY valid JSON.`;
     const response = result.response.text().trim();
     
     let cleanResponse = response.replace(/```json\s*/, '').replace(/```\s*$/, '');
-    return JSON.parse(cleanResponse);
+    const summary = JSON.parse(cleanResponse);
+    
+    // Replace USER_HOSTEL placeholder with actual hostel
+    if (summary.delivery_location === 'USER_HOSTEL' && customerId) {
+      const { getUserHostel } = await import('../db/Utils/users.js');
+      const hostel = await getUserHostel(customerId);
+      summary.delivery_location = hostel || 'my hostel';
+    }
+    
+    return summary;
   } catch (error) {
     console.error('Order summary error:', error);
     return { vendor: null, items: [], delivery_location: null, has_mixed_types: false };

@@ -24,7 +24,7 @@ export async function processMessage(customerId, message) {
     const failedOrder = getFailedOrder(customerId);
     
     if (failedOrder) {
-      const correctionSummary = await generateOrderSummary(message);
+      const correctionSummary = await generateOrderSummary(message, customerId);
       
       // Handle vendor selection for items without vendor
       if (correctionSummary?.vendor && failedOrder.errorType === 'no_vendor') {
@@ -114,7 +114,7 @@ export async function processMessage(customerId, message) {
     let orderSummary = null;
     
     if (ORDER_SUMMARY_INTENTS.includes(classification.intent)) {
-      orderSummary = await generateOrderSummary(message);
+      orderSummary = await generateOrderSummary(message, customerId);
     }
     
     const response = await handleIntent(classification.intent, customerId, message, orderSummary);
