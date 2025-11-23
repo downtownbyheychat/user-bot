@@ -318,6 +318,14 @@ if (!vendor && items.length > 0) {
   }
   
   const itemNames = items.map(i => i.name).join(', ');
+  
+  // Save items to failed order so vendor selection can process them
+  const { setFailedOrder } = await import('../services/sessionManager.js');
+  setFailedOrder(customerId, {
+    items,
+    delivery_location,
+    errorType: 'no_vendor'
+  });
 
   if (validVendors.length > 10) {
     const vendorList = validVendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
