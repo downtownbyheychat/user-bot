@@ -629,7 +629,9 @@ if (!vendor && items.length > 0) {
         failedItems,
         vendor: vendorData.name,
         vendorId: vendorData.id,
-        delivery_location
+        delivery_location,
+        errorType: alternativeVendors.length > 0 ? 'item_at_other_vendor' : 'validation_failed',
+        originalItems: items
       });
       
       const validList = validatedItems.length > 0 
@@ -638,6 +640,16 @@ if (!vendor && items.length > 0) {
       
       // If alternative vendors exist and <= 10, use list format
       if (alternativeVendors.length > 0 && alternativeVendors.length <= 10) {
+        setFailedOrder(customerId, {
+          validatedItems,
+          failedItems,
+          vendor: vendorData.name,
+          vendorId: vendorData.id,
+          delivery_location,
+          errorType: 'item_at_other_vendor',
+          originalItems: items
+        });
+        
         return {
           status: "error",
           response_type: "validation_error",

@@ -510,6 +510,19 @@ export async function handleButtonClick(buttonId, customerId) {
           return await handleIntent('Food Ordering', customerId, '', mergedSummary);
         }
         
+        if (failedOrder?.errorType === 'item_at_other_vendor') {
+          // User selected vendor for item that wasn't available at original vendor
+          const { handleIntent } = await import('../ai/intentHandlers.js');
+          const mergedSummary = {
+            vendor: vendor.name,
+            items: [...failedOrder.validatedItems, ...failedOrder.originalItems.filter(i => failedOrder.failedItems.includes(i.name))],
+            delivery_location: failedOrder.delivery_location
+          };
+          
+          clearFailedOrder(customerId);
+          return await handleIntent('Food Ordering', customerId, '', mergedSummary);
+        }
+        
         // Normal vendor menu display
         const menuItems = await getVendorMenuItems(vendorId);
         
