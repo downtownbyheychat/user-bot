@@ -651,8 +651,8 @@ if (!vendor && items.length > 0) {
               button: "Select Vendor",
               sections: [{
                 title: "Vendors",
-                rows: alternativeVendors.map(v => ({
-                  id: `vendor_${v.vendor_id}`,
+                rows: alternativeVendors.map((v, idx) => ({
+                  id: `vendor_${v.vendor_id}_${idx}`,
                   title: v.vendor_name.substring(0, 24),
                   description: v.food_name.substring(0, 72)
                 }))

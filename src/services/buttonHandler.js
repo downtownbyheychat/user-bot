@@ -476,7 +476,8 @@ export async function handleButtonClick(buttonId, customerId) {
       // Handle vendor selection from restaurant list
       if (buttonId.startsWith('vendor_')) {
         console.log('🏪 Handling vendor selection:', buttonId);
-        const vendorId = buttonId.substring(7);
+        const parts = buttonId.substring(7).split('_');
+        const vendorId = parts[0];
         
         const { getVendorMenuItems, getAllVendors } = await import('../db/Utils/vendor.js');
         const allVendors = await getAllVendors();
