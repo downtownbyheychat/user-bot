@@ -607,6 +607,23 @@ if (!vendor && items.length > 0) {
     
     if (validationErrors.length > 0) {
       const { setFailedOrder } = await import('../services/sessionManager.js');
+      
+      // Check if any validation has alternative vendors
+      let alternativeVendors = [];
+      for (const item of items) {
+        const validation = await validateOrderItem(
+          vendorData.id,
+          item.name,
+          item.quantity_type,
+          item.price,
+          item.quantity
+        );
+        if (validation.alternativeVendors) {
+          alternativeVendors = validation.alternativeVendors;
+          break;
+        }
+      }
+      
       setFailedOrder(customerId, {
         validatedItems,
         failedItems,
@@ -618,6 +635,48 @@ if (!vendor && items.length > 0) {
       const validList = validatedItems.length > 0 
         ? `\n\n✅ Valid items:\n${validatedItems.map(i => `• ${i.dbName}`).join('\n')}`
         : '';
+      
+      // If alternative vendors exist and <= 10, use list format
+      if (alternativeVendors.length > 0 && alternativeVendors.length <= 10) {
+        // Get unique vendors
+        const uniqueVendors = [...new Map(alternativeVendors.map(v => [v.vendor_id, v])).values()];
+        
+        return {
+          status: "error",
+          response_type: "validation_error",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `❌ ${validationErrors.join('\n')}${validList}\n\nSelect a vendor to order from:`,
+          data: {
+            list: {
+              header: "Available Vendors",
+              body: "These vendors have the item:",
+              button: "Select Vendor",
+              sections: [{
+                title: "Vendors",
+                rows: uniqueVendors.map(v => ({
+                  id: `vendor_${v.vendor_id}`,
+                  title: v.vendor_name.substring(0, 24),
+                  description: `Order ${v.food_name}`.substring(0, 72)
+                }))
+              }]
+            }
+          }
+        };
+      }
+      
+      // If > 10 or no alternatives, use text format
+      if (alternativeVendors.length > 10) {
+        const uniqueVendors = [...new Map(alternativeVendors.map(v => [v.vendor_id, v])).values()];
+        const vendorList = uniqueVendors.map((v, i) => `${i + 1}. ${v.vendor_name}`).join('\n');
+        return {
+          status: "error",
+          response_type: "validation_error",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `❌ ${validationErrors.join('\n')}${validList}\n\nYou can find it at:\n\n${vendorList}\n\n💡 Reply with corrected items only, or type 'cancel' to start over.`
+        };
+      }
       
       return {
         status: "error",

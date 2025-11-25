@@ -139,8 +139,7 @@ export async function validateOrderItem(vendorId, itemName, quantityType, price,
         if (vendors.length === 0) {
           return { valid: false, error: `${itemName} not available at any vendor`, notFoundAnywhere: true };
         }
-        const vendorList = vendors.map(v => `${v.vendor_name} (${v.food_name})`).join(', ');
-        return { valid: false, error: `${itemName} not available at this vendor, you can find it at: ${vendorList}` };
+        return { valid: false, error: `${itemName} not available at this vendor`, alternativeVendors: vendors };
     }
 
     const item = result.rows[0];
