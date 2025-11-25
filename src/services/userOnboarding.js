@@ -106,8 +106,10 @@ export async function verifyOTP(otp, phoneNumber) {
         console.error('❌ Failed to update database:', dbError.message);
       }
       
-      // Send template format message
-      await sendOrderTemplateMessage(phoneNumber);
+      // Send template format message with 3 second delay
+      setTimeout(() => {
+        sendOrderTemplateMessage(phoneNumber);
+      }, 3000);
       
       return { success: true };
     }
