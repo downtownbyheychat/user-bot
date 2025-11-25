@@ -113,6 +113,8 @@ Return ONLY valid JSON.`;
     
     let cleanResponse = response.replace(/```json\s*/, '').replace(/```\s*$/, '');
     const summary = JSON.parse(cleanResponse);
+
+    console.log('Generated order summary:', summary);
     
     // Replace USER_HOSTEL placeholder with actual hostel
     if (summary.delivery_location === 'USER_HOSTEL' && customerId) {

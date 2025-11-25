@@ -304,3 +304,25 @@ export async function hasOnlyAddOns(vendorId, items) {
     return false;
 
 }
+
+// checks if swallow is ordered without soup
+export async function hasSwallowWithoutSoup(vendorId, items) {
+  const foodTypes = new Set();
+  
+  for (const item of items) {
+    const validation = await validateOrderItem(
+      vendorId,
+      item.name,
+      item.quantity_type,
+      item.price
+    );
+    
+    if (!validation.valid) continue;
+    
+    if (validation.item.food_type) {
+      foodTypes.add(validation.item.food_type.toLowerCase());
+    }
+  }
+  
+  return foodTypes.has('swallow') && !foodTypes.has('soup');
+}

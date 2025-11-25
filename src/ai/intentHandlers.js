@@ -1,5 +1,5 @@
 import { getUserName } from "../db/Utils/users.js";
-import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasMixedTypes, hasOnlyAddOns, getAllVendors, checkVendorStatus } from "../db/Utils/vendor.js";
+import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasMixedTypes, hasOnlyAddOns, hasSwallowWithoutSoup, getAllVendors, checkVendorStatus } from "../db/Utils/vendor.js";
 
 
 export const intentHandlers = {
@@ -464,6 +464,27 @@ if (!vendor && items.length > 0) {
           message: "❌ You can't order only add-ons (egg, sausage, etc).\n\n💡 Reply with a main item to add, or type 'cancel' to start over."
         };
       }
+
+    // Check if swallow is ordered without soup
+    const swallowWithoutSoup = await hasSwallowWithoutSoup(vendorData.id, items);
+    if (swallowWithoutSoup) {
+      const { setFailedOrder } = await import('../services/sessionManager.js');
+      setFailedOrder(customerId, {
+        validatedItems: [],
+        failedItems: items.map(i => i.name),
+        vendor: vendorData.name,
+        vendorId: vendorData.id,
+        delivery_location,
+        errorType: 'swallow_without_soup'
+      });
+      return {
+        status: "error",
+        response_type: "validation_error",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: "❌ You can't order swallow without soup.\n\n💡 Reply with a soup to add, or type 'cancel' to start over."
+      };
+    }
 
     // Check for mixed types
     const mixedTypes = await hasMixedTypes(vendorData.id, items);

@@ -106,6 +106,9 @@ export async function verifyOTP(otp, phoneNumber) {
         console.error('❌ Failed to update database:', dbError.message);
       }
       
+      // Send template format message
+      await sendOrderTemplateMessage(phoneNumber);
+      
       return { success: true };
     }
     
@@ -113,6 +116,52 @@ export async function verifyOTP(otp, phoneNumber) {
   } catch (error) {
     console.error('❌ OTP verification failed:', error.response?.data || error.message);
     return { success: false, error: error.response?.data?.message || 'Verification failed' };
+  }
+}
+
+// Send order template format message
+async function sendOrderTemplateMessage(phoneNumber) {
+  try {
+    await axios({
+      url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+      method: 'post',
+      headers: {
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+        messaging_product: 'whatsapp',
+        to: phoneNumber,
+        type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: {
+            text: 'Welcome to Downtown!\n\nWhat would you like to do?'
+          },
+          action: {
+            buttons: [
+              {
+                type: 'reply',
+                reply: {
+                  id: 'view_restaurants',
+                  title: '🍽️ View Restaurants'
+                }
+              },
+              {
+                type: 'reply',
+                reply: {
+                  id: 'start_ordering',
+                  title: '🛒 Start Ordering'
+                }
+              }
+            ]
+          }
+        }
+      }
+    });
+    console.log('✅ Template message sent');
+  } catch (error) {
+    console.error('❌ Error sending template message:', error.response?.data || error.message);
   }
 }
 

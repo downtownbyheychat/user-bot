@@ -23,6 +23,51 @@ export async function handleButtonClick(buttonId, customerId) {
         action: "transfer_to_human"
       };
 
+    case 'view_restaurants':
+      const { getAllVendors } = await import('../db/Utils/vendor.js');
+      const vendors = await getAllVendors();
+      
+      if (vendors.length === 0) {
+        return {
+          status: "error",
+          message: "Sorry, no restaurants are available at the moment."
+        };
+      }
+
+      if (vendors.length > 10) {
+        const vendorList = vendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
+        return {
+          status: "success",
+          message: `🍽️ Available Restaurants:\n\n${vendorList}\n\nJust mention the restaurant name to view their menu!`
+        };
+      }
+
+      return {
+        status: "success",
+        message: "Select a restaurant to view their menu:",
+        data: {
+          list: {
+            header: "Campus Restaurants",
+            body: "Here are the available restaurants on campus:",
+            button: "View Restaurants",
+            sections: [{
+              title: "Restaurants",
+              rows: vendors.map(v => ({
+                id: `vendor_${v.id}`,
+                title: v.name.substring(0, 24),
+                description: (v.description || "View menu").substring(0, 72)
+              }))
+            }]
+          }
+        }
+      };
+
+    case 'start_ordering':
+      return {
+        status: "success",
+        message: "Got an order? Say less 😌\nJust drop it in this format so we can process it fast 👇🏾\n\n*Example:*\njollof rice - ₦1,400, 1 meat 1 egg from African Kitchen delivered to my hostel(location)\n\nMake sure to include the 👇🏾\n• Item name + quantity you want\n• Specify the vendor you're buying from\n• Specify the location the food is delivered to"
+      };
+
     case 'show_restaurants':
       return {
         status: "success",
@@ -147,11 +192,15 @@ export async function handleButtonClick(buttonId, customerId) {
         customerName: 'Customer'
       };
       
-      // Generate receipt in background (don't block order confirmation)
+      // Generate receipt
       const { generateReceipt } = await import('./receiptGenerator.js');
-      generateReceipt(receiptData).catch(err => {
-        console.error('Background receipt generation failed:', err);
-      });
+      let receiptPath = null;
+      try {
+        const result = await generateReceipt(receiptData);
+        receiptPath = result.filePath;
+      } catch (err) {
+        console.error('Receipt generation failed:', err);
+      }
       
       clearOrderStack(customerId);
       
@@ -160,7 +209,8 @@ export async function handleButtonClick(buttonId, customerId) {
         response_type: "payment_confirmed",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `✅ Payment Confirmed!\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}\n\nWe'll confirm with the restaurant shortly!`
+        message: `✅ Payment Confirmed!\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}\n\nWe'll confirm with the restaurant shortly!`,
+        data: { receipt_path: receiptPath }
       };
 
     default:
@@ -410,6 +460,16 @@ export async function handleButtonClick(buttonId, customerId) {
         return {
           status: "success",
           message: `Great choice! 🍽️\n\n${item.food_name} - ${priceInfo}\nFrom: ${item.vendor_name}\n\nTo order, just say:\n"${item.food_name} from ${item.vendor_name} delivered to [your location]"`
+        };
+      }
+
+      // Handle resend OTP button
+      if (buttonId === 'resend_otp') {
+        const { checkAndResendOTP } = await import('./userOnboarding.js');
+        const result = await checkAndResendOTP(customerId);
+        return {
+          status: "success",
+          message: result.message || '✅ A new OTP has been sent to your email.'
         };
       }
 
