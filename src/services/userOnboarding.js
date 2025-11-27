@@ -9,7 +9,6 @@ const BASE_URL = 'https://downtownbyhai-api.onrender.com/';
 
 // OTP session storage
 const otpSessions = new Map(); // { phoneNumber: { otp, expiresAt, email } }
-const processingFlows = new Set(); // Track flows being processed to prevent duplicates
 
 // Send user onboarding flow
 export async function sendUserOnboardingFlow(phoneNumber) {
@@ -255,20 +254,11 @@ export async function checkAndResendOTP(phoneNumber) {
     };
   }
   
-  return { expired: false };
+  return { expired: false, session };
 }
 
 // Handle user onboarding flow submission
 export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
-  // Prevent duplicate processing
-  const flowKey = `${phoneNumber}_${flowData.screen_1_Email_2}`;
-  if (processingFlows.has(flowKey)) {
-    console.log('⚠️ Duplicate flow submission detected, ignoring');
-    return { success: true };
-  }
-  
-  processingFlows.add(flowKey);
-  
   try {
     // Parse hostel from Label field (format: "2_Male_Silver_3")
     const hostelData = flowData.screen_1_Label_1 || '';
@@ -311,43 +301,21 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
 
     console.log('✅ User created:', response.data);
     
-    // Send OTP to email
-    try {
-      await sendOTPVerificationFlow(phoneNumber, payload.email, payload.name);
-    } catch (otpError) {
-      console.error('❌ OTP send failed:', otpError.message);
-      await axios({
-        url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
-        method: 'post',
-        headers: {
-          'Authorization': `Bearer ${ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        data: {
-          messaging_product: 'whatsapp',
-          to: phoneNumber,
-          type: 'text',
-          text: {
-            body: 'The OTP was not delivered to the email because it was invalid.'
-          }
-        }
-      });
-      await sendUserOnboardingFlow(phoneNumber);
-      return { success: false, error: 'OTP delivery failed' };
-    }
+    // Store OTP session (backend already sent OTP)
+    otpSessions.set(phoneNumber, {
+      email: payload.email,
+      name: payload.name,
+      expiresAt: Date.now() + 15 * 60 * 1000
+    });
     
     // Send OTP flow message
     await sendOTPFlowMessage(phoneNumber);
+    console.log('✅ OTP sent by backend during user creation');
     
     return { success: true };
   } catch (error) {
     console.error('❌ Error creating user:', error.response?.data || error.message);
     return { success: false, error: error.response?.data?.message || 'Registration failed' };
-  } finally {
-    // Remove from processing set after 5 seconds
-    setTimeout(() => {
-      processingFlows.delete(flowKey);
-    }, 5000);
   }
 }
 

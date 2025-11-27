@@ -254,8 +254,14 @@ async function processMessagesAsync(body) {
                         if (buttonId === 'resend_otp') {
                             const userCheck = await checkUserExists(customerId);
                             if (userCheck.exists && !userCheck.verified) {
-                                const { sendOTPFlowMessage } = await import('../services/userOnboarding.js');
-                                await sendOTPFlowMessage(customerId);
+                                const otpCheck = await checkAndResendOTP(customerId);
+                                if (otpCheck.expired) {
+                                    await sendMessage(customerId, otpCheck.message);
+                                } else {
+                                    await sendOTPVerificationFlow(customerId, otpCheck.session?.email, otpCheck.session?.name);
+                                    const { sendOTPFlowMessage } = await import('../services/userOnboarding.js');
+                                    await sendOTPFlowMessage(customerId);
+                                }
                             }
                             continue;
                         }
