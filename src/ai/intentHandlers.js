@@ -719,9 +719,9 @@ if (!vendor && items.length > 0) {
       
       const itemsList = validatedItems.map(i => {
         if (i.quantity_type === 'per_price') {
-          return `${i.dbName} -- ₦${i.price}`;
+          return `${i.dbName || i.name} -- ₦${i.price}`;
         } else {
-          return `${i.dbName} (x${i.quantity}) -- ₦${i.price}`;
+          return `${i.dbName || i.name} (x${i.quantity}) -- ₦${i.price}`;
         }
       }).join('\n');
 
@@ -752,8 +752,14 @@ if (!vendor && items.length > 0) {
         return sum + parseFloat(item.price);
       }, 0);
       
+      // Update items to use database names
+      const itemsWithDbNames = validatedItems.map(i => ({
+        ...i,
+        name: i.dbName || i.name
+      }));
+      
       pushOrderPack(customerId, {
-        items: validatedItems,
+        items: itemsWithDbNames,
         vendor: vendorData.name,
         vendorId: vendorData.id,
         delivery_location,
