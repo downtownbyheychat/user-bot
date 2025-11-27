@@ -9,6 +9,7 @@ const BASE_URL = 'https://downtownbyhai-api.onrender.com/';
 
 // OTP session storage
 const otpSessions = new Map(); // { phoneNumber: { otp, expiresAt, email } }
+const awaitingEmailChange = new Set(); // Track users awaiting email change
 
 // Send user onboarding flow
 export async function sendUserOnboardingFlow(phoneNumber) {
@@ -362,6 +363,101 @@ export async function sendInvalidOTPMessage(phoneNumber) {
     console.log(' Invalid OTP message sent');
   } catch (error) {
     console.error(' Error sending invalid OTP message:', error.response?.data || error.message);
+  }
+}
+
+// Send change email flow
+export async function sendChangeEmailFlow(phoneNumber) {
+  try {
+    awaitingEmailChange.add(phoneNumber);
+    await axios({
+      url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+      method: 'post',
+      headers: {
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+        messaging_product: 'whatsapp',
+        to: phoneNumber,
+        type: 'text',
+        text: {
+          body: 'Please reply with your new email address:'
+        }
+      }
+    });
+    console.log('Change email prompt sent');
+  } catch (error) {
+    console.error('Error sending change email prompt:', error.response?.data || error.message);
+  }
+}
+
+export function isAwaitingEmailChange(phoneNumber) {
+  return awaitingEmailChange.has(phoneNumber);
+}
+
+export function clearEmailChangeState(phoneNumber) {
+  awaitingEmailChange.delete(phoneNumber);
+}
+
+// Handle email change
+export async function handleEmailChange(phoneNumber, newEmail) {
+  try {
+    if (!isValidEmail(newEmail)) {
+      await axios({
+        url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+        method: 'post',
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        data: {
+          messaging_product: 'whatsapp',
+          to: phoneNumber,
+          type: 'text',
+          text: {
+            body: 'Invalid email format. Please provide a valid email address.'
+          }
+        }
+      });
+      return { success: false, error: 'Invalid email' };
+    }
+
+    const response = await axios.put(`${BASE_URL}users/update-email/${phoneNumber}`, {
+      email: newEmail
+    });
+
+    console.log('Email updated:', response.data);
+    
+    otpSessions.set(phoneNumber, {
+      email: newEmail,
+      name: otpSessions.get(phoneNumber)?.name || 'User',
+      expiresAt: Date.now() + 15 * 60 * 1000
+    });
+    
+    await sendOTPFlowMessage(phoneNumber);
+    console.log('OTP sent to new email');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating email:', error.response?.data || error.message);
+    await axios({
+      url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+      method: 'post',
+      headers: {
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+        messaging_product: 'whatsapp',
+        to: phoneNumber,
+        type: 'text',
+        text: {
+          body: 'Failed to update email. Please try again.'
+        }
+      }
+    });
+    return { success: false, error: error.response?.data?.message || 'Update failed' };
   }
 }
 

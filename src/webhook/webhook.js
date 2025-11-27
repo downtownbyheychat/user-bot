@@ -194,6 +194,14 @@ async function processMessagesAsync(body) {
                         }
                         
                         if (!userCheck.verified) {
+                            // Check if user is changing email
+                            const { isAwaitingEmailChange, handleEmailChange, clearEmailChangeState } = await import('../services/userOnboarding.js');
+                            if (isAwaitingEmailChange(customerId)) {
+                                await handleEmailChange(customerId, userMessage.trim());
+                                clearEmailChangeState(customerId);
+                                continue;
+                            }
+                            
                             // User registered but not verified, check if message is OTP
                             const otpPattern = /^\d{4,6}$/;
                             if (otpPattern.test(userMessage.trim())) {
@@ -218,7 +226,8 @@ async function processMessagesAsync(body) {
                                     message: ' Please verify your email first.\n\nReply with the OTP code sent to your email.',
                                     data: {
                                         buttons: [
-                                            { id: 'resend_otp', title: ' Resend OTP' }
+                                            { id: 'resend_otp', title: 'Resend OTP' },
+                                            { id: 'change_email', title: 'Change Email' }
                                         ]
                                     }
                                 });
@@ -262,6 +271,16 @@ async function processMessagesAsync(body) {
                                     const { sendOTPFlowMessage } = await import('../services/userOnboarding.js');
                                     await sendOTPFlowMessage(customerId);
                                 }
+                            }
+                            continue;
+                        }
+
+                        // Handle change email button
+                        if (buttonId === 'change_email') {
+                            const userCheck = await checkUserExists(customerId);
+                            if (userCheck.exists && !userCheck.verified) {
+                                const { sendChangeEmailFlow } = await import('../services/userOnboarding.js');
+                                await sendChangeEmailFlow(customerId);
                             }
                             continue;
                         }
