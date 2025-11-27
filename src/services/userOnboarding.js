@@ -285,10 +285,13 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
           to: phoneNumber,
           type: 'text',
           text: {
-            body: 'The OTP was not delivered to the email because it was invalid.\n\nPlease restart onboarding with a valid email address.'
+            body: 'The OTP was not delivered to the email because it was invalid.'
           }
         }
       });
+      
+      // Send onboarding flow again
+      await sendUserOnboardingFlow(phoneNumber);
       return { success: false, error: 'Invalid email' };
     }
 
