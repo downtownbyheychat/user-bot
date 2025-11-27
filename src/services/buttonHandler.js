@@ -180,6 +180,39 @@ export async function handleButtonClick(buttonId, customerId) {
         message: `Current valid items: ${validItemsList}\n\nWhat would you like to add to your order?`
       };
 
+    case 'show_corrections':
+      const { getFailedOrder: getFailedForCorrections } = await import('./sessionManager.js');
+      const failedOrderCorrections = getFailedForCorrections(customerId);
+      
+      if (!failedOrderCorrections) {
+        return {
+          status: "error",
+          message: "No order found to correct."
+        };
+      }
+      
+      const { validateOrderItem } = await import('../db/Utils/vendor.js');
+      const corrections = [];
+      
+      for (const item of failedOrderCorrections.originalItems || []) {
+        const validation = await validateOrderItem(
+          failedOrderCorrections.vendorId,
+          item.name,
+          item.quantity_type,
+          item.price,
+          item.quantity
+        );
+        
+        if (!validation.valid) {
+          corrections.push(`• ${validation.error}`);
+        }
+      }
+      
+      return {
+        status: "success",
+        message: `Here's what needs to be corrected:\n\n${corrections.join('\n')}\n\n💡 Reply with the corrected items.`
+      };
+
     case 'cancel_order':
       const { clearOrderStack: clearStack, clearFailedOrder: clearFailed } = await import('./orderStack.js');
       const { clearFailedOrder } = await import('./sessionManager.js');

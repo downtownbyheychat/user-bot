@@ -276,34 +276,6 @@ export async function hasMixedTypes(vendorId, items) {
   return hasPerPriceOrPiece && hasPack;
 }
 
-// checks for if an order has only add on items
-export async function hasOnlyAddOns(vendorId, items) {
-  const quantityTypes = new Set();
-  
-  for (const item of items) {
-    const validation = await validateOrderItem(
-      vendorId,
-      item.name,
-      item.quantity_type,
-      item.price
-    );
-    
-    if (!validation.valid) {
-      console.error(`Validation failed for ${item.name}: ${validation.error}`);
-      continue;
-    }
-    
-    quantityTypes.add(validation.item.sale_quantity);
-  }
-  
-  if (quantityTypes.size === 1 && quantityTypes.has('add_on')) {
-    return true;
-  }
-
-    return false;
-
-}
-
 // checks if swallow is ordered without soup
 export async function hasSwallowWithoutSoup(vendorId, items) {
   const foodTypes = new Set();

@@ -1,5 +1,5 @@
 import { getUserName } from "../db/Utils/users.js";
-import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasMixedTypes, hasOnlyAddOns, hasSwallowWithoutSoup, getAllVendors, checkVendorStatus } from "../db/Utils/vendor.js";
+import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasMixedTypes, hasSwallowWithoutSoup, getAllVendors, checkVendorStatus } from "../db/Utils/vendor.js";
 
 
 export const intentHandlers = {
@@ -444,27 +444,6 @@ if (!vendor && items.length > 0) {
     
     const vendorData = await getVendorByName(vendor);
 
-    // Check if order has only add-ons
-      const onlyAddOns = await hasOnlyAddOns(vendorData.id, items);
-      if (onlyAddOns) {
-        const { setFailedOrder } = await import('../services/sessionManager.js');
-        setFailedOrder(customerId, {
-          validatedItems: [],
-          failedItems: items.map(i => i.name),
-          vendor: vendorData.name,
-          vendorId: vendorData.id,
-          delivery_location,
-          errorType: 'only_addons'
-        });
-        return {
-          status: "error",
-          response_type: "validation_error",
-          customer_id: customerId,
-          timestamp: new Date().toISOString(),
-          message: "❌ You can't order only add-ons (egg, sausage, etc).\n\n💡 Reply with a main item to add, or type 'cancel' to start over."
-        };
-      }
-
     // Check if swallow is ordered without soup
     const swallowWithoutSoup = await hasSwallowWithoutSoup(vendorData.id, items);
     if (swallowWithoutSoup) {
@@ -709,7 +688,13 @@ if (!vendor && items.length > 0) {
         response_type: "validation_error",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `❌ Order validation failed:\n\n${validationErrors.join('\n')}\n\n💡 Reply with corrected items only, or type 'cancel' to start over.`
+        message: `❌ Order validation failed:\n\n${validationErrors.join('\n')}\n\nWhat would you like to do?`,
+        data: {
+          buttons: [
+            { id: "show_corrections", title: "📝 Show What to Correct" },
+            { id: "cancel_order", title: "❌ Cancel" }
+          ]
+        }
       };
     }
 
