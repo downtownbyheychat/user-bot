@@ -113,7 +113,7 @@ export async function sendOTPFlowMessage(phoneNumber) {
               flow_cta: 'Complete Onboarding',
               flow_action: 'navigate',
               flow_action_payload: {
-                screen: 'ENTER_OTP',
+                screen: 'enter_otp',
                 data: {
                   type: 'dynamic_object',
                   value: {}
@@ -132,7 +132,7 @@ export async function sendOTPFlowMessage(phoneNumber) {
 
 // Validate email format
 function isValidEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return emailRegex.test(email);
 }
 
@@ -302,7 +302,29 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
     console.log('✅ User created:', response.data);
     
     // Send OTP to email
-    await sendOTPVerificationFlow(phoneNumber, payload.email, payload.name);
+    try {
+      await sendOTPVerificationFlow(phoneNumber, payload.email, payload.name);
+    } catch (otpError) {
+      console.error('❌ OTP send failed:', otpError.message);
+      await axios({
+        url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+        method: 'post',
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        data: {
+          messaging_product: 'whatsapp',
+          to: phoneNumber,
+          type: 'text',
+          text: {
+            body: 'The OTP was not delivered to the email because it was invalid.'
+          }
+        }
+      });
+      await sendUserOnboardingFlow(phoneNumber);
+      return { success: false, error: 'OTP delivery failed' };
+    }
     
     // Send OTP flow message
     await sendOTPFlowMessage(phoneNumber);
@@ -342,7 +364,7 @@ export async function sendInvalidOTPMessage(phoneNumber) {
               flow_cta: 'Complete Onboarding',
               flow_action: 'navigate',
               flow_action_payload: {
-                screen: 'ENTER_OTP',
+                screen: 'enter_otp',
                 data: {
                   type: 'dynamic_object',
                   value: {}
