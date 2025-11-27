@@ -47,10 +47,10 @@ app.get('/webhook', (req, res) => {
   const challenge = req.query['hub.challenge'];
 
   if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-    console.log('✅ Webhook verified');
+    console.log(' Webhook verified');
     return res.status(200).send(challenge);
   } else {
-    console.log('❌ Webhook verification failed');
+    console.log(' Webhook verification failed');
     return res.status(403).send('Forbidden');
   }
 });
@@ -200,8 +200,8 @@ async function processMessagesAsync(body) {
                                 const result = await verifyOTP(userMessage.trim(), customerId);
                                 
                                 if (result.success) {
-                                    console.log('✅ OTP verified, sending welcome message');
-                                    await sendMessage(customerId, '✅ Email verified successfully!');
+                                    console.log(' OTP verified, sending welcome message');
+                                    await sendMessage(customerId, ' Email verified successfully!');
                                     continue;
                                 } else{
                                     await sendInvalidOTPMessage(customerId);
@@ -215,10 +215,10 @@ async function processMessagesAsync(body) {
                                 await sendMessage(customerId, otpCheck.message);
                             } else {
                                 await sendMessage(customerId, {
-                                    message: '🔒 Please verify your email first.\n\nReply with the OTP code sent to your email.',
+                                    message: ' Please verify your email first.\n\nReply with the OTP code sent to your email.',
                                     data: {
                                         buttons: [
-                                            { id: 'resend_otp', title: '🔄 Resend OTP' }
+                                            { id: 'resend_otp', title: ' Resend OTP' }
                                         ]
                                     }
                                 });
@@ -293,13 +293,13 @@ async function processMessagesAsync(body) {
                         const flowData = message.interactive.nfm_reply;
                         const userInput = JSON.parse(flowData.response_json);
 
-                        console.log('📥 Flow Data:', userInput);
+                        console.log(' Flow Data:', userInput);
 
                         // Handle user onboarding flow submission
                         if (userInput.screen_1_Full_name_0 && userInput.screen_1_Email_2) {
                             const result = await handleUserOnboardingSubmission(customerId, userInput);
                             // if (!result.success) {
-                            //     await sendMessage(customerId, `❌ Registration failed: ${result.error}`);
+                            //     await sendMessage(customerId, ` Registration failed: ${result.error}`);
                             // }
                             continue;
                         }
@@ -317,13 +317,13 @@ async function processMessagesAsync(body) {
                     // Handle list interactions
                     if (message.type === 'interactive' && message.interactive.type === 'list_reply') {
                         const listItemId = message.interactive.list_reply.id;
-                        console.log('📋 List item selected:', listItemId);
+                        console.log(' List item selected:', listItemId);
 
                         try {
                             // Process the list selection
                             const { handleButtonClick } = await import('../services/buttonHandler.js');
                             const listResponse = await handleButtonClick(listItemId, customerId);
-                            console.log('✅ List response generated:', listResponse.message?.substring(0, 50));
+                            console.log(' List response generated:', listResponse.message?.substring(0, 50));
 
                             // Save the list interaction to the chat log
                             await saveChatMessage(customerId, `[List: ${listItemId}]`, false);
@@ -499,5 +499,5 @@ async function sendDocument(recipientPhoneNumber, filePath, filename) {
 
 
 app.listen(PORT, () => {
-  console.log(`🚀 Campus AI Bot running on port ${PORT}`);
+  console.log(` Campus AI Bot running on port ${PORT}`);
 });

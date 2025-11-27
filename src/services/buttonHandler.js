@@ -3,7 +3,7 @@ export async function handleButtonClick(buttonId, customerId) {
     case 'visit_website':
       return {
         status: "success",
-        message: "🌐 Redirecting you to downtown.ng...",
+        message: " Redirecting you to downtown.ng...",
         action: "open_url",
         url: "https://downtown.ng"
       };
@@ -11,7 +11,7 @@ export async function handleButtonClick(buttonId, customerId) {
     case 'join_channel':
       return {
         status: "success", 
-        message: "📱 Opening WhatsApp channel...",
+        message: " Opening WhatsApp channel...",
         action: "open_url",
         url: "https://whatsapp.com/channel/0029Vb73OpaLtOjL2pM98O34"
       };
@@ -19,7 +19,7 @@ export async function handleButtonClick(buttonId, customerId) {
     case 'chat_rep':
       return {
         status: "success",
-        message: "👨‍💼 Connecting you to a live representative...\nPlease hold while we find someone to assist you.",
+        message: "‍ Connecting you to a live representative...\nPlease hold while we find someone to assist you.",
         action: "transfer_to_human"
       };
 
@@ -38,7 +38,7 @@ export async function handleButtonClick(buttonId, customerId) {
         const vendorList = vendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
         return {
           status: "success",
-          message: `🍽️ Available Restaurants:\n\n${vendorList}\n\nJust mention the restaurant name to view their menu!`
+          message: ` Available Restaurants:\n\n${vendorList}\n\nJust mention the restaurant name to view their menu!`
         };
       }
 
@@ -65,7 +65,7 @@ export async function handleButtonClick(buttonId, customerId) {
     case 'start_ordering':
       return {
         status: "success",
-        message: "Got an order? Say less 😌\nJust drop it in this format so we can process it fast 👇🏾\n\n*Example:*\njollof rice - ₦1,400, 1 meat 1 egg from African Kitchen delivered to my hostel(location)\n\nMake sure to include the 👇🏾\n• Item name + quantity you want\n• Specify the vendor you're buying from\n• Specify the location the food is delivered to"
+        message: "Got an order? Say less \nJust drop it in this format so we can process it fast \n\n*Example:*\njollof rice - ₦1,400, 1 meat 1 egg from African Kitchen delivered to my hostel(location)\n\nMake sure to include the \n• Item name + quantity you want\n• Specify the vendor you're buying from\n• Specify the location the food is delivered to"
       };
 
 
@@ -73,11 +73,11 @@ export async function handleButtonClick(buttonId, customerId) {
     case 'reorder_last':
       return {
         status: "success",
-        message: "🔁 Reordering your last meal:\n2x Jollof Rice + Chicken - ₦2,800\nDelivery to: Your usual spot\n\nConfirm this order?",
+        message: " Reordering your last meal:\n2x Jollof Rice + Chicken - ₦2,800\nDelivery to: Your usual spot\n\nConfirm this order?",
         data: {
           buttons: [
-            { id: "confirm_reorder", title: "✅ Confirm" },
-            { id: "cancel_reorder", title: "❌ Cancel" }
+            { id: "confirm_reorder", title: " Confirm" },
+            { id: "cancel_reorder", title: " Cancel" }
           ]
         }
       };
@@ -85,13 +85,13 @@ export async function handleButtonClick(buttonId, customerId) {
     case 'confirm_cancel':
       return {
         status: "success",
-        message: "✅ Done! Your order's been canceled successfully.\nRefund (if paid online) will be processed within 24 hours 💸\nWanna try placing a new one?"
+        message: " Done! Your order's been canceled successfully.\nRefund (if paid online) will be processed within 24 hours \nWanna try placing a new one?"
       };
 
     case 'keep_order':
       return {
         status: "success",
-        message: "👍 Great! Your order is still active.\nWe'll keep you updated on the progress."
+        message: " Great! Your order is still active.\nWe'll keep you updated on the progress."
       };
 
     case 'proceed_payment':
@@ -125,10 +125,10 @@ export async function handleButtonClick(buttonId, customerId) {
         response_type: "payment",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `💳 Payment Details\n\nYour Order:${orderDetails}\n\n===================\nGrand Total: ₦${grandTotal}\n===================\n\nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint\n\nClick below after payment:`,
+        message: ` Payment Details\n\nYour Order:${orderDetails}\n\n===================\nGrand Total: ₦${grandTotal}\n===================\n\nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint\n\nClick below after payment:`,
         data: {
           buttons: [
-            { id: "payment_sent", title: "✅ Payment Sent" }
+            { id: "payment_sent", title: " Payment Sent" }
           ]
         }
       };
@@ -139,7 +139,7 @@ export async function handleButtonClick(buttonId, customerId) {
         response_type: "order_format",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: "Got an order? Say less 😌\nJust drop it in this format so we can process it fast 👇🏾\n\n*Example:*\njollof rice - ₦1,400, 1 meat 1 egg from African Kitchen delivered to my hostel(location)\n\nMake sure to include the 👇🏾\n• Item name + quantity you want\n• Specify the vendor you're buying from\n• Specify the location the food is delivered to"
+        message: "Got an order? Say less \nJust drop it in this format so we can process it fast \n\n*Example:*\njollof rice - ₦1,400, 1 meat 1 egg from African Kitchen delivered to my hostel(location)\n\nMake sure to include the \n• Item name + quantity you want\n• Specify the vendor you're buying from\n• Specify the location the food is delivered to"
       };
 
     case 'proceed_without_invalid':
@@ -210,7 +210,7 @@ export async function handleButtonClick(buttonId, customerId) {
       
       return {
         status: "success",
-        message: `Here's what needs to be corrected:\n\n${corrections.join('\n')}\n\n💡 Reply with the corrected items.`
+        message: `Here's what needs to be corrected:\n\n${corrections.join('\n')}\n\n Reply with the corrected items.`
       };
 
     case 'cancel_order':
@@ -224,7 +224,7 @@ export async function handleButtonClick(buttonId, customerId) {
         response_type: "order_cancelled",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: "✅ Order Cancelled\nYour order has been cancelled successfully.\n\nReady to order again? Just drop your order in this format:\n\n*Example:*\njollof rice - ₦1,400, 1 meat 1 egg from African Kitchen delivered to my hostel(location)"
+        message: " Order Cancelled\nYour order has been cancelled successfully.\n\nReady to order again? Just drop your order in this format:\n\n*Example:*\njollof rice - ₦1,400, 1 meat 1 egg from African Kitchen delivered to my hostel(location)"
       };
 
     case 'payment_sent':
@@ -278,7 +278,7 @@ export async function handleButtonClick(buttonId, customerId) {
         response_type: "payment_confirmed",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `✅ Payment Confirmed!\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}\n\nWe'll confirm with the restaurant shortly!`,
+        message: ` Payment Confirmed!\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}\n\nWe'll confirm with the restaurant shortly!`,
         data: { receipt_path: receiptPath }
       };
 
@@ -332,12 +332,12 @@ export async function handleButtonClick(buttonId, customerId) {
           response_type: "order_summary",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: `📦 Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nPickup: You'll collect from restaurant\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
+          message: ` Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nPickup: You'll collect from restaurant\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
           data: {
             buttons: [
-              { id: "proceed_payment", title: "💳 Proceed to Payment" },
-              { id: "add_new_pack", title: "➕ Add New Pack" },
-              { id: "cancel_order", title: "❌ Cancel Order" }
+              { id: "proceed_payment", title: " Proceed to Payment" },
+              { id: "add_new_pack", title: " Add New Pack" },
+              { id: "cancel_order", title: " Cancel Order" }
             ]
           }
         };
@@ -367,13 +367,13 @@ export async function handleButtonClick(buttonId, customerId) {
           response_type: "address_prompt",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: "📍 Where should we deliver your order?\n\nPlease provide your delivery address:"
+          message: " Where should we deliver your order?\n\nPlease provide your delivery address:"
         };
       }
 
       // Handle pagination for restaurants list
       if (buttonId.startsWith('restaurants_next_')) {
-        console.log('🍴 Handling restaurants pagination:', buttonId);
+        console.log(' Handling restaurants pagination:', buttonId);
         const page = parseInt(buttonId.split('_').pop());
         const { getAllVendors } = await import('../db/Utils/vendor.js');
         const vendors = await getAllVendors();
@@ -418,7 +418,7 @@ export async function handleButtonClick(buttonId, customerId) {
 
       // Handle pagination for vendor menu
       if (buttonId.startsWith('menu_next_')) {
-        console.log('📝 Handling menu pagination:', buttonId);
+        console.log(' Handling menu pagination:', buttonId);
         const parts = buttonId.split('_');
         const vendorId = parts.slice(2, -1).join('_');
         const page = parseInt(parts[parts.length - 1]);
@@ -495,7 +495,7 @@ export async function handleButtonClick(buttonId, customerId) {
 
       // Handle menu item selection
       if (buttonId.startsWith('menu_') && !buttonId.includes('_next_')) {
-        console.log('🍽️ Handling menu item selection:', buttonId);
+        console.log(' Handling menu item selection:', buttonId);
         const menuItemId = buttonId.substring(5);
         
         const pool = (await import('../db/database.js')).default;
@@ -528,7 +528,7 @@ export async function handleButtonClick(buttonId, customerId) {
         
         return {
           status: "success",
-          message: `Great choice! 🍽️\n\n${item.food_name} - ${priceInfo}\nFrom: ${item.vendor_name}\n\nTo order, just say:\n"${item.food_name} from ${item.vendor_name} delivered to [your location]"`
+          message: `Great choice! \n\n${item.food_name} - ${priceInfo}\nFrom: ${item.vendor_name}\n\nTo order, just say:\n"${item.food_name} from ${item.vendor_name} delivered to [your location]"`
         };
       }
 
@@ -538,13 +538,13 @@ export async function handleButtonClick(buttonId, customerId) {
         const result = await checkAndResendOTP(customerId);
         return {
           status: "success",
-          message: result.message || '✅ A new OTP has been sent to your email.'
+          message: result.message || ' A new OTP has been sent to your email.'
         };
       }
 
       // Handle vendor selection from restaurant list
       if (buttonId.startsWith('vendor_')) {
-        console.log('🏪 Handling vendor selection:', buttonId);
+        console.log(' Handling vendor selection:', buttonId);
         const parts = buttonId.substring(7).split('_');
         const vendorId = parts[0];
         
@@ -624,7 +624,7 @@ export async function handleButtonClick(buttonId, customerId) {
             response_type: "vendor_catalogue",
             customer_id: customerId,
             timestamp: new Date().toISOString(),
-            message: `📋 ${vendor.name} Menu:\n\n${menuList}\n\nJust tell me what you'd like to order!`
+            message: ` ${vendor.name} Menu:\n\n${menuList}\n\nJust tell me what you'd like to order!`
           };
         }
 
@@ -668,7 +668,7 @@ export async function handleButtonClick(buttonId, customerId) {
       
       return {
         status: "error",
-        message: "🤔 I didn't understand that action. Please try again."
+        message: " I didn't understand that action. Please try again."
       };
   }
 }

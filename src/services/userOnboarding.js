@@ -55,9 +55,9 @@ export async function sendUserOnboardingFlow(phoneNumber) {
       }
     });
 
-    console.log('✅ User onboarding flow sent');
+    console.log(' User onboarding flow sent');
   } catch (error) {
-    console.error('❌ Error sending onboarding flow:', error.response?.data || error.message);
+    console.error(' Error sending onboarding flow:', error.response?.data || error.message);
   }
 }
 
@@ -78,9 +78,9 @@ export async function sendOTPVerificationFlow(phoneNumber, email, name) {
       expiresAt: Date.now() + 15 * 60 * 1000 // 15 minutes
     });
 
-    console.log('✅ OTP sent to email');
+    console.log(' OTP sent to email');
   } catch (error) {
-    console.error('❌ Error sending OTP:', error.response?.data || error.message);
+    console.error(' Error sending OTP:', error.response?.data || error.message);
     throw error;
   }
 }
@@ -124,9 +124,9 @@ export async function sendOTPFlowMessage(phoneNumber) {
         }
       }
     });
-    console.log('✅ OTP flow message sent');
+    console.log(' OTP flow message sent');
   } catch (error) {
-    console.error('❌ Error sending OTP flow:', error.response?.data || error.message);
+    console.error(' Error sending OTP flow:', error.response?.data || error.message);
   }
 }
 
@@ -139,11 +139,11 @@ function isValidEmail(email) {
 // Verify OTP
 export async function verifyOTP(otp, phoneNumber) {
   try {
-    console.log('🔍 Verifying OTP:', otp);
+    console.log(' Verifying OTP:', otp);
     const response = await axios.post(`${BASE_URL}auth/verify-email`, { otp: otp.toString() });
     
     if (response.status === 200) {
-      console.log('✅ OTP verified successfully');
+      console.log(' OTP verified successfully');
       
       // Manually update email_verified in database
       try {
@@ -152,9 +152,9 @@ export async function verifyOTP(otp, phoneNumber) {
           'UPDATE users SET email_verified = true WHERE phone_number = $1',
           [phoneNumber]
         );
-        console.log('✅ Database updated: email_verified = true');
+        console.log(' Database updated: email_verified = true');
       } catch (dbError) {
-        console.error('❌ Failed to update database:', dbError.message);
+        console.error(' Failed to update database:', dbError.message);
       }
       
       // Send success message
@@ -170,7 +170,7 @@ export async function verifyOTP(otp, phoneNumber) {
           to: phoneNumber,
           type: 'text',
           text: {
-            body: '✅ Email successfully verified!'
+            body: ' Email successfully verified!'
           }
         }
       });
@@ -185,7 +185,7 @@ export async function verifyOTP(otp, phoneNumber) {
     
     return { success: false, error: 'Invalid OTP' };
   } catch (error) {
-    console.error('❌ OTP verification failed:', error.response?.data || error.message);
+    console.error(' OTP verification failed:', error.response?.data || error.message);
     return { success: false, error: error.response?.data?.message || 'Verification failed' };
   }
 }
@@ -207,7 +207,7 @@ async function sendOrderTemplateMessage(phoneNumber) {
         interactive: {
           type: 'button',
           body: {
-            text: '🎉 Welcome to Downtown!\n\nWhat would you like to do?'
+            text: ' Welcome to Downtown!\n\nWhat would you like to do?'
           },
           action: {
             buttons: [
@@ -215,14 +215,14 @@ async function sendOrderTemplateMessage(phoneNumber) {
                 type: 'reply',
                 reply: {
                   id: 'view_restaurants',
-                  title: '🍽️ View Restaurants'
+                  title: ' View Restaurants'
                 }
               },
               {
                 type: 'reply',
                 reply: {
                   id: 'start_ordering',
-                  title: '🛒 Start Ordering'
+                  title: ' Start Ordering'
                 }
               }
             ]
@@ -230,9 +230,9 @@ async function sendOrderTemplateMessage(phoneNumber) {
         }
       }
     });
-    console.log('✅ Template message sent');
+    console.log(' Template message sent');
   } catch (error) {
-    console.error('❌ Error sending template message:', error.response?.data || error.message);
+    console.error(' Error sending template message:', error.response?.data || error.message);
   }
 }
 
@@ -250,7 +250,7 @@ export async function checkAndResendOTP(phoneNumber) {
     
     return {
       expired: true,
-      message: '⏰ Your OTP has expired.\n\n✅ A new OTP has been sent to your email.\nPlease verify to continue.'
+      message: ' Your OTP has expired.\n\n A new OTP has been sent to your email.\nPlease verify to continue.'
     };
   }
   
@@ -299,7 +299,7 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
       headers: { 'Content-Type': 'application/json' }
     });
 
-    console.log('✅ User created:', response.data);
+    console.log(' User created:', response.data);
     
     // Store OTP session (backend already sent OTP)
     otpSessions.set(phoneNumber, {
@@ -310,11 +310,11 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
     
     // Send OTP flow message
     await sendOTPFlowMessage(phoneNumber);
-    console.log('✅ OTP sent by backend during user creation');
+    console.log(' OTP sent by backend during user creation');
     
     return { success: true };
   } catch (error) {
-    console.error('❌ Error creating user:', error.response?.data || error.message);
+    console.error(' Error creating user:', error.response?.data || error.message);
     return { success: false, error: error.response?.data?.message || 'Registration failed' };
   }
 }
@@ -359,9 +359,9 @@ export async function sendInvalidOTPMessage(phoneNumber) {
       }
     });
 
-    console.log('✅ Invalid OTP message sent');
+    console.log(' Invalid OTP message sent');
   } catch (error) {
-    console.error('❌ Error sending invalid OTP message:', error.response?.data || error.message);
+    console.error(' Error sending invalid OTP message:', error.response?.data || error.message);
   }
 }
 
@@ -371,7 +371,7 @@ setInterval(() => {
   for (const [phoneNumber, session] of otpSessions.entries()) {
     if (now > session.expiresAt) {
       otpSessions.delete(phoneNumber);
-      console.log(`🧹 Cleaned up expired OTP session for ${phoneNumber}`);
+      console.log(` Cleaned up expired OTP session for ${phoneNumber}`);
     }
   }
 }, 5 * 60 * 1000); // Every 5 minutes
