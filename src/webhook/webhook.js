@@ -293,15 +293,15 @@ async function processMessagesAsync(body) {
                         // Handle user onboarding flow submission
                         if (userInput.screen_1_Full_name_0 && userInput.screen_1_Email_2) {
                             const result = await handleUserOnboardingSubmission(customerId, userInput);
-                            if (!result.success) {
-                                await sendMessage(customerId, `❌ Registration failed: ${result.error}`);
-                            }
+                            // if (!result.success) {
+                            //     await sendMessage(customerId, `❌ Registration failed: ${result.error}`);
+                            // }
                             continue;
                         }
                         
                         // Handle OTP flow submission
-                        if (userInput.otp) {
-                            const result = await verifyOTP(userInput.otp, customerId);
+                        if (userInput.screen_0_OTP_0) {
+                            const result = await verifyOTP(userInput.screen_0_OTP_0, customerId);
                             if (!result.success) {
                                 await sendInvalidOTPMessage(customerId);
                             }
