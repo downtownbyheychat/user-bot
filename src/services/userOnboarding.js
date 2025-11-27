@@ -114,7 +114,10 @@ export async function sendOTPFlowMessage(phoneNumber) {
               flow_action: 'navigate',
               flow_action_payload: {
                 screen: 'ENTER_OTP',
-                data: {}
+                data: {
+                  type: 'dynamic_object',
+                  value: {}
+                }
               }
             }
           }
@@ -337,7 +340,10 @@ export async function sendInvalidOTPMessage(phoneNumber) {
               flow_action: 'navigate',
               flow_action_payload: {
                 screen: 'ENTER_OTP',
-                data: {}
+                data: {
+                  type: 'dynamic_object',
+                  value: {}
+                }
               }
             }
           }

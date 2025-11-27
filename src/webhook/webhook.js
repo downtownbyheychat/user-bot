@@ -254,8 +254,9 @@ async function processMessagesAsync(body) {
                         if (buttonId === 'resend_otp') {
                             const userCheck = await checkUserExists(customerId);
                             if (userCheck.exists && !userCheck.verified) {
+                                const { sendOTPFlowMessage } = await import('../services/userOnboarding.js');
                                 await sendOTPVerificationFlow(customerId, userCheck.user.email, userCheck.user.name);
-                                await sendMessage(customerId, '📧 A new OTP has been sent to your email.\n\nPlease reply with the OTP code to verify your account.');
+                                await sendOTPFlowMessage(customerId);
                             }
                             continue;
                         }
