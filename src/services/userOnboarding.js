@@ -32,7 +32,7 @@ export async function sendUserOnboardingFlow(phoneNumber) {
             text: 'Downtown'
           },
           body: {
-            text: 'Welcome to Downtown! 🎉\nLet\'s get you set up in seconds.'
+            text: "Let's get you onboarded"
           },
           action: {
             name: 'flow',
@@ -85,6 +85,54 @@ export async function sendOTPVerificationFlow(phoneNumber, email, name) {
   }
 }
 
+// Send OTP flow message
+export async function sendOTPFlowMessage(phoneNumber) {
+  try {
+    await axios({
+      url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+      method: 'post',
+      headers: {
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+        messaging_product: 'whatsapp',
+        to: phoneNumber,
+        type: 'interactive',
+        interactive: {
+          type: 'flow',
+          body: {
+            text: 'An OTP has been sent to your email\nReply with OTP to verify account'
+          },
+          action: {
+            name: 'flow',
+            parameters: {
+              flow_message_version: '3',
+              flow_token: 'unused',
+              flow_id: '1206250401558114',
+              flow_cta: 'Complete Onboarding',
+              flow_action: 'navigate',
+              flow_action_payload: {
+                screen: 'ENTER_OTP',
+                data: {}
+              }
+            }
+          }
+        }
+      }
+    });
+    console.log('✅ OTP flow message sent');
+  } catch (error) {
+    console.error('❌ Error sending OTP flow:', error.response?.data || error.message);
+  }
+}
+
+// Validate email format
+function isValidEmail(email) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
 // Verify OTP
 export async function verifyOTP(otp, phoneNumber) {
   try {
@@ -105,6 +153,24 @@ export async function verifyOTP(otp, phoneNumber) {
       } catch (dbError) {
         console.error('❌ Failed to update database:', dbError.message);
       }
+      
+      // Send success message
+      await axios({
+        url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+        method: 'post',
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        data: {
+          messaging_product: 'whatsapp',
+          to: phoneNumber,
+          type: 'text',
+          text: {
+            body: '✅ Email successfully verified!'
+          }
+        }
+      });
       
       // Send template format message with 3 second delay
       setTimeout(() => {
@@ -138,7 +204,7 @@ async function sendOrderTemplateMessage(phoneNumber) {
         interactive: {
           type: 'button',
           body: {
-            text: 'Welcome to Downtown!\n\nWhat would you like to do?'
+            text: '🎉 Welcome to Downtown!\n\nWhat would you like to do?'
           },
           action: {
             buttons: [
@@ -202,6 +268,27 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
       university: 'Bells Tech'
     };
 
+    // Validate email
+    if (!isValidEmail(payload.email)) {
+      await axios({
+        url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+        method: 'post',
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        data: {
+          messaging_product: 'whatsapp',
+          to: phoneNumber,
+          type: 'text',
+          text: {
+            body: 'The OTP was not delivered to the email because it was invalid.\n\nPlease restart onboarding with a valid email address.'
+          }
+        }
+      });
+      return { success: false, error: 'Invalid email' };
+    }
+
     const response = await axios.post(`${BASE_URL}users`, payload, {
       headers: { 'Content-Type': 'application/json' }
     });
@@ -211,6 +298,9 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
     // Send OTP to email
     await sendOTPVerificationFlow(phoneNumber, payload.email, payload.name);
     
+    // Send OTP flow message
+    await sendOTPFlowMessage(phoneNumber);
+    
     return { success: true };
   } catch (error) {
     console.error('❌ Error creating user:', error.response?.data || error.message);
@@ -218,7 +308,7 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
   }
 }
 
-// Send invalid OTP message with resend option
+// Send invalid OTP message with flow button
 export async function sendInvalidOTPMessage(phoneNumber) {
   try {
     await axios({
@@ -233,20 +323,23 @@ export async function sendInvalidOTPMessage(phoneNumber) {
         to: phoneNumber,
         type: 'interactive',
         interactive: {
-          type: 'button',
+          type: 'flow',
           body: {
-            text: '❌ Invalid OTP\n\nThe code you entered is incorrect. Please try again.'
+            text: 'Invalid OTP\nInput the correct OTP'
           },
           action: {
-            buttons: [
-              {
-                type: 'reply',
-                reply: {
-                  id: 'resend_otp',
-                  title: '🔄 Resend OTP'
-                }
+            name: 'flow',
+            parameters: {
+              flow_message_version: '3',
+              flow_token: 'unused',
+              flow_id: '1206250401558114',
+              flow_cta: 'Complete Onboarding',
+              flow_action: 'navigate',
+              flow_action_payload: {
+                screen: 'ENTER_OTP',
+                data: {}
               }
-            ]
+            }
           }
         }
       }

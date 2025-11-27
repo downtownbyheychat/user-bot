@@ -292,10 +292,17 @@ async function processMessagesAsync(body) {
                         // Handle user onboarding flow submission
                         if (userInput.screen_1_Full_name_0 && userInput.screen_1_Email_2) {
                             const result = await handleUserOnboardingSubmission(customerId, userInput);
-                            if (result.success) {
-                                await sendMessage(customerId, '📧 An OTP has been sent to your email.\n\nPlease reply with the OTP code to verify your account.');
-                            } else {
+                            if (!result.success) {
                                 await sendMessage(customerId, `❌ Registration failed: ${result.error}`);
+                            }
+                            continue;
+                        }
+                        
+                        // Handle OTP flow submission
+                        if (userInput.otp) {
+                            const result = await verifyOTP(userInput.otp, customerId);
+                            if (!result.success) {
+                                await sendInvalidOTPMessage(customerId);
                             }
                             continue;
                         }

@@ -1,4 +1,12 @@
 TODO: your order of {ID} has been delivered, accepted, received status
+TODO: 3 action buttons for partial validation of direct order
+cancel:
+proceed without missing item and
+modify: prompt for what would you like to add
+added item is not validated : loop back 3 buttons
+
+TODO: use onboarding flow for OTP
+Check your mail for your code as the message after the
 
 Downtown – User-End Chatbot
 Project Overview
@@ -101,7 +109,6 @@ Welcome back to Downtown, where you chat, order, and eat fast.
             Got it! You’re still within the 2 min 30 sec grace window, so your order can be canceled 👌
             Want me to go ahead and cancel it?
             Action Button 1: Cancel Order👍
-
 
 Greeting Response:
 Sup {{WhatsApp name}},
