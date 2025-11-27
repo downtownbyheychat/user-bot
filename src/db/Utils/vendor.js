@@ -148,7 +148,7 @@ export async function validateOrderItem(vendorId, itemName, quantityType, price,
     if (quantityType === 'per_price' && item.sale_quantity !== 'per_price') {
       return { 
         valid: false, 
-        error: `${itemName} is sold as ${item.sale_quantity}, not per price` 
+        error: `${item.food_name} is sold as ${item.sale_quantity}, not per price` 
       };
     }
     
@@ -166,14 +166,14 @@ export async function validateOrderItem(vendorId, itemName, quantityType, price,
       if (!price || price === null || price === undefined) {
         return { 
           valid: false, 
-          error: `How much of ${itemName} do you want? Minimum price is ₦${minPrice}` 
+          error: `How much of ${item.food_name} do you want? Minimum price is ₦${minPrice}` 
         };
       }
       
       if (price < minPrice) {
         return { 
           valid: false, 
-          error: `Minimum price for ${itemName} is ₦${minPrice}` 
+          error: `Minimum price for ${item.food_name} is ₦${minPrice}` 
         };
       }
 
@@ -181,7 +181,7 @@ export async function validateOrderItem(vendorId, itemName, quantityType, price,
       if (price > maxPrice) {
         return { 
           valid: false, 
-          error: `Maximum price that fits into one pack for ${itemName} is ₦${maxPrice}` 
+          error: `Maximum price that fits into one pack for ${item.food_name} is ₦${maxPrice}` 
         };
       }
 
@@ -190,7 +190,7 @@ export async function validateOrderItem(vendorId, itemName, quantityType, price,
 
             return { 
             valid: false, 
-            error: `${itemName} must be in multiples of ₦100 from ₦${minPrice}` 
+            error: `${item.food_name} must be in multiples of ₦100 from ₦${minPrice}` 
             };
         }
       }
