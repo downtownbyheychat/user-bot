@@ -9,6 +9,7 @@ const BASE_URL = 'https://downtownbyhai-api.onrender.com/';
 
 // OTP session storage
 const otpSessions = new Map(); // { phoneNumber: { otp, expiresAt, email } }
+const processingFlows = new Set(); // Track flows being processed to prevent duplicates
 
 // Send user onboarding flow
 export async function sendUserOnboardingFlow(phoneNumber) {
@@ -259,6 +260,15 @@ export async function checkAndResendOTP(phoneNumber) {
 
 // Handle user onboarding flow submission
 export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
+  // Prevent duplicate processing
+  const flowKey = `${phoneNumber}_${flowData.screen_1_Email_2}`;
+  if (processingFlows.has(flowKey)) {
+    console.log('⚠️ Duplicate flow submission detected, ignoring');
+    return { success: true };
+  }
+  
+  processingFlows.add(flowKey);
+  
   try {
     // Parse hostel from Label field (format: "2_Male_Silver_3")
     const hostelData = flowData.screen_1_Label_1 || '';
@@ -333,6 +343,11 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
   } catch (error) {
     console.error('❌ Error creating user:', error.response?.data || error.message);
     return { success: false, error: error.response?.data?.message || 'Registration failed' };
+  } finally {
+    // Remove from processing set after 5 seconds
+    setTimeout(() => {
+      processingFlows.delete(flowKey);
+    }, 5000);
   }
 }
 
