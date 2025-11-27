@@ -5,7 +5,7 @@ proceed without missing item and
 modify: prompt for what would you like to add
 added item is not validated : loop back 3 buttons
 
-TODO: use onboarding flow for OTP
+DONE: use onboarding flow for OTP
 Check your mail for your code as the message after the
 
 Downtown – User-End Chatbot

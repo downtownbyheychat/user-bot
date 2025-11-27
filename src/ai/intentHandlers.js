@@ -686,12 +686,30 @@ if (!vendor && items.length > 0) {
         };
       }
       
+      // Show 3 action buttons for partial validation
+      if (validatedItems.length > 0) {
+        return {
+          status: "error",
+          response_type: "validation_error",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `❌ Order validation failed:\n\n${validationErrors.join('\n')}${validList}\n\nWhat would you like to do?`,
+          data: {
+            buttons: [
+              { id: "proceed_without_invalid", title: "✅ Proceed Without" },
+              { id: "modify_order", title: "✏️ Modify Order" },
+              { id: "cancel_order", title: "❌ Cancel" }
+            ]
+          }
+        };
+      }
+      
       return {
         status: "error",
         response_type: "validation_error",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `❌ Order validation failed:\n\n${validationErrors.join('\n')}${validList}\n\n💡 Reply with corrected items only, or type 'cancel' to start over.`
+        message: `❌ Order validation failed:\n\n${validationErrors.join('\n')}\n\n💡 Reply with corrected items only, or type 'cancel' to start over.`
       };
     }
 

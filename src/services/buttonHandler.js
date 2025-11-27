@@ -142,9 +142,49 @@ export async function handleButtonClick(buttonId, customerId) {
         message: "Got an order? Say less 😌\nJust drop it in this format so we can process it fast 👇🏾\n\n*Example:*\njollof rice - ₦1,400, 1 meat 1 egg from African Kitchen delivered to my hostel(location)\n\nMake sure to include the 👇🏾\n• Item name + quantity you want\n• Specify the vendor you're buying from\n• Specify the location the food is delivered to"
       };
 
+    case 'proceed_without_invalid':
+      const { getFailedOrder: getFailedForProceed, clearFailedOrder: clearFailedForProceed } = await import('./sessionManager.js');
+      const failedOrderProceed = getFailedForProceed(customerId);
+      
+      if (!failedOrderProceed || failedOrderProceed.validatedItems.length === 0) {
+        return {
+          status: "error",
+          message: "No valid items to proceed with."
+        };
+      }
+      
+      const { handleIntent } = await import('../ai/intentHandlers.js');
+      const orderSummary = {
+        vendor: failedOrderProceed.vendor,
+        items: failedOrderProceed.validatedItems,
+        delivery_location: failedOrderProceed.delivery_location
+      };
+      
+      clearFailedForProceed(customerId);
+      return await handleIntent('Food Ordering', customerId, '', orderSummary);
+
+    case 'modify_order':
+      const { getFailedOrder: getFailedForModify } = await import('./sessionManager.js');
+      const failedOrderModify = getFailedForModify(customerId);
+      
+      if (!failedOrderModify) {
+        return {
+          status: "error",
+          message: "No order to modify."
+        };
+      }
+      
+      const validItemsList = failedOrderModify.validatedItems.map(i => i.dbName).join(', ');
+      return {
+        status: "success",
+        message: `Current valid items: ${validItemsList}\n\nWhat would you like to add to your order?`
+      };
+
     case 'cancel_order':
-      const { clearOrderStack: clearStack } = await import('./orderStack.js');
+      const { clearOrderStack: clearStack, clearFailedOrder: clearFailed } = await import('./orderStack.js');
+      const { clearFailedOrder } = await import('./sessionManager.js');
       clearStack(customerId);
+      clearFailedOrder(customerId);
       
       return {
         status: "success",

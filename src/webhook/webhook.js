@@ -255,7 +255,6 @@ async function processMessagesAsync(body) {
                             const userCheck = await checkUserExists(customerId);
                             if (userCheck.exists && !userCheck.verified) {
                                 const { sendOTPFlowMessage } = await import('../services/userOnboarding.js');
-                                await sendOTPVerificationFlow(customerId, userCheck.user.email, userCheck.user.name);
                                 await sendOTPFlowMessage(customerId);
                             }
                             continue;
