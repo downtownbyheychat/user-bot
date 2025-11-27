@@ -691,8 +691,8 @@ if (!vendor && items.length > 0) {
         message: `❌ Order validation failed:\n\n${validationErrors.join('\n')}\n\nWhat would you like to do?`,
         data: {
           buttons: [
-            { id: "show_corrections", title: "📝 Show What to Correct" },
-            { id: "cancel_order", title: "❌ Cancel" }
+            { id: "show_corrections", title: "Show What to Correct" },
+            { id: "cancel_order", title: "Cancel" }
           ]
         }
       };
