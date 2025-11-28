@@ -339,7 +339,7 @@ export async function handleButtonClick(buttonId, customerId) {
           if (i.quantity_type === 'per_price') {
             return `${i.name} -- ₦${i.price}`;
           } else {
-            return `${i.name} (x${i.quantity}) -- ₦${i.price * i.quantity}`;
+            return `${i.name} (x${i.quantity}) -- ₦${i.price}`;
           }
         }).join('\n');
         
