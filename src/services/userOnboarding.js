@@ -159,7 +159,7 @@ export async function sendOTPVerificationFlow(phoneNumber, email, name) {
   }
 }
 
-// Send OTP flow message
+// Send OTP text message
 export async function sendOTPFlowMessage(phoneNumber) {
   try {
     await axios({
@@ -172,35 +172,15 @@ export async function sendOTPFlowMessage(phoneNumber) {
       data: {
         messaging_product: 'whatsapp',
         to: phoneNumber,
-        type: 'interactive',
-        interactive: {
-          type: 'flow',
-          body: {
-            text: 'An OTP has been sent to your email\nReply with OTP to verify account'
-          },
-          action: {
-            name: 'flow',
-            parameters: {
-              flow_message_version: '3',
-              flow_token: 'unused',
-              flow_id: '1206250401558114',
-              flow_cta: 'Complete Onboarding',
-              flow_action: 'navigate',
-              flow_action_payload: {
-                screen: 'enter_otp',
-                data: {
-                  type: 'dynamic_object',
-                  value: {}
-                }
-              }
-            }
-          }
+        type: 'text',
+        text: {
+          body: 'A new OTP has been sent to your email. Please reply with the OTP to verify your account.'
         }
       }
     });
-    console.log(' OTP flow message sent');
+    console.log(' OTP text message sent');
   } catch (error) {
-    console.error(' Error sending OTP flow:', error.response?.data || error.message);
+    console.error(' Error sending OTP message:', error.response?.data || error.message);
   }
 }
 
@@ -393,7 +373,7 @@ export async function checkAndResendOTP(phoneNumber) {
 //   }
 // }
 
-// Send invalid OTP message with flow button
+// Send invalid OTP message
 export async function sendInvalidOTPMessage(phoneNumber) {
   try {
     await axios({
@@ -406,29 +386,9 @@ export async function sendInvalidOTPMessage(phoneNumber) {
       data: {
         messaging_product: 'whatsapp',
         to: phoneNumber,
-        type: 'interactive',
-        interactive: {
-          type: 'flow',
-          body: {
-            text: 'Invalid OTP\nInput the correct OTP'
-          },
-          action: {
-            name: 'flow',
-            parameters: {
-              flow_message_version: '3',
-              flow_token: 'unused',
-              flow_id: '1206250401558114',
-              flow_cta: 'Complete Onboarding',
-              flow_action: 'navigate',
-              flow_action_payload: {
-                screen: 'enter_otp',
-                data: {
-                  type: 'dynamic_object',
-                  value: {}
-                }
-              }
-            }
-          }
+        type: 'text',
+        text: {
+          body: 'Invalid OTP. Please check your email and reply with the correct OTP code.'
         }
       }
     });
