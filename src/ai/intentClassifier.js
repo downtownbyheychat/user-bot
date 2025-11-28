@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = gemini.getGenerativeModel({model: "gemini-2.0-flash-lite"});
+const model = gemini.getGenerativeModel({model: "gemini-2.5-pro"});
 
 export async function classifyIntent(message) {
   const prompt = `You are an Intent Classification Model for a University Campus Chatbot.
