@@ -43,8 +43,11 @@ export async function processMessage(customerId, message) {
       }
       
       if (correctionSummary?.items?.length > 0) {
-        // Merge validated items with new corrections
-        const mergedItems = [...failedOrder.validatedItems, ...correctionSummary.items];
+        // Merge original items with new corrections for swallow/soup errors, otherwise use validated items
+        const baseItems = (failedOrder.errorType === 'swallow_without_soup' || failedOrder.errorType === 'only_free_soup') 
+          ? failedOrder.originalItems 
+          : failedOrder.validatedItems;
+        const mergedItems = [...baseItems, ...correctionSummary.items];
         const mergedSummary = {
           vendor: failedOrder.vendor,
           items: mergedItems,
