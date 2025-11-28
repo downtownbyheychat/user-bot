@@ -637,10 +637,6 @@ if (!vendor && items.length > 0) {
         originalItems: items
       });
       
-      const validList = validatedItems.length > 0 
-        ? `\n\n Valid items:\n${validatedItems.map(i => `• ${i.dbName}`).join('\n')}`
-        : '';
-      
       // If alternative vendors exist and <= 10, use list format
       if (alternativeVendors.length > 0 && alternativeVendors.length <= 10) {
         setFailedOrder(customerId, {
@@ -658,7 +654,7 @@ if (!vendor && items.length > 0) {
           response_type: "validation_error",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: ` ${validationErrors.join('\n')}${validList}\n\nSelect a vendor to order from:`,
+          message: ` ${validationErrors.join('\n')}\n\nSelect a vendor to order from:`,
           data: {
             list: {
               header: "Available Vendors",
@@ -685,7 +681,7 @@ if (!vendor && items.length > 0) {
           response_type: "validation_error",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: ` ${validationErrors.join('\n')}${validList}\n\nYou can find it at:\n\n${vendorList}\n\n Reply with corrected items only, or type 'cancel' to start over.`
+          message: ` ${validationErrors.join('\n')}\n\nYou can find it at:\n\n${vendorList}\n\n Reply with corrected items only, or type 'cancel' to start over.`
         };
       }
       
@@ -696,7 +692,7 @@ if (!vendor && items.length > 0) {
           response_type: "validation_error",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: ` Order validation failed:\n\n${validationErrors.join('\n')}${validList}\n\nWhat would you like to do?`,
+          message: ` Order validation failed:\n\n${validationErrors.join('\n')}\n\nWhat would you like to do?`,
           data: {
             buttons: [
               { id: "proceed_without_invalid", title: " Proceed Without" },
