@@ -56,9 +56,82 @@ export async function sendUserOnboardingFlow(phoneNumber) {
       }
     });
 
-    console.log(' User onboarding flow sent');
+    console.log('User onboarding flow sent');
   } catch (error) {
-    console.error(' Error sending onboarding flow:', error.response?.data || error.message);
+    console.error('Error sending onboarding flow:', error.response?.data || error.message);
+  }
+}
+
+// Handle user onboarding flow submission
+export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
+  try {
+    const hostelData = flowData.screen_1_Label_1 || '';
+
+    const payload = {
+      name: flowData.screen_1_Full_name_0.trim(),
+      phone_number: phoneNumber,
+      email: flowData.screen_1_Email_2,
+      hostel: hostelData || 'Silver 2',
+      university: 'Bells Tech'
+    };
+
+    if (!isValidEmail(payload.email)) {
+      await axios({
+        url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+        method: 'post',
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        data: {
+          messaging_product: 'whatsapp',
+          to: phoneNumber,
+          type: 'text',
+          text: {
+            body: 'The OTP was not delivered to the email because it was invalid.'
+          }
+        }
+      });
+      
+      await sendUserOnboardingFlow(phoneNumber);
+      return { success: false, error: 'Invalid email' };
+    }
+
+    const response = await axios.post(`${BASE_URL}users`, payload, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    console.log('User created:', response.data);
+    
+    otpSessions.set(phoneNumber, {
+      email: payload.email,
+      name: payload.name,
+      expiresAt: Date.now() + 15 * 60 * 1000
+    });
+    
+    await axios({
+      url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+      method: 'post',
+      headers: {
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+        messaging_product: 'whatsapp',
+        to: phoneNumber,
+        type: 'text',
+        text: {
+          body: 'An OTP has been sent to your email. Please reply with the OTP to verify your account.'
+        }
+      }
+    });
+    
+    console.log('OTP sent by backend during user creation');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error creating user:', error.response?.data || error.message);
+    return { success: false, error: error.response?.data?.message || 'Registration failed' };
   }
 }
 

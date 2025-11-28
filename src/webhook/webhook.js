@@ -307,28 +307,18 @@ async function processMessagesAsync(body) {
                         }
                     }
 
-                    // Handle flow submissions (user onboarding & OTP)
+
+
+                    // Handle flow submissions (user onboarding)
                     if (message.type === 'interactive' && message.interactive.type === 'nfm_reply') {
                         const flowData = message.interactive.nfm_reply;
                         const userInput = JSON.parse(flowData.response_json);
 
-                        console.log(' Flow Data:', userInput);
+                        console.log('Flow Data:', userInput);
 
                         // Handle user onboarding flow submission
                         if (userInput.screen_1_Full_name_0 && userInput.screen_1_Email_2) {
-                            const result = await handleUserOnboardingSubmission(customerId, userInput);
-                            // if (!result.success) {
-                            //     await sendMessage(customerId, ` Registration failed: ${result.error}`);
-                            // }
-                            continue;
-                        }
-                        
-                        // Handle OTP flow submission
-                        if (userInput.screen_0_OTP_0) {
-                            const result = await verifyOTP(userInput.screen_0_OTP_0, customerId);
-                            if (!result.success) {
-                                await sendInvalidOTPMessage(customerId);
-                            }
+                            await handleUserOnboardingSubmission(customerId, userInput);
                             continue;
                         }
                     }
