@@ -214,12 +214,16 @@ export async function handleButtonClick(buttonId, customerId) {
       };
 
     case 'enter_soup':
+      const { setAwaitingInput: setSoupInput } = await import('./sessionManager.js');
+      setSoupInput(customerId, 'soup');
       return {
         status: "success",
         message: "Please enter the soup you'd like to add to your order:"
       };
 
     case 'enter_swallow':
+      const { setAwaitingInput: setSwallowInput } = await import('./sessionManager.js');
+      setSwallowInput(customerId, 'swallow');
       return {
         status: "success",
         message: "Please enter the swallow you'd like to add to your order:"

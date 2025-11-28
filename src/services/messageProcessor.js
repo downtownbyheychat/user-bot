@@ -20,11 +20,40 @@ export async function processMessage(customerId, message) {
     }
     
     // Check if user is correcting a failed order
-    const { getFailedOrder, clearFailedOrder } = await import('./sessionManager.js');
+    const { getFailedOrder, clearFailedOrder, getAwaitingInput } = await import('./sessionManager.js');
     const failedOrder = getFailedOrder(customerId);
+    const awaitingInput = getAwaitingInput(customerId);
     
     if (failedOrder) {
-      // Add vendor context to message for correction
+      // If awaiting direct input (soup/swallow), parse message directly without AI
+      if (awaitingInput) {
+        const correctionSummary = {
+          vendor: failedOrder.vendor,
+          items: [{ name: message.trim(), quantity: 1, quantity_type: 'per_piece' }],
+          delivery_location: failedOrder.delivery_location
+        };
+        
+        // Merge with original items
+        const baseItems = (failedOrder.errorType === 'swallow_without_soup' || failedOrder.errorType === 'only_free_soup') 
+          ? failedOrder.originalItems 
+          : failedOrder.validatedItems;
+        const mergedItems = [...baseItems, ...correctionSummary.items];
+        const mergedSummary = {
+          vendor: failedOrder.vendor,
+          items: mergedItems,
+          delivery_location: failedOrder.delivery_location
+        };
+        
+        clearFailedOrder(customerId);
+        const response = await handleIntent('Food Ordering', customerId, message, mergedSummary);
+        return {
+          ...response,
+          classification: { intent: 'Food Ordering', confidence: 1.0 },
+          data: { ...response.data }
+        };
+      }
+      
+      // Otherwise use AI to parse correction
       const messageWithVendor = failedOrder.vendor ? `${message} from ${failedOrder.vendor}` : message;
       const correctionSummary = await generateOrderSummary(messageWithVendor, customerId);
       

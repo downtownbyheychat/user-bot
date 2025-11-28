@@ -24,6 +24,20 @@ export function setFailedOrder(customerId, orderData) {
   });
 }
 
+export function setAwaitingInput(customerId, inputType) {
+  const existing = failedOrders.get(customerId) || {};
+  failedOrders.set(customerId, {
+    ...existing,
+    awaitingInput: inputType,
+    timestamp: Date.now()
+  });
+}
+
+export function getAwaitingInput(customerId) {
+  const order = failedOrders.get(customerId);
+  return order?.awaitingInput || null;
+}
+
 export function getFailedOrder(customerId) {
   return failedOrders.get(customerId) || null;
 }
