@@ -1,5 +1,5 @@
 import { getUserName } from "../db/Utils/users.js";
-import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasMixedTypes, hasSwallowWithoutSoup, getAllVendors, checkVendorStatus } from "../db/Utils/vendor.js";
+import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasMixedTypes, hasSwallowWithoutSoup, hasOnlyFreeSoup, getAllVendors, checkVendorStatus } from "../db/Utils/vendor.js";
 
 
 export const intentHandlers = {
@@ -485,6 +485,28 @@ if (!vendor && items.length > 0) {
         customer_id: customerId,
         timestamp: new Date().toISOString(),
         message: " You can't mix pack items with per-price/per-piece items.\n\n Reply with items of the same type, or type 'cancel' to start over."
+      };
+    }
+
+    // Check if order has only free soup
+    const onlyFreeSoup = await hasOnlyFreeSoup(vendorData.id, items);
+    if (onlyFreeSoup) {
+      const { setFailedOrder } = await import('../services/sessionManager.js');
+      setFailedOrder(customerId, {
+        validatedItems: [],
+        failedItems: items.map(i => i.name),
+        vendor: vendorData.name,
+        vendorId: vendorData.id,
+        delivery_location,
+        errorType: 'only_free_soup',
+        originalItems: items
+      });
+      return {
+        status: "error",
+        response_type: "validation_error",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: " You can't order only free soup. Please add swallow to your order.\n\n Reply with items to add, or type 'cancel' to start over."
       };
     }
 

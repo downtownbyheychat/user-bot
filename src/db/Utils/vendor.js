@@ -297,3 +297,40 @@ export async function hasSwallowWithoutSoup(vendorId, items) {
   
   return foodTypes.has('swallow') && !foodTypes.has('soup');
 }
+
+// checks if order has only free soup (price = 0)
+export async function hasOnlyFreeSoup(vendorId, items) {
+  let hasSoup = false;
+//   let hasNonSoup = false;
+  let hasSwallow = false;
+  let allSoupsAreFree = true;
+  
+  for (const item of items) {
+    const validation = await validateOrderItem(
+      vendorId,
+      item.name,
+      item.quantity_type,
+      item.price
+    );
+    
+    if (!validation.valid) continue;
+    
+    const foodType = validation.item.food_type?.toLowerCase();
+    const itemPrice = parseFloat(validation.item.price) || 0;
+    
+    if (foodType === 'soup') {
+      hasSoup = true;
+      if (itemPrice > 0) {
+        allSoupsAreFree = false;
+      }
+    } else if (foodType === 'swallow') {
+        hasSwallow = true;
+    }
+    // else {
+    //   hasNonSoup = true;
+    // }
+  }
+  
+  // Return true if order has only soup AND all soups are free (price = 0)
+  return hasSoup && !hasSwallow && allSoupsAreFree; //&& !hasNonSoup 
+}
