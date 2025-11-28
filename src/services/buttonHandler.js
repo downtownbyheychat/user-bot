@@ -113,7 +113,7 @@ export async function handleButtonClick(buttonId, customerId) {
           if (item.quantity_type === 'per_price') {
             return `  ${item.name} -- ₦${item.price}`;
           } else {
-            return `  ${item.name} (x${item.quantity}) -- ₦${item.price * item.quantity}`;
+            return `  ${item.name} (x${item.quantity}) -- ₦${item.price}`;
           }
         }).join('\n');
         orderDetails += `\n\nPack ${i + 1} from ${pack.vendor}:\n${packItems}\nPack Total: ₦${pack.total}`;
