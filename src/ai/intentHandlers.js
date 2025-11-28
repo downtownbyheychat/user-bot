@@ -462,7 +462,13 @@ if (!vendor && items.length > 0) {
         response_type: "validation_error",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: " You can't order swallow without soup.\n\n Reply with a soup to add, or type 'cancel' to start over."
+        message: " You can't order swallow without soup.\n\nReply with a soup to add, or cancel to start over.",
+        data: {
+          buttons: [
+            { id: "enter_soup", title: "Enter Soup" },
+            { id: "cancel_order", title: "Cancel" }
+          ]
+        }
       };
     }
 
@@ -484,7 +490,13 @@ if (!vendor && items.length > 0) {
         response_type: "validation_error",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: " You can't order only free soup. Please add swallow to your order.\n\n Reply with items to add, or type 'cancel' to start over."
+        message: " You can't order only free soup. Please add swallow to your order.\n\nReply with items to add, or cancel to start over.",
+        data: {
+          buttons: [
+            { id: "enter_swallow", title: "Enter Swallow" },
+            { id: "cancel_order", title: "Cancel" }
+          ]
+        }
       };
     }
 

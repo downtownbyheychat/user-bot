@@ -213,6 +213,18 @@ export async function handleButtonClick(buttonId, customerId) {
         message: `Here's what needs to be corrected:\n\n${corrections.join('\n')}\n\n Reply with the corrected items.`
       };
 
+    case 'enter_soup':
+      return {
+        status: "success",
+        message: "Please enter the soup you'd like to add to your order:"
+      };
+
+    case 'enter_swallow':
+      return {
+        status: "success",
+        message: "Please enter the swallow you'd like to add to your order:"
+      };
+
     case 'cancel_order':
       const { clearOrderStack } = await import('./orderStack.js');
       const { clearFailedOrder } = await import('./sessionManager.js');
