@@ -144,6 +144,11 @@ export async function validateOrderItem(vendorId, itemName, quantityType, price,
 
     const item = result.rows[0];
 
+    // Override quantity_type with database value unless AI detected per_price
+    if (quantityType !== 'per_price') {
+      quantityType = item.sale_quantity;
+    }
+
     // if we have the quantity as per price wrongly specified
     if (quantityType === 'per_price' && item.sale_quantity !== 'per_price') {
       return { 
