@@ -318,11 +318,7 @@ export async function handleButtonClick(buttonId, customerId) {
         const vendor = vendors.find(v => v.id === vendorId);
         
         const packTotal = pendingOrder.orderSummary.items.reduce((sum, item) => {
-          if (item.quantity_type === 'per_price') {
-            return sum + parseFloat(item.price);
-          } else {
-            return sum + (parseFloat(item.price) * item.quantity);
-          }
+          return sum + parseFloat(item.price);
         }, 0);
         
         pushOrderPack(customerId, {
