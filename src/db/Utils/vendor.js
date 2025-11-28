@@ -14,7 +14,7 @@ export async function getVendorByName(vendorName) {
   try {
     const result = await pool.query(
       `SELECT * FROM vendors 
-       WHERE similarity(LOWER(name), LOWER($1)) > 0.3 
+       WHERE similarity(LOWER(name), LOWER($1)) > 0.5 
        AND status = $2 
        ORDER BY similarity(LOWER(name), LOWER($1)) DESC 
        LIMIT 1`,
@@ -32,7 +32,7 @@ export async function getVendorId(vendorName) {
   try {
     const result = await pool.query(
       `SELECT id FROM vendors 
-       WHERE similarity(LOWER(name), LOWER($1)) > 0.3 
+       WHERE similarity(LOWER(name), LOWER($1)) > 0.5 
        AND status = $2 
        ORDER BY similarity(LOWER(name), LOWER($1)) DESC 
        LIMIT 1`,
@@ -65,7 +65,7 @@ export async function searchItemAcrossVendors(itemName) {
       `SELECT m.*, v.name as vendor_name, v.id as vendor_id 
        FROM menus m 
        JOIN vendors v ON m.vendor_id = v.id 
-       WHERE similarity(LOWER(m.food_name), LOWER($1)) > 0.3 
+       WHERE similarity(LOWER(m.food_name), LOWER($1)) > 0.5 
        AND v.status = $2
        ORDER BY similarity(LOWER(m.food_name), LOWER($1)) DESC`,
       [itemName, 'active']
@@ -128,7 +128,7 @@ export async function validateOrderItem(vendorId, itemName, quantityType, price,
     const result = await pool.query(
       `SELECT * FROM menus 
        WHERE vendor_id = $1 
-       AND similarity(LOWER(food_name), LOWER($2)) > 0.4
+       AND similarity(LOWER(food_name), LOWER($2)) > 0.5
        ORDER BY similarity(LOWER(food_name), LOWER($2)) DESC
        LIMIT 1`,
       [vendorId, itemName]
@@ -237,7 +237,7 @@ export async function checkVendorStatus(vendorName) {
   try {
     const result = await pool.query(
       `SELECT id, name, status FROM vendors 
-       WHERE similarity(LOWER(name), LOWER($1)) > 0.3 
+       WHERE similarity(LOWER(name), LOWER($1)) > 0.5 
        ORDER BY similarity(LOWER(name), LOWER($1)) DESC 
        LIMIT 1`,
       [vendorName]
