@@ -9,14 +9,49 @@ export const intentHandlers = {
         const userName = await getUserName(customerId);
         console.log(`[Greeting] Fetched userName: ${userName}`);
 
+        // Get available vendors
+        const vendors = await getAllVendors();
+        
+        let greetingMessage = `Sup ${userName || "{name}"}! \nWelcome back to Downtown, where you chat, order, and eat. Fast.`;
+        
+        if (vendors.length > 0) {
+          if (vendors.length > 10) {
+            const vendorList = vendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
+            greetingMessage += `\n\n Available Restaurants:\n\n${vendorList}\n\nJust mention the restaurant name to view their menu!`;
+          } else {
+            greetingMessage += `\n\nSelect a restaurant to get started:`;
+          }
+        }
+
         // Generate the response
-        return {
-        status: "success",
-        response_type: "greeting",
-        customer_id: customerId,
-        timestamp: new Date().toISOString(),
-        message: `Sup ${userName || "{name}"}! \nWelcome back to Downtown, where you chat, order, and eat. Fast.`,
+        const response = {
+          status: "success",
+          response_type: "greeting",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: greetingMessage
         };
+        
+        // Add list if vendors <= 10
+        if (vendors.length > 0 && vendors.length <= 10) {
+          response.data = {
+            list: {
+              header: "Campus Restaurants",
+              body: "Here are the available restaurants on campus:",
+              button: "View Restaurants",
+              sections: [{
+                title: "Restaurants",
+                rows: vendors.map(v => ({
+                  id: `vendor_${v.id}`,
+                  title: v.name.substring(0, 24),
+                  description: (v.description || "View menu").substring(0, 72)
+                }))
+              }]
+            }
+          };
+        }
+        
+        return response;
     } catch (error) {
         console.error('Error handling Greeting intent:', error);
         return {
