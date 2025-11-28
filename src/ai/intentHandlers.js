@@ -454,7 +454,8 @@ if (!vendor && items.length > 0) {
         vendor: vendorData.name,
         vendorId: vendorData.id,
         delivery_location,
-        errorType: 'swallow_without_soup'
+        errorType: 'swallow_without_soup',
+        originalItems: items
       });
       return {
         status: "error",
@@ -475,7 +476,8 @@ if (!vendor && items.length > 0) {
         vendor: vendorData.name,
         vendorId: vendorData.id,
         delivery_location,
-        errorType: 'mixed_types'
+        errorType: 'mixed_types',
+        originalItems: items
       });
       return {
         status: "error",
