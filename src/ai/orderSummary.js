@@ -97,6 +97,9 @@ Extract:
   - "*VendorName* restaurant"
   - "order from *VendorName*"
 - Ignore text unrelated to the order.
+- treat with as a delimiter between items.
+- If no vendor is mentioned, set \`vendor\` to null.
+- If no delivery location is mentioned, set \`delivery_location\` to null.
 
  OUTPUT FORMAT (STRICT)
 Return ONLY valid JSON in this exact structure:
