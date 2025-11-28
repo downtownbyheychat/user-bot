@@ -214,9 +214,9 @@ export async function handleButtonClick(buttonId, customerId) {
       };
 
     case 'cancel_order':
-      const { clearOrderStack: clearStack, clearFailedOrder: clearFailed } = await import('./orderStack.js');
+      const { clearOrderStack } = await import('./orderStack.js');
       const { clearFailedOrder } = await import('./sessionManager.js');
-      clearStack(customerId);
+      clearOrderStack(customerId);
       clearFailedOrder(customerId);
       
       return {
@@ -228,7 +228,7 @@ export async function handleButtonClick(buttonId, customerId) {
       };
 
     case 'payment_sent':
-      const { getOrderStack: getStack, clearOrderStack } = await import('./orderStack.js');
+      const { getOrderStack: getStack, } = await import('./orderStack.js');
       const stack = getStack(customerId);
       
       if (stack.length === 0) {

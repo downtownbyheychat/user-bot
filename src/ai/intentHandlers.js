@@ -1,5 +1,5 @@
 import { getUserName } from "../db/Utils/users.js";
-import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasMixedTypes, hasSwallowWithoutSoup, hasOnlyFreeSoup, getAllVendors, checkVendorStatus } from "../db/Utils/vendor.js";
+import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasSwallowWithoutSoup, hasOnlyFreeSoup, getAllVendors, checkVendorStatus } from "../db/Utils/vendor.js";
 
 
 export const intentHandlers = {
@@ -463,28 +463,6 @@ if (!vendor && items.length > 0) {
         customer_id: customerId,
         timestamp: new Date().toISOString(),
         message: " You can't order swallow without soup.\n\n Reply with a soup to add, or type 'cancel' to start over."
-      };
-    }
-
-    // Check for mixed types
-    const mixedTypes = await hasMixedTypes(vendorData.id, items);
-    if (mixedTypes) {
-      const { setFailedOrder } = await import('../services/sessionManager.js');
-      setFailedOrder(customerId, {
-        validatedItems: [],
-        failedItems: items.map(i => i.name),
-        vendor: vendorData.name,
-        vendorId: vendorData.id,
-        delivery_location,
-        errorType: 'mixed_types',
-        originalItems: items
-      });
-      return {
-        status: "error",
-        response_type: "validation_error",
-        customer_id: customerId,
-        timestamp: new Date().toISOString(),
-        message: " You can't mix pack items with per-price/per-piece items.\n\n Reply with items of the same type, or type 'cancel' to start over."
       };
     }
 

@@ -331,67 +331,67 @@ export async function checkAndResendOTP(phoneNumber) {
   return { expired: false, session };
 }
 
-// Handle user onboarding flow submission
-export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
-  try {
-    // Parse hostel from Label field (format: "2_Male_Silver_3")
-    const hostelData = flowData.screen_1_Label_1 || '';
+// // Handle user onboarding flow submission
+// export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
+//   try {
+//     // Parse hostel from Label field (format: "2_Male_Silver_3")
+//     const hostelData = flowData.screen_1_Label_1 || '';
 
-    const payload = {
-      name: flowData.screen_1_Full_name_0.trim(),
-      phone_number: phoneNumber,
-      email: flowData.screen_1_Email_2,
-      hostel: hostelData || 'Silver 2',
-      university: 'Bells Tech'
-    };
+//     const payload = {
+//       name: flowData.screen_1_Full_name_0.trim(),
+//       phone_number: phoneNumber,
+//       email: flowData.screen_1_Email_2,
+//       hostel: hostelData || 'Silver 2',
+//       university: 'Bells Tech'
+//     };
 
-    // Validate email
-    if (!isValidEmail(payload.email)) {
-      await axios({
-        url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
-        method: 'post',
-        headers: {
-          'Authorization': `Bearer ${ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        data: {
-          messaging_product: 'whatsapp',
-          to: phoneNumber,
-          type: 'text',
-          text: {
-            body: 'The OTP was not delivered to the email because it was invalid.'
-          }
-        }
-      });
+//     // Validate email
+//     if (!isValidEmail(payload.email)) {
+//       await axios({
+//         url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+//         method: 'post',
+//         headers: {
+//           'Authorization': `Bearer ${ACCESS_TOKEN}`,
+//           'Content-Type': 'application/json'
+//         },
+//         data: {
+//           messaging_product: 'whatsapp',
+//           to: phoneNumber,
+//           type: 'text',
+//           text: {
+//             body: 'The OTP was not delivered to the email because it was invalid.'
+//           }
+//         }
+//       });
       
-      // Send onboarding flow again
-      await sendUserOnboardingFlow(phoneNumber);
-      return { success: false, error: 'Invalid email' };
-    }
+//       // Send onboarding flow again
+//       await sendUserOnboardingFlow(phoneNumber);
+//       return { success: false, error: 'Invalid email' };
+//     }
 
-    const response = await axios.post(`${BASE_URL}users`, payload, {
-      headers: { 'Content-Type': 'application/json' }
-    });
+//     const response = await axios.post(`${BASE_URL}users`, payload, {
+//       headers: { 'Content-Type': 'application/json' }
+//     });
 
-    console.log(' User created:', response.data);
+//     console.log(' User created:', response.data);
     
-    // Store OTP session (backend already sent OTP)
-    otpSessions.set(phoneNumber, {
-      email: payload.email,
-      name: payload.name,
-      expiresAt: Date.now() + 15 * 60 * 1000
-    });
+//     // Store OTP session (backend already sent OTP)
+//     otpSessions.set(phoneNumber, {
+//       email: payload.email,
+//       name: payload.name,
+//       expiresAt: Date.now() + 15 * 60 * 1000
+//     });
     
-    // Send OTP flow message
-    await sendOTPFlowMessage(phoneNumber);
-    console.log(' OTP sent by backend during user creation');
+//     // Send OTP flow message
+//     await sendOTPFlowMessage(phoneNumber);
+//     console.log(' OTP sent by backend during user creation');
     
-    return { success: true };
-  } catch (error) {
-    console.error(' Error creating user:', error.response?.data || error.message);
-    return { success: false, error: error.response?.data?.message || 'Registration failed' };
-  }
-}
+//     return { success: true };
+//   } catch (error) {
+//     console.error(' Error creating user:', error.response?.data || error.message);
+//     return { success: false, error: error.response?.data?.message || 'Registration failed' };
+//   }
+// }
 
 // Send invalid OTP message with flow button
 export async function sendInvalidOTPMessage(phoneNumber) {
