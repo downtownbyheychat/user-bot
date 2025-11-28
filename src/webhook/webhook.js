@@ -266,10 +266,12 @@ async function processMessagesAsync(body) {
                                 const otpCheck = await checkAndResendOTP(customerId);
                                 if (otpCheck.expired) {
                                     await sendMessage(customerId, otpCheck.message);
-                                } else {
-                                    await sendOTPVerificationFlow(customerId, otpCheck.session?.email, otpCheck.session?.name);
+                                } else if (otpCheck.session) {
+                                    await sendOTPVerificationFlow(customerId, otpCheck.session.email, otpCheck.session.name);
                                     const { sendOTPFlowMessage } = await import('../services/userOnboarding.js');
                                     await sendOTPFlowMessage(customerId);
+                                } else {
+                                    await sendMessage(customerId, 'No active OTP session found. Please restart registration.');
                                 }
                             }
                             continue;
