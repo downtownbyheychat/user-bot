@@ -228,7 +228,7 @@ export async function handleButtonClick(buttonId, customerId) {
       };
 
     case 'payment_sent':
-      const { getOrderStack: getStack, } = await import('./orderStack.js');
+      const { getOrderStack: getStack, clearOrderStack: clearStack } = await import('./orderStack.js');
       const stack = getStack(customerId);
       
       if (stack.length === 0) {
@@ -271,7 +271,7 @@ export async function handleButtonClick(buttonId, customerId) {
         console.error('Receipt generation failed:', err);
       }
       
-      clearOrderStack(customerId);
+      clearStack(customerId);
       
       return {
         status: "success",
