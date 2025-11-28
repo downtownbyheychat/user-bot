@@ -131,6 +131,24 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
     return { success: true };
   } catch (error) {
     console.error('Error creating user:', error.response?.data || error.message);
+    
+    await axios({
+      url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+      method: 'post',
+      headers: {
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+        messaging_product: 'whatsapp',
+        to: phoneNumber,
+        type: 'text',
+        text: {
+          body: 'Registration failed. Please try again or contact support if the issue persists.'
+        }
+      }
+    });
+    
     return { success: false, error: error.response?.data?.message || 'Registration failed' };
   }
 }
@@ -211,24 +229,7 @@ export async function verifyOTP(otp, phoneNumber) {
         console.error(' Failed to update database:', dbError.message);
       }
       
-      // Send success message
-      await axios({
-        url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
-        method: 'post',
-        headers: {
-          'Authorization': `Bearer ${ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        data: {
-          messaging_product: 'whatsapp',
-          to: phoneNumber,
-          type: 'text',
-          text: {
-            body: ' Email successfully verified!'
-          }
-        }
-      });
-      
+            
       // Send template format message with 3 second delay
       setTimeout(() => {
         sendOrderTemplateMessage(phoneNumber);
