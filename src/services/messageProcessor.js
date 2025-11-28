@@ -46,7 +46,7 @@ export async function processMessage(customerId, message) {
         // Merge validated items with new corrections
         const mergedItems = [...failedOrder.validatedItems, ...correctionSummary.items];
         const mergedSummary = {
-          vendor: correctionSummary.vendor || failedOrder.vendor,
+          vendor: failedOrder.vendor,
           items: mergedItems,
           delivery_location: correctionSummary.delivery_location || failedOrder.delivery_location
         };
