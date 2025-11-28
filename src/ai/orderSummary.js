@@ -75,37 +75,50 @@ const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = gemini.getGenerativeModel({model: "gemini-2.5-pro"});
 
 export async function generateOrderSummary(message, customerId = null) {
-  const prompt = `Extract order details and return structured JSON.
+  const prompt = `You are an information extraction system. Analyze the customer message and return a structured JSON order summary.
 
-EXTRACT:
-- vendor: vendor/restaurant name
-- items: array of food items with quantity and price
-- quantity_types: detect per_price, per_piece, full_pack, or half_pack
+ OBJECTIVE
+Extract:
+1. **vendor** – restaurant/vendor name if mentioned
+2. **items** – each food item with quantity and price
+3. **quantity_type** – ONLY:
+   - "per_price" → when the user gives a price directly tied to that item (e.g., "₦800 jollof rice", "stir fry ₦1200")
+   - null → when no price implies a unit quantity
+4. **delivery_location** – extract location OR return "USER_HOSTEL" if user mentions:
+   "my hostel", "my room", "my block", "my place", "my hall", "my apartment", etc.
 
-RULES:
-- per_price: items sold by price (e.g., "₦800 jollof rice")
-- per_piece: items sold by count (e.g., "2 bottles of coke")
-- full_pack/half_pack: combo meals
-- Extract vendor from phrases like "from [vendor]"
-- For delivery_location: if user says "my hostel" or "my room", return "USER_HOSTEL" as placeholder
+ EXTRACTION RULES
+- If no quantity is stated, use \`1\`.
+- If price is present for an item, set \`price\` to that value.
+- If multiple items are mentioned, extract each separately.
+- Normalize item names (no emojis, no slang).
+- Detect vendor from phrases like:
+  - "from *VendorName*"
+  - "*VendorName* restaurant"
+  - "order from *VendorName*"
+- Ignore text unrelated to the order.
 
-OUTPUT FORMAT:
+ OUTPUT FORMAT (STRICT)
+Return ONLY valid JSON in this exact structure:
+
 {
-  "vendor": "vendor name or null",
+  "vendor": string | null,
   "items": [
     {
-      "name": "item name",
+      "name": string,
       "quantity": number,
-      "quantity_type": "per_price|per_piece|full_pack|half_pack",
-      "price": price_if_mentioned
+      "quantity_type": "per_price" | null,
+      "price": number | null
     }
   ],
-  "delivery_location": "location or USER_HOSTEL or null",
+  "delivery_location": string | "USER_HOSTEL" | null
 }
 
-Message: "${message}"
 
-Return ONLY valid JSON.`;
+
+ USER MESSAGE:  "${message}"
+
+Return ONLY JSON. No explanations.`;
 
   try {
     const result = await model.generateContent(prompt);
