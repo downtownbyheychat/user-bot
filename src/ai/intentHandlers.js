@@ -587,21 +587,24 @@ if (!vendor && items.length > 0) {
     }
     
     if (validationErrors.length > 0) {
-      const { setFailedOrder } = await import('../services/sessionManager.js');
+      const { setFailedOrder, getFailedOrder } = await import('../services/sessionManager.js');
+      const existingFailedOrder = getFailedOrder(customerId);
       
-      // Check if any validation has alternative vendors
+      // Check if any validation has alternative vendors (only for new orders, not modifications)
       let alternativeVendors = [];
-      for (const item of items) {
-        const validation = await validateOrderItem(
-          vendorData.id,
-          item.name,
-          item.quantity_type,
-          item.price,
-          item.quantity
-        );
-        if (validation.alternativeVendors) {
-          alternativeVendors = validation.alternativeVendors;
-          break;
+      if (!existingFailedOrder) {
+        for (const item of items) {
+          const validation = await validateOrderItem(
+            vendorData.id,
+            item.name,
+            item.quantity_type,
+            item.price,
+            item.quantity
+          );
+          if (validation.alternativeVendors) {
+            alternativeVendors = validation.alternativeVendors;
+            break;
+          }
         }
       }
       
