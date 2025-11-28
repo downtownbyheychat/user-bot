@@ -24,7 +24,9 @@ export async function processMessage(customerId, message) {
     const failedOrder = getFailedOrder(customerId);
     
     if (failedOrder) {
-      const correctionSummary = await generateOrderSummary(message, customerId);
+      // Add vendor context to message for correction
+      const messageWithVendor = failedOrder.vendor ? `${message} from ${failedOrder.vendor}` : message;
+      const correctionSummary = await generateOrderSummary(messageWithVendor, customerId);
       
       // Handle vendor selection for items without vendor
       if (correctionSummary?.vendor && failedOrder.errorType === 'no_vendor') {
