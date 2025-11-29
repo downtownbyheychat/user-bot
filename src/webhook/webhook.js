@@ -184,9 +184,6 @@ async function processMessagesAsync(body) {
                     if (message.type === 'text') {
                         const userMessage = message.text.body;
 
-                        // Mark message as read
-                        await markAsRead(message.id);
-
                         // Check if user exists
                         let userCheck = await checkUserExists(customerId);
                         
@@ -242,8 +239,8 @@ async function processMessagesAsync(body) {
                         await saveChatMessage(customerId, userMessage, false);
 
                         try {
-                            // Show typing indicator
-                            await sendTypingIndicator(customerId, true);
+                            // Show typing indicator (combines read receipt + typing)
+                            await sendTypingIndicator(customerId, message.id);
                             
                             // Process the message and get the response
                             const responseData = await processMessage(customerId, userMessage);
@@ -482,7 +479,7 @@ async function markAsRead(messageId) {
     }
 }
 
-async function sendTypingIndicator(recipientPhoneNumber, isTyping = true) {
+async function sendTypingIndicator(recipientPhoneNumber, messageId) {
     try {
         await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
             method: 'POST',
@@ -492,12 +489,10 @@ async function sendTypingIndicator(recipientPhoneNumber, isTyping = true) {
             },
             body: JSON.stringify({
                 messaging_product: 'whatsapp',
-                recipient_type: 'individual',
-                to: recipientPhoneNumber,
-                type: 'reaction',
-                reaction: {
-                    message_id: '',
-                    emoji: isTyping ? '⏳' : ''
+                status: 'read',
+                message_id: messageId,
+                typing_indicator: {
+                    type: 'text'
                 }
             })
         });
