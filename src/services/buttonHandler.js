@@ -105,6 +105,68 @@ export async function handleButtonClick(buttonId, customerId) {
         };
       }
       
+    //   // Get user details
+    //   const { getUserName } = await import('../db/Utils/users.js');
+    //   const userName = await getUserName(customerId);
+      
+    //   // Get vendor phone numbers
+    //   const pool = (await import('../db/database.js')).default;
+      
+    //   // Create orders in database for each pack
+    //   const createdOrders = [];
+    //   for (const pack of orderStack) {
+    //     // Get vendor phone
+    //     const vendorResult = await pool.query(
+    //       'SELECT phone_number FROM vendors WHERE id = $1',
+    //       [pack.vendorId]
+    //     );
+    //     const vendorPhone = vendorResult.rows[0]?.phone_number;
+        
+    //     // Format food names
+    //     const foodNames = pack.items.map(item => {
+    //       if (item.quantity_type === 'per_price') {
+    //         return `${item.name} (₦${item.price})`;
+    //       }
+    //       return `${item.name} x${item.quantity}`;
+    //     }).join(', ');
+        
+    //     // Normalize location to snake_case
+    //     const normalizeLocation = (loc) => {
+    //       if (loc === 'Pickup') return 'pickup';
+    //       return loc.toLowerCase().replace(/\s+/g, '_');
+    //     };
+        
+    //     // Create order
+    //     try {
+    //       const orderResponse = await fetch(`${process.env.API_BASE_URL || 'http://localhost:3000'}/orders/`, {
+    //         method: 'POST',
+    //         headers: { 'Content-Type': 'application/json' },
+    //         body: JSON.stringify({
+    //           user_id: customerId,
+    //           vendor_phone_number: vendorPhone,
+    //           user_name: userName || 'Customer',
+    //           vendor_name: pack.vendor,
+    //           food_name: foodNames,
+    //           order_type: pack.delivery_location === 'Pickup' ? 'pick_up' : 'delivery',
+    //           price: pack.total.toString(),
+    //           user_location: normalizeLocation(pack.delivery_location),
+    //           user_phone_number: customerId
+    //         })
+    //       });
+          
+    //       if (orderResponse.ok) {
+    //         const orderData = await orderResponse.json();
+    //         createdOrders.push({ pack, success: true });
+    //       } else {
+    //         console.error('Order creation failed:', await orderResponse.text());
+    //         createdOrders.push({ pack, success: false });
+    //       }
+    //     } catch (error) {
+    //       console.error('Order creation error:', error);
+    //       createdOrders.push({ pack, success: false });
+    //     }
+    //   }
+      
       let orderDetails = '';
       let grandTotal = 0;
       

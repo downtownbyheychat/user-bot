@@ -40,7 +40,7 @@ export async function sendUserOnboardingFlow(phoneNumber) {
             parameters: {
               flow_message_version: '3',
               flow_token: 'unused',
-              flow_id: '834210229023164',
+              flow_id: '2061679031252167',
               flow_cta: 'Get Started',
               flow_action: 'navigate',
               flow_action_payload: {
@@ -65,14 +65,12 @@ export async function sendUserOnboardingFlow(phoneNumber) {
 // Handle user onboarding flow submission
 export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
   try {
-    const hostelData = flowData.screen_1_Label_1 || '';
-
     const payload = {
-      name: flowData.screen_1_Full_name_0.trim(),
-      phone_number: phoneNumber,
+      first_name: flowData.screen_1_First_Name_0?.trim() || '',
+      last_name: flowData.screen_1_Last_Name_1?.trim() || '',
       email: flowData.screen_1_Email_2,
-      hostel: hostelData || 'Silver 2',
-      university: 'Bells Tech'
+      university: 'Bells Tech',
+      phone_number: phoneNumber
     };
 
     if (!isValidEmail(payload.email)) {
@@ -105,7 +103,7 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
     
     otpSessions.set(phoneNumber, {
       email: payload.email,
-      name: payload.name,
+      name: `${payload.first_name} ${payload.last_name}`.trim(),
       expiresAt: Date.now() + 15 * 60 * 1000
     });
     

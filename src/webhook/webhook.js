@@ -331,7 +331,7 @@ async function processMessagesAsync(body) {
                         console.log('Flow Data:', userInput);
 
                         // Handle user onboarding flow submission
-                        if (userInput.screen_1_Full_name_0 && userInput.screen_1_Email_2) {
+                        if (userInput.screen_1_First_Name_0 && userInput.screen_1_Email_2) {
                             await handleUserOnboardingSubmission(customerId, userInput);
                             continue;
                         }
