@@ -184,6 +184,9 @@ async function processMessagesAsync(body) {
                     if (message.type === 'text') {
                         const userMessage = message.text.body;
 
+                        // Mark message as read
+                        await markAsRead(message.id);
+
                         // Check if user exists
                         let userCheck = await checkUserExists(customerId);
                         
@@ -239,6 +242,9 @@ async function processMessagesAsync(body) {
                         await saveChatMessage(customerId, userMessage, false);
 
                         try {
+                            // Show typing indicator
+                            await sendTypingIndicator(customerId, true);
+                            
                             // Process the message and get the response
                             const responseData = await processMessage(customerId, userMessage);
 
@@ -258,6 +264,9 @@ async function processMessagesAsync(body) {
                     // Handle button interactions
                     if (message.type === 'interactive' && message.interactive.type === 'button_reply') {
                         const buttonId = message.interactive.button_reply.id;
+
+                        // Mark message as read
+                        await markAsRead(message.id);
 
                         // Handle resend OTP button
                         if (buttonId === 'resend_otp') {
@@ -329,6 +338,9 @@ async function processMessagesAsync(body) {
                     if (message.type === 'interactive' && message.interactive.type === 'list_reply') {
                         const listItemId = message.interactive.list_reply.id;
                         console.log(' List item selected:', listItemId);
+
+                        // Mark message as read
+                        await markAsRead(message.id);
 
                         try {
                             // Process the list selection
@@ -444,6 +456,49 @@ async function processMessagesAsync(body) {
 //         }
 //     }
 // }
+
+async function markAsRead(messageId) {
+    try {
+        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                messaging_product: 'whatsapp',
+                status: 'read',
+                message_id: messageId
+            })
+        });
+    } catch (error) {
+        console.error('Error marking message as read:', error.message);
+    }
+}
+
+async function sendTypingIndicator(recipientPhoneNumber, isTyping = true) {
+    try {
+        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                messaging_product: 'whatsapp',
+                recipient_type: 'individual',
+                to: recipientPhoneNumber,
+                type: 'reaction',
+                reaction: {
+                    message_id: '',
+                    emoji: isTyping ? '⏳' : ''
+                }
+            })
+        });
+    } catch (error) {
+        console.error('Error sending typing indicator:', error.message);
+    }
+}
 
 async function sendMessage(recipientPhoneNumber, responseData) {
     // Handle both old format (text string) and new format (response object)
