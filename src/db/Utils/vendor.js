@@ -135,11 +135,7 @@ export async function validateOrderItem(vendorId, itemName, quantityType, price,
     );
 
     if (result.rows.length === 0) {
-        const vendors = await searchItemAcrossVendors(itemName);
-        if (vendors.length === 0) {
-          return { valid: false, error: `${itemName} not available at any vendor`, notFoundAnywhere: true };
-        }
-        return { valid: false, error: `${itemName} not available at this vendor`, alternativeVendors: vendors };
+      return { valid: false, error: `${itemName} not available at this vendor` };
     }
 
     const item = result.rows[0];

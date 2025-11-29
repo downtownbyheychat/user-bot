@@ -12,46 +12,55 @@ export const intentHandlers = {
         // Get available vendors
         const vendors = await getAllVendors();
         
-        let greetingMessage = `Sup ${userName || "{name}"}! \nWelcome back to Downtown, where you chat, order, and eat. Fast.`;
+        const greetingMessage = `Sup ${userName || "{name}"}! \nWelcome back to Downtown, where you chat, order, and eat. Fast.`;
         
+        // Create restaurant list response
+        let restaurantResponse = null;
         if (vendors.length > 0) {
           if (vendors.length > 10) {
             const vendorList = vendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
-            greetingMessage += `\n\n Available Restaurants:\n\n${vendorList}\n\nJust mention the restaurant name to view their menu!`;
+            restaurantResponse = {
+              status: "success",
+              response_type: "restaurant_list",
+              customer_id: customerId,
+              timestamp: new Date().toISOString(),
+              message: ` Available Restaurants:\n\n${vendorList}\n\nJust mention the restaurant name to view their menu!`
+            };
           } else {
-            greetingMessage += `\n\nSelect a restaurant to get started:`;
+            restaurantResponse = {
+              status: "success",
+              response_type: "restaurant_list",
+              customer_id: customerId,
+              timestamp: new Date().toISOString(),
+              message: "Select a restaurant to get started:",
+              data: {
+                list: {
+                  header: "Campus Restaurants",
+                  body: "Here are the available restaurants on campus:",
+                  button: "View Restaurants",
+                  sections: [{
+                    title: "Restaurants",
+                    rows: vendors.map(v => ({
+                      id: `vendor_${v.id}`,
+                      title: v.name.substring(0, 24),
+                      description: (v.description || "View menu").substring(0, 72)
+                    }))
+                  }]
+                }
+              }
+            };
           }
         }
-
-        // Generate the response
-        const response = {
+        
+        // Return both messages
+        return {
           status: "success",
           response_type: "greeting",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: greetingMessage
+          message: greetingMessage,
+          additionalMessage: restaurantResponse
         };
-        
-        // Add list if vendors <= 10
-        if (vendors.length > 0 && vendors.length <= 10) {
-          response.data = {
-            list: {
-              header: "Campus Restaurants",
-              body: "Here are the available restaurants on campus:",
-              button: "View Restaurants",
-              sections: [{
-                title: "Restaurants",
-                rows: vendors.map(v => ({
-                  id: `vendor_${v.id}`,
-                  title: v.name.substring(0, 24),
-                  description: (v.description || "View menu").substring(0, 72)
-                }))
-              }]
-            }
-          };
-        }
-        
-        return response;
     } catch (error) {
         console.error('Error handling Greeting intent:', error);
         return {
@@ -539,7 +548,6 @@ if (!vendor && items.length > 0) {
     const validationErrors = [];
     const validatedItems = [];
     const failedItems = [];
-    let hasItemNotFoundAnywhere = false;
     
     for (const item of items) {
       const validation = await validateOrderItem(
@@ -553,9 +561,6 @@ if (!vendor && items.length > 0) {
       if (!validation.valid) {
         validationErrors.push(validation.error);
         failedItems.push(item.name);
-        if (validation.notFoundAnywhere) {
-          hasItemNotFoundAnywhere = true;
-        }
       } else {
         // Store validated item with database price
         validatedItems.push({
@@ -566,7 +571,7 @@ if (!vendor && items.length > 0) {
       }
     }
 
-    if (validationErrors.length > 0 && hasItemNotFoundAnywhere) {
+    if (validationErrors.length > 0) {
       const menuItems = await getVendorMenuItems(vendorData.id);
       
       if (menuItems.length > 10) {
@@ -634,26 +639,7 @@ if (!vendor && items.length > 0) {
     }
     
     if (validationErrors.length > 0) {
-      const { setFailedOrder, getFailedOrder } = await import('../services/sessionManager.js');
-      const existingFailedOrder = getFailedOrder(customerId);
-      
-      // Check if any validation has alternative vendors (only for new orders, not modifications)
-      let alternativeVendors = [];
-      if (!existingFailedOrder) {
-        for (const item of items) {
-          const validation = await validateOrderItem(
-            vendorData.id,
-            item.name,
-            item.quantity_type,
-            item.price,
-            item.quantity
-          );
-          if (validation.alternativeVendors) {
-            alternativeVendors = validation.alternativeVendors;
-            break;
-          }
-        }
-      }
+      const { setFailedOrder } = await import('../services/sessionManager.js');
       
       setFailedOrder(customerId, {
         validatedItems,
@@ -661,57 +647,9 @@ if (!vendor && items.length > 0) {
         vendor: vendorData.name,
         vendorId: vendorData.id,
         delivery_location,
-        errorType: alternativeVendors.length > 0 ? 'item_at_other_vendor' : 'validation_failed',
+        errorType: 'validation_failed',
         originalItems: items
       });
-      
-      // If alternative vendors exist and <= 10, use list format
-      if (alternativeVendors.length > 0 && alternativeVendors.length <= 10) {
-        setFailedOrder(customerId, {
-          validatedItems,
-          failedItems,
-          vendor: vendorData.name,
-          vendorId: vendorData.id,
-          delivery_location,
-          errorType: 'item_at_other_vendor',
-          originalItems: items
-        });
-        
-        return {
-          status: "error",
-          response_type: "validation_error",
-          customer_id: customerId,
-          timestamp: new Date().toISOString(),
-          message: ` ${validationErrors.join('\n')}\n\nSelect a vendor to order from:`,
-          data: {
-            list: {
-              header: "Available Vendors",
-              body: "These vendors have the item:",
-              button: "Select Vendor",
-              sections: [{
-                title: "Vendors",
-                rows: alternativeVendors.map((v, idx) => ({
-                  id: `vendor_${v.vendor_id}_${idx}`,
-                  title: v.vendor_name.substring(0, 24),
-                  description: v.food_name.substring(0, 72)
-                }))
-              }]
-            }
-          }
-        };
-      }
-      
-      // If > 10, use text format
-      if (alternativeVendors.length > 10) {
-        const vendorList = alternativeVendors.map((v, i) => `${i + 1}. ${v.vendor_name} (${v.food_name})`).join('\n');
-        return {
-          status: "error",
-          response_type: "validation_error",
-          customer_id: customerId,
-          timestamp: new Date().toISOString(),
-          message: ` ${validationErrors.join('\n')}\n\nYou can find it at:\n\n${vendorList}\n\n Reply with corrected items only, or type 'cancel' to start over.`
-        };
-      }
       
       // Show 3 action buttons for partial validation
       if (validatedItems.length > 0) {

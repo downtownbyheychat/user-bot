@@ -253,6 +253,12 @@ async function processMessagesAsync(body) {
 
                             // Send the response to the user
                             await sendMessage(customerId, responseData);
+                            
+                            // Send additional message if present (e.g., restaurant list after greeting)
+                            if (responseData.additionalMessage) {
+                                await saveChatMessage(customerId, responseData.additionalMessage.message, true);
+                                await sendMessage(customerId, responseData.additionalMessage);
+                            }
                         } catch (error) {
                             console.error('Error processing message:', error);
                             const fallbackMessage = "Sorry, I'm currently overloaded. Please try again shortly.";
