@@ -4,7 +4,7 @@
 // dotenv.config();
 
 // const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-// const model = gemini.getGenerativeModel({model: "gemini-2.5-pro"});
+// const model = gemini.getGenerativeModel({model: "gemini-2.0-flash-lite"});
 
 // export async function generateOrderSummary(message) {
 //   const prompt = `Extract order details from this message and return a structured summary.
@@ -72,7 +72,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = gemini.getGenerativeModel({model: "gemini-2.5-pro"});
+const model = gemini.getGenerativeModel({model: "gemini-2.0-flash-lite"});
 
 export async function generateOrderSummary(message, customerId = null) {
   const prompt = `You are an information extraction system. Analyze the customer message and return a structured JSON order summary.
