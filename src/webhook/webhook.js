@@ -184,6 +184,9 @@ async function processMessagesAsync(body) {
                     if (message.type === 'text') {
                         const userMessage = message.text.body;
 
+                        // Show read receipt and typing indicator for all messages
+                        await sendTypingIndicator(customerId, message.id);
+
                         // Check if user exists
                         let userCheck = await checkUserExists(customerId);
                         
@@ -239,8 +242,6 @@ async function processMessagesAsync(body) {
                         await saveChatMessage(customerId, userMessage, false);
 
                         try {
-                            // Show typing indicator (combines read receipt + typing)
-                            await sendTypingIndicator(customerId, message.id);
                             
                             // Process the message and get the response
                             const responseData = await processMessage(customerId, userMessage);
