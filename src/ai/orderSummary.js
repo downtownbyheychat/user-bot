@@ -97,20 +97,22 @@ Extract:
   - "*VendorName* restaurant"
   - "order from *VendorName*"
 - Ignore text unrelated to the order.
-- CRITICAL: These are SINGLE food items (do NOT split them):
-  - "yam and egg"
-  - "bread and egg"
-  - "rice and beans"
-  - "plantain and egg"
-  - "cake and cream"
-  - "chicken and chips"
-  - "big bread and egg"
-  - "yam and egg with sauce"
-  - "coconut rice with shrimps"
-  - "potatoes and egg with sauce"
-  - "plantain and egg with sauce"
-  - "hot chocolate with whipped cream"
-- For ALL other cases, treat "with", "and" as a delimiter between separate items
+- CRITICAL EXCEPTION: These exact phrases are SINGLE items - NEVER split them:
+  1. "yam and egg" → ONE item, not "yam" + "egg"
+  2. "bread and egg" → ONE item, not "bread" + "egg"
+  3. "rice and beans" → ONE item, not "rice" + "beans"
+  4. "plantain and egg" → ONE item, not "plantain" + "egg"
+  5. "cake and cream" → ONE item
+  6. "chicken and chips" → ONE item
+  7. "big bread and egg" → ONE item
+  8. "yam and egg with sauce" → ONE item
+  9. "coconut rice with shrimps" → ONE item
+  10. "potatoes and egg with sauce" → ONE item
+  11. "plantain and egg with sauce" → ONE item
+  12. "hot chocolate with whipped cream" → ONE item
+- For ALL other cases, treat "with" or "and" as delimiters between separate items
+- Example: "I want bread and egg" → items: [{name: "bread and egg", quantity: 1}]
+- Example: "I want jollof rice and chicken" → items: [{name: "jollof rice", quantity: 1}, {name: "chicken", quantity: 1}]
 - If no vendor is mentioned, set \`vendor\` to null.
 - If no delivery location is mentioned, set \`delivery_location\` to null.
 
