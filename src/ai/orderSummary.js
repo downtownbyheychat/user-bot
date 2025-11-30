@@ -97,7 +97,20 @@ Extract:
   - "*VendorName* restaurant"
   - "order from *VendorName*"
 - Ignore text unrelated to the order.
-- treat "with" as a delimiter between items.
+- CRITICAL: These are SINGLE food items (do NOT split them):
+  - "yam and egg"
+  - "bread and egg"
+  - "rice and beans"
+  - "plantain and egg"
+  - "cake and cream"
+  - "chicken and chips"
+  - "big bread and egg"
+  - "yam and egg with sauce"
+  - "coconut rice with shrimps"
+  - "potatoes and egg with sauce"
+  - "plantain and egg with sauce"
+  - "hot chocolate with whipped cream"
+- For ALL other cases, treat "with", "and" as a delimiter between separate items
 - If no vendor is mentioned, set \`vendor\` to null.
 - If no delivery location is mentioned, set \`delivery_location\` to null.
 
