@@ -228,10 +228,9 @@ export async function verifyOTP(otp, phoneNumber) {
       }
       
             
-      // Send template format message with 3 second delay
-      setTimeout(() => {
-        sendOrderTemplateMessage(phoneNumber);
-      }, 3000);
+      // Send template format message
+      sendOrderTemplateMessage(phoneNumber);
+     
       
       return { success: true };
     }
