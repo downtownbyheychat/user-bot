@@ -36,15 +36,16 @@ export async function getUserName(whatsappId) {
     console.log(`[getUserName] Converted phoneNumber: ${phoneNumber}`);
 
     const result = await pool.query(
-      'SELECT name FROM users WHERE phone_number = $1',
+      'SELECT first_name, last_name FROM users WHERE phone_number = $1',
       [phoneNumber]
     );
 
     console.log(`[getUserName] Query result: ${JSON.stringify(result.rows)}`);
 
     if (result.rows.length > 0) {
-      console.log(`[getUserName] User found: ${result.rows[0].name}`);
-      return result.rows[0].name;
+      const fullName = `${result.rows[0].first_name} ${result.rows[0].last_name}`.trim();
+      console.log(`[getUserName] User found: ${fullName}`);
+      return fullName;
     } else {
       console.log(`[getUserName] No user found for phone number: ${phoneNumber}`);
       return null;
@@ -59,7 +60,7 @@ export async function getUserName(whatsappId) {
 export async function checkUserExists(phoneNumber) {
   try {
     const result = await pool.query(
-      'SELECT id, name, email, email_verified, hostel FROM users WHERE phone_number = $1',
+      'SELECT id, first_name, last_name, email, email_verified FROM users WHERE phone_number = $1',
       [String(phoneNumber)]
     );
 
@@ -78,21 +79,3 @@ export async function checkUserExists(phoneNumber) {
   }
 }
 
-// Get user's hostel
-export async function getUserHostel(phoneNumber) {
-  try {
-    const result = await pool.query(
-      'SELECT hostel FROM users WHERE phone_number = $1',
-      [String(phoneNumber)]
-    );
-
-    if (result.rows.length > 0) {
-      return result.rows[0].hostel;
-    }
-
-    return null;
-  } catch (error) {
-    console.error('Error fetching user hostel:', error);
-    return null;
-  }
-}

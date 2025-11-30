@@ -132,11 +132,9 @@ Return ONLY JSON. No explanations.`;
 
     console.log('Generated order summary:', summary);
     
-    // Replace USER_HOSTEL placeholder with actual hostel
-    if (summary.delivery_location === 'USER_HOSTEL' && customerId) {
-      const { getUserHostel } = await import('../db/Utils/users.js');
-      const hostel = await getUserHostel(customerId);
-      summary.delivery_location = hostel || 'my hostel';
+    // Keep USER_HOSTEL as placeholder since hostel is no longer in database
+    if (summary.delivery_location === 'USER_HOSTEL') {
+      summary.delivery_location = 'my hostel';
     }
     
     return summary;
