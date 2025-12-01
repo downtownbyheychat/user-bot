@@ -511,7 +511,7 @@ if (!vendor && items.length > 0) {
           response_type: "validation_error",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: `🚫 You can't order swallow without soup.\n\nSorry, no soups are available at ${vendorData.name} right now.",
+          message: `You can't order swallow without soup.\n\nSorry, no soups are available at ${vendorData.name} right now.`,
           data: {
             buttons: [
               { id: "cancel_order", title: "Cancel" }
@@ -527,7 +527,7 @@ if (!vendor && items.length > 0) {
           response_type: "validation_error",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: `🚫 You can't order swallow without soup.\n\nSelect a soup to add to your order:",
+          message: `You can't order swallow without soup.\n\nSelect a soup to add to your order:`,
           data: {
             list: {
               header: "Available Soups",
@@ -582,7 +582,7 @@ if (!vendor && items.length > 0) {
         response_type: "validation_error",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `🚫 You can't order swallow without soup.\n\nAvailable Soups at ${vendorData.name}:\n\n${soupList}\n\nReply with the soup name to add it to your order."
+        message: `You can't order swallow without soup.\n\nAvailable Soups at ${vendorData.name}:\n\n${soupList}\n\nReply with the soup name to add it to your order.`
       };
     }
 
@@ -610,7 +610,7 @@ if (!vendor && items.length > 0) {
           response_type: "validation_error",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: `🚫 You can't order only free soup.\n\nSorry, no swallows are available at ${vendorData.name} right now.",
+          message: `You can't order only free soup.\n\nSorry, no swallows are available at ${vendorData.name} right now.`,
           data: {
             buttons: [
               { id: "cancel_order", title: "Cancel" }
@@ -626,7 +626,7 @@ if (!vendor && items.length > 0) {
           response_type: "validation_error",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: `🚫 You can't order only free soup.\n\nSelect a swallow to add to your order:",
+          message: `You can't order only free soup.\n\nSelect a swallow to add to your order:`,
           data: {
             list: {
               header: "Available Swallows",
@@ -681,7 +681,7 @@ if (!vendor && items.length > 0) {
         response_type: "validation_error",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `🚫 You can't order only free soup.\n\nAvailable Swallows at ${vendorData.name}:\n\n${swallowList}\n\nReply with the swallow name to add it to your order."
+        message: `You can't order only free soup.\n\nAvailable Swallows at ${vendorData.name}:\n\n${swallowList}\n\nReply with the swallow name to add it to your order.`
       };
     }
 
