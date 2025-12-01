@@ -511,7 +511,7 @@ if (!vendor && items.length > 0) {
           response_type: "validation_error",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: `You can't order swallow without soup.\n\nSorry, no soups are available at ${vendorData.name} right now.`,
+          message: `Swallow needs soup to go with it!\n\nUnfortunately, ${vendorData.name} has no soups available right now. Please add a soup from another vendor or cancel this order.`,
           data: {
             buttons: [
               { id: "cancel_order", title: "Cancel" }
@@ -527,11 +527,11 @@ if (!vendor && items.length > 0) {
           response_type: "validation_error",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: `You can't order swallow without soup.\n\nSelect a soup to add to your order:`,
+          message: `Swallow needs soup to go with it!\n\nSelect a soup from ${vendorData.name} to complete your order:`,
           data: {
             list: {
               header: "Available Soups",
-              body: `Select a soup from ${vendorData.name}:`,
+              body: `Swallow needs soup to go with it! Select a soup from ${vendorData.name}:`,
               button: "Select Soup",
               sections: [{
                 title: "Soups",
@@ -582,7 +582,7 @@ if (!vendor && items.length > 0) {
         response_type: "validation_error",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `You can't order swallow without soup.\n\nAvailable Soups at ${vendorData.name}:\n\n${soupList}\n\nReply with the soup name to add it to your order.`
+        message: `Swallow needs soup to go with it!\n\nAvailable Soups at ${vendorData.name}:\n\n${soupList}\n\nReply with the soup name to add it to your order.`
       };
     }
 
@@ -748,7 +748,7 @@ if (!vendor && items.length > 0) {
         response_type: "validation_error",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: ` Order validation failed:\n\n${validationErrors.join('\n')}\n\nWhat would you like to do?`,
+        message: ` Order validation failed:\n\nWhat would you like to do?`,
         data: {
           buttons: [
             { id: "show_corrections", title: "Show What to Correct" },
