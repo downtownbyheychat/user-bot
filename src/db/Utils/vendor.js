@@ -335,3 +335,35 @@ export async function hasOnlyFreeSoup(vendorId, items) {
   // Return true if order has only soup AND all soups are free (price = 0)
   return hasSoup && !hasSwallow && allSoupsAreFree; //&& !hasNonSoup 
 }
+
+// Get available soups at a vendor
+export async function getAvailableSoups(vendorId) {
+  try {
+    const result = await pool.query(
+      `SELECT food_name, price, sale_quantity FROM menus 
+       WHERE vendor_id = $1 AND LOWER(food_type) = 'soup'
+       ORDER BY food_name`,
+      [vendorId]
+    );
+    return result.rows;
+  } catch (error) {
+    console.error('Error fetching soups:', error);
+    return [];
+  }
+}
+
+// Get available swallows at a vendor
+export async function getAvailableSwallows(vendorId) {
+  try {
+    const result = await pool.query(
+      `SELECT food_name, price, sale_quantity FROM menus 
+       WHERE vendor_id = $1 AND LOWER(food_type) = 'swallow'
+       ORDER BY food_name`,
+      [vendorId]
+    );
+    return result.rows;
+  } catch (error) {
+    console.error('Error fetching swallows:', error);
+    return [];
+  }
+}

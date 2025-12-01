@@ -275,22 +275,6 @@ export async function handleButtonClick(buttonId, customerId) {
         message: `Here's what needs to be corrected:\n\n${corrections.join('\n')}\n\n Reply with the corrected items.`
       };
 
-    case 'enter_soup':
-      const { setAwaitingInput: setSoupInput } = await import('./sessionManager.js');
-      setSoupInput(customerId, 'soup');
-      return {
-        status: "success",
-        message: "Please enter the soup you'd like to add to your order:"
-      };
-
-    case 'enter_swallow':
-      const { setAwaitingInput: setSwallowInput } = await import('./sessionManager.js');
-      setSwallowInput(customerId, 'swallow');
-      return {
-        status: "success",
-        message: "Please enter the swallow you'd like to add to your order:"
-      };
-
     case 'cancel_order':
       const { clearOrderStack } = await import('./orderStack.js');
       const { clearFailedOrder } = await import('./sessionManager.js');
@@ -614,6 +598,54 @@ export async function handleButtonClick(buttonId, customerId) {
           status: "success",
           message: result.message || ' A new OTP has been sent to your email.'
         };
+      }
+
+      // Handle soup selection from swallow error
+      if (buttonId.startsWith('add_soup_')) {
+        const soupName = buttonId.substring(9).replace(/_/g, ' ');
+        const { getFailedOrder, clearFailedOrder } = await import('./sessionManager.js');
+        const failedOrder = getFailedOrder(customerId);
+        
+        if (!failedOrder || failedOrder.errorType !== 'swallow_without_soup') {
+          return {
+            status: "error",
+            message: "No pending order found. Please place a new order."
+          };
+        }
+        
+        const { handleIntent } = await import('../ai/intentHandlers.js');
+        const mergedSummary = {
+          vendor: failedOrder.vendor,
+          items: [...failedOrder.originalItems, { name: soupName, quantity: 1, quantity_type: null }],
+          delivery_location: failedOrder.delivery_location
+        };
+        
+        clearFailedOrder(customerId);
+        return await handleIntent('Food Ordering', customerId, '', mergedSummary);
+      }
+
+      // Handle swallow selection from free soup error
+      if (buttonId.startsWith('add_swallow_')) {
+        const swallowName = buttonId.substring(12).replace(/_/g, ' ');
+        const { getFailedOrder, clearFailedOrder } = await import('./sessionManager.js');
+        const failedOrder = getFailedOrder(customerId);
+        
+        if (!failedOrder || failedOrder.errorType !== 'only_free_soup') {
+          return {
+            status: "error",
+            message: "No pending order found. Please place a new order."
+          };
+        }
+        
+        const { handleIntent } = await import('../ai/intentHandlers.js');
+        const mergedSummary = {
+          vendor: failedOrder.vendor,
+          items: [...failedOrder.originalItems, { name: swallowName, quantity: 1, quantity_type: null }],
+          delivery_location: failedOrder.delivery_location
+        };
+        
+        clearFailedOrder(customerId);
+        return await handleIntent('Food Ordering', customerId, '', mergedSummary);
       }
 
       // Handle vendor selection from restaurant list

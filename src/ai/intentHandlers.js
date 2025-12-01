@@ -1,5 +1,5 @@
 import { getUserName } from "../db/Utils/users.js";
-import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasSwallowWithoutSoup, hasOnlyFreeSoup, getAllVendors, checkVendorStatus } from "../db/Utils/vendor.js";
+import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasSwallowWithoutSoup, hasOnlyFreeSoup, getAllVendors, checkVendorStatus, getAvailableSoups } from "../db/Utils/vendor.js";
 
 
 export const intentHandlers = {
@@ -501,18 +501,88 @@ if (!vendor && items.length > 0) {
         errorType: 'swallow_without_soup',
         originalItems: items
       });
+      
+      // Get available soups at this vendor
+      const availableSoups = await getAvailableSoups(vendorData.id);
+      
+      if (availableSoups.length === 0) {
+        return {
+          status: "error",
+          response_type: "validation_error",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `🚫 You can't order swallow without soup.\n\nSorry, no soups are available at ${vendorData.name} right now.",
+          data: {
+            buttons: [
+              { id: "cancel_order", title: "Cancel" }
+            ]
+          }
+        };
+      }
+      
+      // Show soups as interactive list if 10 or fewer
+      if (availableSoups.length <= 10) {
+        return {
+          status: "error",
+          response_type: "validation_error",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `🚫 You can't order swallow without soup.\n\nSelect a soup to add to your order:",
+          data: {
+            list: {
+              header: "Available Soups",
+              body: `Select a soup from ${vendorData.name}:`,
+              button: "Select Soup",
+              sections: [{
+                title: "Soups",
+                rows: availableSoups.map(soup => {
+                  let priceDesc = '';
+                  if (soup.sale_quantity === 'per_price') {
+                    priceDesc = `from ₦${soup.price}`;
+                  } else if (soup.sale_quantity === 'per_piece') {
+                    priceDesc = `₦${soup.price} each`;
+                  } else if (soup.sale_quantity === 'full_pack') {
+                    priceDesc = `₦${soup.price} (Full Pack)`;
+                  } else if (soup.sale_quantity === 'half_pack') {
+                    priceDesc = `₦${soup.price} (Half Pack)`;
+                  } else {
+                    priceDesc = `₦${soup.price}`;
+                  }
+                  return {
+                    id: `add_soup_${soup.food_name.toLowerCase().replace(/\s+/g, '_')}`,
+                    title: soup.food_name.substring(0, 24),
+                    description: priceDesc.substring(0, 72)
+                  };
+                })
+              }]
+            }
+          }
+        };
+      }
+      
+      // Show as text list if more than 10
+      const soupList = availableSoups.map((soup, i) => {
+        let priceDesc = '';
+        if (soup.sale_quantity === 'per_price') {
+          priceDesc = `from ₦${soup.price}`;
+        } else if (soup.sale_quantity === 'per_piece') {
+          priceDesc = `₦${soup.price} each`;
+        } else if (soup.sale_quantity === 'full_pack') {
+          priceDesc = `₦${soup.price} (Full Pack)`;
+        } else if (soup.sale_quantity === 'half_pack') {
+          priceDesc = `₦${soup.price} (Half Pack)`;
+        } else {
+          priceDesc = `₦${soup.price}`;
+        }
+        return `${i + 1}. ${soup.food_name} - ${priceDesc}`;
+      }).join('\n');
+      
       return {
         status: "error",
         response_type: "validation_error",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: " You can't order swallow without soup.\n\nReply with a soup to add, or cancel to start over.",
-        data: {
-          buttons: [
-            { id: "enter_soup", title: "Enter Soup" },
-            { id: "cancel_order", title: "Cancel" }
-          ]
-        }
+        message: `🚫 You can't order swallow without soup.\n\nAvailable Soups at ${vendorData.name}:\n\n${soupList}\n\nReply with the soup name to add it to your order."
       };
     }
 
@@ -529,18 +599,89 @@ if (!vendor && items.length > 0) {
         errorType: 'only_free_soup',
         originalItems: items
       });
+      
+      // Get available swallows at this vendor
+      const { getAvailableSwallows } = await import('../db/Utils/vendor.js');
+      const availableSwallows = await getAvailableSwallows(vendorData.id);
+      
+      if (availableSwallows.length === 0) {
+        return {
+          status: "error",
+          response_type: "validation_error",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `🚫 You can't order only free soup.\n\nSorry, no swallows are available at ${vendorData.name} right now.",
+          data: {
+            buttons: [
+              { id: "cancel_order", title: "Cancel" }
+            ]
+          }
+        };
+      }
+      
+      // Show swallows as interactive list if 10 or fewer
+      if (availableSwallows.length <= 10) {
+        return {
+          status: "error",
+          response_type: "validation_error",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `🚫 You can't order only free soup.\n\nSelect a swallow to add to your order:",
+          data: {
+            list: {
+              header: "Available Swallows",
+              body: `Select a swallow from ${vendorData.name}:`,
+              button: "Select Swallow",
+              sections: [{
+                title: "Swallows",
+                rows: availableSwallows.map(swallow => {
+                  let priceDesc = '';
+                  if (swallow.sale_quantity === 'per_price') {
+                    priceDesc = `from ₦${swallow.price}`;
+                  } else if (swallow.sale_quantity === 'per_piece') {
+                    priceDesc = `₦${swallow.price} each`;
+                  } else if (swallow.sale_quantity === 'full_pack') {
+                    priceDesc = `₦${swallow.price} (Full Pack)`;
+                  } else if (swallow.sale_quantity === 'half_pack') {
+                    priceDesc = `₦${swallow.price} (Half Pack)`;
+                  } else {
+                    priceDesc = `₦${swallow.price}`;
+                  }
+                  return {
+                    id: `add_swallow_${swallow.food_name.toLowerCase().replace(/\s+/g, '_')}`,
+                    title: swallow.food_name.substring(0, 24),
+                    description: priceDesc.substring(0, 72)
+                  };
+                })
+              }]
+            }
+          }
+        };
+      }
+      
+      // Show as text list if more than 10
+      const swallowList = availableSwallows.map((swallow, i) => {
+        let priceDesc = '';
+        if (swallow.sale_quantity === 'per_price') {
+          priceDesc = `from ₦${swallow.price}`;
+        } else if (swallow.sale_quantity === 'per_piece') {
+          priceDesc = `₦${swallow.price} each`;
+        } else if (swallow.sale_quantity === 'full_pack') {
+          priceDesc = `₦${swallow.price} (Full Pack)`;
+        } else if (swallow.sale_quantity === 'half_pack') {
+          priceDesc = `₦${swallow.price} (Half Pack)`;
+        } else {
+          priceDesc = `₦${swallow.price}`;
+        }
+        return `${i + 1}. ${swallow.food_name} - ${priceDesc}`;
+      }).join('\n');
+      
       return {
         status: "error",
         response_type: "validation_error",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: " You can't order only free soup. Please add swallow to your order.\n\nReply with items to add, or cancel to start over.",
-        data: {
-          buttons: [
-            { id: "enter_swallow", title: "Enter Swallow" },
-            { id: "cancel_order", title: "Cancel" }
-          ]
-        }
+        message: `🚫 You can't order only free soup.\n\nAvailable Swallows at ${vendorData.name}:\n\n${swallowList}\n\nReply with the swallow name to add it to your order."
       };
     }
 
