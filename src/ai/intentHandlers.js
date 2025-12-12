@@ -1,6 +1,6 @@
 import { getUserName } from "../db/Utils/users.js";
 import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasSwallowWithoutSoup, hasOnlyFreeSoup, getAllVendors, checkVendorStatus, getAvailableSoups } from "../db/Utils/vendor.js";
-import { sendAfricanKitchenCatalog, sendAlphaCatalog, sendArenaCatalog, sendBestmanCatalog, sendChefMayoCatalog, sendExceedingGraceCatalog, sendFamotCatalog, sendReneesCatalog, sendRukamatCatalog, sendYomiceCatalog } from "../services/sendVendorCatalog.js";
+import { sendAfricanKitchenCatalog, sendAlphaCatalog, sendArenaCatalog, sendBestmanCatalog, sendChefMayoCatalog, sendExceedingGraceCatalog, sendFamotCatalog, sendReneesCatalog, sendRukamatCatalog, sendYomiceCatalog, sendTestvendor } from "../services/sendVendorCatalog.js";
 
 
 
@@ -15,7 +15,7 @@ export const intentHandlers = {
         // Get available vendors
         const vendors = await getAllVendors();
         
-        const greetingMessage = `Sup ${userName || ""}! \nDowntown is active. Select food shop`;
+        const greetingMessage = `Sup ${userName || ""}👋! \nDowntown is active. Select food shop`;
         
         // Create restaurant list response
         let restaurantResponse = null;
@@ -230,6 +230,7 @@ export const intentHandlers = {
 
     if (menuItems.length) {
 
+      console.log('sending from intent handler')
       if (vendorData.name==='AFRICAN KITCHEN'){
         await sendAfricanKitchenCatalog(customerId)
       } else if (vendorData.name==='ARENA'){
@@ -250,6 +251,8 @@ export const intentHandlers = {
         await sendChefMayoCatalog(customerId)
       } else if (vendorData.name==="EXCEEDING GRACE"){
         await sendExceedingGraceCatalog(customerId)
+      } else if (vendorData.name === "Test vendor") {
+        await sendTestvendor(customerId)
       }
 
       return {
@@ -257,7 +260,7 @@ export const intentHandlers = {
         response_type: "vendor_catalogue",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: ` ${vendorData.name} Menu:\n\nJust tell me what you'd like to order!`
+        message: ``
       };
 
       // const menuList = menuItems.map((item, i) => {

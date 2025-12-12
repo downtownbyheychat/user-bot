@@ -9,6 +9,7 @@ import {
   sendReneesCatalog,
   sendRukamatCatalog,
   sendYomiceCatalog,
+  sendTestvendor
 } from "../services/sendVendorCatalog.js";
 import dotenv from "dotenv";
 dotenv.config();
@@ -403,7 +404,7 @@ export async function handleButtonClick(buttonId, customerId) {
       console.log(confirm_payment);
 
       // If NO payment received
-      if (confirm_payment.success !== true) {
+      if (confirm_payment.success === true) {
         return {
           status: "failed",
           response_type: "payment_not_received",
@@ -958,7 +959,8 @@ export async function handleButtonClick(buttonId, customerId) {
           };
         }
 
-        if (menuItems.length > 10) {
+        if (menuItems.length) {
+          console.log('sending from button handler')
           if (vendor.name === "AFRICAN KITCHEN") {
             await sendAfricanKitchenCatalog(customerId);
           } else if (vendor.name === "ARENA") {
@@ -979,7 +981,19 @@ export async function handleButtonClick(buttonId, customerId) {
             await sendChefMayoCatalog(customerId);
           } else if (vendor.name === "EXCEEDING GRACE") {
             await sendExceedingGraceCatalog(customerId);
+          } 
+          //remove test vendor from all instances when done
+          else if (vendor.name === "Test vendor") {
+            await sendTestvendor(customerId);
           }
+
+          return {
+            status: "success",
+            response_type: "vendor_catalogue",
+            customer_id: customerId,
+            timestamp: new Date().toISOString(),
+            message: ``
+          };
 
           // const menuList = menuItems.map((item, i) => {
           //   let priceDesc = '';

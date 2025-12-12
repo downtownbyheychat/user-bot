@@ -1198,3 +1198,132 @@ export async function sendExceedingGraceCatalog(to) {
     }),
   });
 }
+export async function sendTestvendor(to) {
+  await axios({
+    url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+    method: "post",
+    headers: {
+      Authorization: `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    data: JSON.stringify({
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to,
+      type: "interactive",
+      interactive: {
+        type: "product_list",
+        header: {
+          type: "text",
+          text: "Test vendor's menu",
+        },
+        body: {
+          text: "Discover the Test vendor's Menu favorites from our menu, handpicked just for you.",
+        },
+        footer: {
+          text: "Menu",
+        },
+        action: {
+          catalog_id: "1456615208749246",
+          sections: [
+            {
+              title: "Food",
+              product_items: [
+                {
+                  product_retailer_id: "0ie7gonsp9",
+                },
+                {
+                  product_retailer_id: "4k1d2m6426",
+                },
+                {
+                  product_retailer_id: "5zwn6bds3y",
+                },
+                {
+                  product_retailer_id: "8bn6qwhdg6",
+                },
+                {
+                  product_retailer_id: "96hyz1v2jb",
+                },
+                {
+                  product_retailer_id: "ifzqnqulrm",
+                },
+                {
+                  product_retailer_id: "l1l6667nj2",
+                },
+                {
+                  product_retailer_id: "nes1buwk3v",
+                },
+                {
+                  product_retailer_id: "os0oexo98d",
+                },
+                {
+                  product_retailer_id: "pn5kpp9adi",
+                },
+                {
+                  product_retailer_id: "wa4f02xtq1",
+                },
+                {
+                  product_retailer_id: "xufdmtfvk0",
+                },
+                {
+                  product_retailer_id: "y416cz4j2i",
+                },
+                {
+                  product_retailer_id: "z10tvrat1t",
+                },
+                {
+                  product_retailer_id: "zhrwm086ah",
+                },
+                {
+                  product_retailer_id: "50u1jiuw9v",
+                },
+                {
+                  product_retailer_id: "7yjotytonk",
+                },
+                {
+                  product_retailer_id: "etnpp1acwx",
+                },
+                {
+                  product_retailer_id: "gct415miau",
+                },
+                {
+                  product_retailer_id: "ib1bw6v4di",
+                },
+                {
+                  product_retailer_id: "idscw3mv2u",
+                },
+                {
+                  product_retailer_id: "jxdih64kz6",
+                },
+                {
+                  product_retailer_id: "kux41y4w38",
+                },
+                {
+                  product_retailer_id: "nkb9wrawyc",
+                },
+                {
+                  product_retailer_id: "rupmy858i1",
+                },
+                {
+                  product_retailer_id: "sthyg473mn",
+                },
+                {
+                  product_retailer_id: "t4u4gi4u06",
+                },
+                {
+                  product_retailer_id: "yh6x8c5p1x",
+                },
+                {
+                  product_retailer_id: "yn19uwwd33",
+                },
+                {
+                  product_retailer_id: "zcm6t0przz",
+                },
+              ],
+            },
+          ],
+        },
+      },
+    }),
+  });
+}
