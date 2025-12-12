@@ -158,7 +158,7 @@ export async function processMessage(customerId, message) {
       }
 
       let packTotal = pendingOrder.orderSummary.items.reduce((sum, item) => {
-        return sum + parseFloat(item.price);
+        return sum + parseFloat(item.total);
       }, 0);
 
       pushOrderPack(customerId, {

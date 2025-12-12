@@ -33,15 +33,14 @@ export async function confirmPayment(total, trans_id) {
   const koboTotal = total * 100;
   try {
     const response = await axios.post(
-      `${baseUrl}transactions/${vendor_phone}/one-time-payment`,
-      { amount: koboTotal }
+      `${baseUrl}transactions/confirm`,
+      { amount: koboTotal,
+        transaction_id: trans_id
+       }
     );
 
-    console.log(response.data.data);
+    // console.log(response.data.data);
 
-    // Send WhatsApp messages
-    await sendWarning(customer_id);
-    await sendTransId(customer_id, response.data.data.id);
 
     return response.data.data;
   } catch (err) {

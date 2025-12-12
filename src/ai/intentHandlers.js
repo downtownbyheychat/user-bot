@@ -15,7 +15,7 @@ export const intentHandlers = {
         // Get available vendors
         const vendors = await getAllVendors();
         
-        const greetingMessage = `Sup ${userName || "{name}"}! \nWelcome back to Downtown, where you chat, order, and eat. Fast.`;
+        const greetingMessage = `Sup ${userName || ""}! \nDowntown is active. Select food shop`;
         
         // Create restaurant list response
         let restaurantResponse = null;

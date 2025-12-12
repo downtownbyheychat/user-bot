@@ -10,14 +10,17 @@ import {
   sendRukamatCatalog,
   sendYomiceCatalog,
 } from "../services/sendVendorCatalog.js";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 dotenv.config();
 import pool from "../db/database.js";
 
-import { getAccount } from "./paymentHandler.js";
+import { getAccount, confirmPayment } from "./paymentHandler.js";
+import { createOrder } from "./orderHandler.js";
 
 const baseUrl = process.env.baseUrl;
-
+let grandTotal = 0;
+let account_details = null;
+let packFee = null;
 
 export async function handleButtonClick(buttonId, customerId) {
   switch (buttonId) {
@@ -196,11 +199,12 @@ export async function handleButtonClick(buttonId, customerId) {
       //   }
 
       let orderDetails = "";
-      let grandTotal = 0;
 
       console.log(orderStack);
 
-      const { pushOrderPack, getStackSummary } = await import("./orderStack.js");
+      const { pushOrderPack, getStackSummary } = await import(
+        "./orderStack.js"
+      );
       let stackSummary = getStackSummary(customerId);
       console.log(stackSummary);
 
@@ -218,15 +222,15 @@ export async function handleButtonClick(buttonId, customerId) {
           .join("\n");
 
         // Determine fee type
-        let fee = null
+        let fee = null;
         let feeLabel = null;
 
-        if (pack.delivery_location !== 'Pickup') {
-          fee = 100
-          feeLabel = 'Delivery Fee'
+        if (pack.delivery_location !== "Pickup") {
+          fee = 100;
+          feeLabel = "Delivery Fee";
         } else {
-          fee=50
-          feeLabel='Pickup Fee'
+          fee = 50;
+          feeLabel = "Pickup Fee";
         }
 
         // Add fee into pack total
@@ -235,9 +239,11 @@ export async function handleButtonClick(buttonId, customerId) {
         vendorName = pack.vendor;
 
         // Build summary string
-        orderDetails += `Pack ${i + 1} from ${pack.vendor}:\n${packItems}\nPack fee: ₦${
-          pack.total
-        }\n${feeLabel}: ₦${fee}`;
+        packFee = (stackSummary?.packCount || 1) * 200;
+        grandTotal += packFee;
+        orderDetails += `Pack ${i + 1} from ${
+          pack.vendor
+        }:\n${packItems}\nPack fee: ₦${packFee}\n${feeLabel}: ₦${fee}`;
 
         // Add to grand total (without pack fee here)
         grandTotal += packTotalWithFee;
@@ -245,21 +251,23 @@ export async function handleButtonClick(buttonId, customerId) {
 
       // ⭐ NEW: Add PACK COUNT fee here
       // packCount * 200
-      const packFee = (stackSummary?.packCount || 1) * 200;
-      grandTotal += packFee;
 
       const vendorResult = await pool.query(
         `SELECT phone_number FROM vendors WHERE name = $1`,
         [vendorName]
       );
-      let vendorNumber = null
-      let account_details = null
-      console.log('account initialised')
+      let vendorNumber = null;
+
+      console.log("account initialised");
       if (vendorResult.rows.length > 0) {
         vendorNumber = vendorResult.rows[0].phone_number;
-        console.log("vendor number :",vendorNumber)
-        account_details = await getAccount(vendorNumber, grandTotal, customerId)
-        console.log('account assigned',account_details)
+        console.log("vendor number :", vendorNumber);
+        account_details = await getAccount(
+          vendorNumber,
+          grandTotal,
+          customerId
+        );
+        console.log("account assigned", account_details);
       }
       return {
         status: "success",
@@ -382,11 +390,32 @@ export async function handleButtonClick(buttonId, customerId) {
           " Order Cancelled\nYour order has been cancelled successfully.\n\nReady to order again? Just drop your order in this format:\n\n*Example:*\njollof rice - ₦1,400, 1 beef 1 egg from African Kitchen delivered to my hostel(location)",
       };
 
-    case "payment_sent":
+    case "payment_sent": {
       const { getOrderStack: getStack, clearOrderStack: clearStack } =
         await import("./orderStack.js");
       const stack = getStack(customerId);
+      console.log(stack);
 
+      const confirm_payment = await confirmPayment(
+        grandTotal,
+        account_details.id
+      );
+      console.log(confirm_payment);
+
+      // If NO payment received
+      if (confirm_payment.success === true) {
+        return {
+          status: "failed",
+          response_type: "payment_not_received",
+          message:
+            "We have not yet received your payment. Please confirm if you've made the transfer.",
+          data: {
+            buttons: [{ id: "recheck_payment", title: "Recheck" }],
+          },
+        };
+      }
+
+      // Now payment is confirmed ✔️
       if (stack.length === 0) {
         return {
           status: "error",
@@ -426,17 +455,73 @@ export async function handleButtonClick(buttonId, customerId) {
       } catch (err) {
         console.error("Receipt generation failed:", err);
       }
-
+      const order_details = getStack(customerId);
       clearStack(customerId);
+
+      //get data
+      const userName = await pool.query(
+        `SELECT first_name FROM users WHERE phone_number = $1`,
+        [customerId]
+      );
+      const user_id = await pool.query(
+        `SELECT id FROM users WHERE phone_number = $1`,
+        [customerId]
+      );
+      let user =
+        userName.rows[0].first_name || userName.rows[0].last_name || " ";
+      let userPhone = await pool.query(
+        `SELECT phone_number FROM users WHERE phone_number = $1`,
+        [customerId]
+      );
+      userPhone = userPhone.phone_number || " ";
+      let vendorName = await pool.query(
+        `SELECT name FROM vendors WHERE id = $1`,
+        [order_details[0].vendorId]
+      );
+      const vendor_phone = await pool.query(
+        `SELECT phone_number FROM vendors WHERE id = $1`,
+        [order_details[0].vendorId]
+      );
+      const items = order_details[0].items;
+
+      const food_name = items
+        .map(
+          (item) =>
+            `name: ${item.name}\nquantity: ${item.quantity}\nprice: ${item.price}\ntotal: ${item.total}`
+        )
+        .join("\n");
+
+      const finalPrice = Number(order_details[0].total) + packFee;
+
+      let order_type = null;
+
+      if (order_details[0].delivery_location !== "Pickup") {
+        order_type = "delivery";
+      } else {
+        order_type = "pickup";
+      }
+      await createOrder(
+        user_id.rows[0].id,
+        order_details[0].vendorId,
+        user,
+        order_details[0].vendor,
+        food_name,
+        finalPrice,
+        order_type,
+        order_details[0].delivery_location,
+        customerId,
+        vendor_phone.rows[0].phone_number
+      );
 
       return {
         status: "success",
         response_type: "payment_confirmed",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: ` Payment Confirmed!\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}\n\nWe'll confirm with the restaurant shortly!`,
+        message: `Payment Confirmed Successfully!\n\nYour order has been forwarded to the vendor.\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}`,
         data: { receipt_path: receiptPath },
       };
+    }
 
     default:
       // Handle pickup button
@@ -464,7 +549,7 @@ export async function handleButtonClick(buttonId, customerId) {
 
         const packTotal = pendingOrder.orderSummary.items.reduce(
           (sum, item) => {
-            return sum + parseFloat(item.price);
+            return sum + parseFloat(item.total);
           },
           0
         );
