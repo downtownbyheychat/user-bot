@@ -403,7 +403,7 @@ export async function handleButtonClick(buttonId, customerId) {
       console.log(confirm_payment);
 
       // If NO payment received
-      if (confirm_payment.success === true) {
+      if (confirm_payment.success !== true) {
         return {
           status: "failed",
           response_type: "payment_not_received",
@@ -498,7 +498,7 @@ export async function handleButtonClick(buttonId, customerId) {
       if (order_details[0].delivery_location !== "Pickup") {
         order_type = "delivery";
       } else {
-        order_type = "pickup";
+        order_type = "pick_up";
       }
       await createOrder(
         user_id.rows[0].id,
