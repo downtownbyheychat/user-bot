@@ -58,6 +58,6 @@ src/
 ## Supported Intents
 
 - Food ordering and delivery management
-- Print services
+- 
 - Account management
 - General customer service
