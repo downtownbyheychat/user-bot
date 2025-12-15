@@ -403,7 +403,7 @@ export async function handleButtonClick(buttonId, customerId) {
       console.log(confirm_payment);
 
       // If NO payment received
-      if (confirm_payment.success === true) {
+      if (confirm_payment.success !== true) {
         return {
           status: "failed",
           response_type: "payment_not_received",
