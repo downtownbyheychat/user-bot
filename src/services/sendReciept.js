@@ -7,7 +7,7 @@ const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 
 
-export async function sendPassImage(customerId) {
+export async function sendPassImage(customerId, vendor, amount) {
   await axios({
     url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
     method: "post",
@@ -21,7 +21,7 @@ export async function sendPassImage(customerId) {
       type: "image",
       image: {
         link: "https://ik.imagekit.io/ytipnete2/SAVE_20251215_021207.jpg",
-        caption: "Your payment has been confirmed"
+        caption: `🎉Your payment of ₦${amount} to ${vendor} has been confirmed`
       }
     }),
   });

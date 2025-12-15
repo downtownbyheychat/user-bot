@@ -2,85 +2,77 @@ import dotenv from "dotenv";
 import axios from "axios";
 dotenv.config();
 
-const baseUrl = process.env.baseUrl;
+const baseUrl = 'https://downtownbyhai-api.onrender.com/'
 const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 
+import { paymentSessions } from "./sessionManager.js";
+
 export async function getAccount(vendor_phone, total, customer_id) {
-  const koboTotal = total * 100;
   try {
     const response = await axios.post(
-      `${baseUrl}transactions/${vendor_phone}/one-time-payment`,
-      { amount: koboTotal }
+      `${baseUrl}transactions/${customer_id}/one-time-payment`,
+      {
+        amount: total,
+        recipient_phone_number: vendor_phone,
+        description: "one time payment",
+      }
     );
 
-    console.log(response.data.data);
+    const external_reference =
+      response.data.data.external_reference;
 
-    // Send WhatsApp messages
-    await sendWarning(customer_id);
-    await sendTransId(customer_id, response.data.data.id);
+    // ✅ CREATE PAYMENT SESSION
+    paymentSessions.set(customer_id, {
+      external_reference,
+      amount: total,
+      vendor_phone,
+      status: "PENDING",
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 10 * 60 * 1000, // 10 mins
+    });
 
     return response.data.data;
   } catch (err) {
     console.log(err);
-    return err;
+    throw err;
   }
 }
 
 
-//confirm one time payment
-export async function confirmPayment(total, trans_id) {
-  const koboTotal = total * 100;
-  try {
-    const response = await axios.post(
-      `${baseUrl}transactions/confirm`,
-      { amount: koboTotal,
-        transaction_id: trans_id
-       }
-    );
 
-    // console.log(response.data.data);
+export async function confirmPayment(total, customer_id) {
+  const session = paymentSessions.get(customer_id);
 
-
-    return response.data.data;
-  } catch (err) {
-    console.log(err);
-    return err;
+  if (!session) {
+    console.log("No active payment session");
+    return
   }
-}
 
-async function sendWarning(to) {
-  await axios({
-    url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
-    method: "post",
-    headers: {
-      Authorization: `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    data: JSON.stringify({
-      messaging_product: "whatsapp",
-      to,
-      type: "text",
-      text: {
-        body: "*‼️ Copy the transaction id below and paste it in the narration/remark in your bank app*",
-      },
-    }),
-  });
-}
+  if (session.status === "CONFIRMED") {
+    console.log("Payment already confirmed" );
+    return
+  }
 
-async function sendTransId(to, id) {
-  await axios({
-    url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
-    method: "post",
-    headers: {
-      Authorization: `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    data: JSON.stringify({
-      messaging_product: "whatsapp",
-      to,
-      type: "text",
-      text: { body: id },
-    }),
-  });
+  if (session.amount !== total) {
+    console.log("Amount mismatch");
+    return
+  }
+
+  // Optional: expiry check
+  if (Date.now() > session.expiresAt) {
+    paymentSessions.delete(customer_id);
+    console.log("Payment session expired");
+  }
+
+  const response = await axios.post(
+    `${baseUrl}transactions/confirm`,
+    {
+      amount: session.amount,
+      external_reference: session.external_reference,
+    }
+  );
+
+
+  return response.data.data;
 }

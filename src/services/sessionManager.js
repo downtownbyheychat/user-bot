@@ -9,6 +9,9 @@ export function setPendingOrder(customerId, orderData) {
   });
 }
 
+export const paymentSessions = new Map();
+
+
 export function getPendingOrder(customerId) {
   return sessions.get(customerId) || null;
 }

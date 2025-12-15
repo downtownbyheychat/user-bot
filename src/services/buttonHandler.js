@@ -9,12 +9,13 @@ import {
   sendReneesCatalog,
   sendRukamatCatalog,
   sendYomiceCatalog,
-  sendTestvendor
+  sendTestvendor,
 } from "../services/sendVendorCatalog.js";
 import dotenv from "dotenv";
 dotenv.config();
 import pool from "../db/database.js";
 import { sendPassImage } from "./sendReciept.js";
+import { paymentSessions } from "./sessionManager.js";
 
 import { getAccount, confirmPayment } from "./paymentHandler.js";
 import { createOrder } from "./orderHandler.js";
@@ -276,7 +277,7 @@ export async function handleButtonClick(buttonId, customerId) {
         response_type: "payment",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: ` Payment Details\nYour Order:\n${orderDetails}\n===================\n*Total: ₦${grandTotal}*\n===================\n*Account Name: ${account_details.recipient_name}\nAccount Number: ${account_details.recipient_account_number}\nBank: ${account_details.recipient_bank}\n\n*`,
+        message: ` Payment Details\nYour Order:\n${orderDetails}\n===================\n*Total: ₦${grandTotal}*\n===================\n*\nAccount Number: ${account_details.account_number}\nBank: ${account_details.bank_name}\n\n*`,
         data: {
           buttons: [{ id: "payment_sent", title: " Payment Sent" }],
         },
@@ -398,15 +399,11 @@ export async function handleButtonClick(buttonId, customerId) {
       const stack = getStack(customerId);
       console.log(stack);
 
-      const confirm_payment = await confirmPayment(
-        grandTotal,
-        account_details.id
-      );
+      const confirm_payment = await confirmPayment(grandTotal, customerId);
       console.log(confirm_payment);
 
       // If NO payment received
-      if (confirm_payment.success !== true) {
-        
+      if (confirm_payment.success === true) {
         return {
           status: "failed",
           response_type: "payment_not_received",
@@ -516,7 +513,10 @@ export async function handleButtonClick(buttonId, customerId) {
         vendor_phone.rows[0].phone_number
       );
 
-      await sendPassImage(customerId)
+      await sendPassImage(customerId, order_details[0].vendor, finalPrice);
+      const session = paymentSessions.get(customerId);
+      session.status = "CONFIRMED";
+      paymentSessions.set(customerId, session);
 
       return {
         status: "success",
@@ -558,6 +558,7 @@ export async function handleButtonClick(buttonId, customerId) {
           },
           0
         );
+        console.log(packTotal)
 
         pushOrderPack(customerId, {
           items: pendingOrder.orderSummary.items,
@@ -964,7 +965,7 @@ export async function handleButtonClick(buttonId, customerId) {
         }
 
         if (menuItems.length) {
-          console.log('sending from button handler')
+          console.log("sending from button handler");
           if (vendor.name === "AFRICAN KITCHEN") {
             await sendAfricanKitchenCatalog(customerId);
           } else if (vendor.name === "ARENA") {
@@ -985,7 +986,7 @@ export async function handleButtonClick(buttonId, customerId) {
             await sendChefMayoCatalog(customerId);
           } else if (vendor.name === "EXCEEDING GRACE") {
             await sendExceedingGraceCatalog(customerId);
-          } 
+          }
           //remove test vendor from all instances when done
           else if (vendor.name === "Test vendor") {
             await sendTestvendor(customerId);
@@ -996,7 +997,7 @@ export async function handleButtonClick(buttonId, customerId) {
             response_type: "vendor_catalogue",
             customer_id: customerId,
             timestamp: new Date().toISOString(),
-            message: ``
+            message: ``,
           };
 
           // const menuList = menuItems.map((item, i) => {
