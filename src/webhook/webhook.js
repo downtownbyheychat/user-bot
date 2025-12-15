@@ -9,7 +9,7 @@ import {
   sendOTPVerificationFlow, 
   verifyOTP, 
   checkAndResendOTP,
-  handleUserOnboardingSubmission,
+  handleUserOnboardingSubmission, handleEmailChange,
   sendInvalidOTPMessage
 } from '../services/userOnboarding.js';
 import { processCart } from '../services/cartProcessor.js';
@@ -299,7 +299,7 @@ async function processMessagesAsync(body) {
                     // Handle button interactions
                     if (message.type === 'interactive' && message.interactive.type === 'button_reply') {
                         const buttonId = message.interactive.button_reply.id;
-
+                        await sendTypingIndicator(customerId, message.id);
                         // Mark message as read
                         await markAsRead(message.id);
 
@@ -359,21 +359,26 @@ async function processMessagesAsync(body) {
                     if (message.type === 'interactive' && message.interactive.type === 'nfm_reply') {
                         const flowData = message.interactive.nfm_reply;
                         const userInput = JSON.parse(flowData.response_json);
-
+                        await sendTypingIndicator(customerId, message.id);
                         console.log('Flow Data:', userInput);
 
                         // Handle user onboarding flow submission
-                        if (userInput.screen_1_First_Name_0 && userInput.screen_1_Email_2) {
+                        if ((userInput.screen_1_First_Name_0 && userInput.screen_1_Email_2) || userInput.screen_0_Email_0) {
                             await handleUserOnboardingSubmission(customerId, userInput);
                             continue;
                         }
+                        if (userInput.screen_0_Email_0) {
+                            await handleEmailChange(customerId, userInput.screen_0_Email_0);
+                            continue;
+                        }
+
                     }
 
                     // Handle list interactions
                     if (message.type === 'interactive' && message.interactive.type === 'list_reply') {
                         const listItemId = message.interactive.list_reply.id;
                         console.log(' List item selected:', listItemId);
-
+                        await sendTypingIndicator(customerId, message.id);
                         // Mark message as read
                         await markAsRead(message.id);
 
@@ -402,6 +407,7 @@ async function processMessagesAsync(body) {
 
                     //handle catalog submissions
                     if (message.type === 'order') {
+                        await sendTypingIndicator(customerId, message.id);
                         console.log("product reply:", JSON.stringify(message, null, 2));
                         const userCart = JSON.stringify(message, null, 2)
                         await processCart(message, message.from)

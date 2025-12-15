@@ -5,7 +5,7 @@ dotenv.config();
 
 const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
-const BASE_URL = 'https://downtownbyhai-api.onrender.com/';
+const BASE_URL = 'https://app.downtown.ng';
 
 // OTP session storage
 const otpSessions = new Map(); // { phoneNumber: { otp, expiresAt, email } }
@@ -186,11 +186,36 @@ export async function sendOTPFlowMessage(phoneNumber) {
         'Content-Type': 'application/json'
       },
       data: {
+        recipient_type: 'individual',
         messaging_product: 'whatsapp',
         to: phoneNumber,
-        type: 'text',
-        text: {
-          body: 'A new OTP has been sent to your email. Please reply with the OTP to verify your account.'
+        type: 'interactive',
+        interactive: {
+          type: 'flow',
+          header: {
+            type: 'text',
+            text: 'Downtown'
+          },
+          body: {
+            text: "Update your email"
+          },
+          action: {
+            name: 'flow',
+            parameters: {
+              flow_message_version: '3',
+              flow_token: 'unused',
+              flow_id: '2123429215130517',
+              flow_cta: 'Update',
+              flow_action: 'navigate',
+              flow_action_payload: {
+                screen: 'update_email',
+                data: {
+                  type: 'dynamic_object',
+                  value: {}
+                }
+              }
+            }
+          }
         }
       }
     });
@@ -409,11 +434,36 @@ export async function sendChangeEmailFlow(phoneNumber) {
         'Content-Type': 'application/json'
       },
       data: {
+        recipient_type: 'individual',
         messaging_product: 'whatsapp',
         to: phoneNumber,
-        type: 'text',
-        text: {
-          body: 'Please reply with your new email address:'
+        type: 'interactive',
+        interactive: {
+          type: 'flow',
+          header: {
+            type: 'text',
+            text: 'Downtown'
+          },
+          body: {
+            text: "Update your email"
+          },
+          action: {
+            name: 'flow',
+            parameters: {
+              flow_message_version: '3',
+              flow_token: 'unused',
+              flow_id: '2123429215130517',
+              flow_cta: 'Update',
+              flow_action: 'navigate',
+              flow_action_payload: {
+                screen: 'update_email',
+                data: {
+                  type: 'dynamic_object',
+                  value: {}
+                }
+              }
+            }
+          }
         }
       }
     });

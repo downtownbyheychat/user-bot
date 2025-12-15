@@ -1,3 +1,4 @@
+
 # Receipt Generation Issues
 
 ## Problem 1: Receipt Generated Before Payment

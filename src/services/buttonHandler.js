@@ -14,6 +14,7 @@ import {
 import dotenv from "dotenv";
 dotenv.config();
 import pool from "../db/database.js";
+import { sendPassImage } from "./sendReciept.js";
 
 import { getAccount, confirmPayment } from "./paymentHandler.js";
 import { createOrder } from "./orderHandler.js";
@@ -404,14 +405,15 @@ export async function handleButtonClick(buttonId, customerId) {
       console.log(confirm_payment);
 
       // If NO payment received
-      if (confirm_payment.success === true) {
+      if (confirm_payment.success !== true) {
+        
         return {
           status: "failed",
           response_type: "payment_not_received",
           message:
             "We have not yet received your payment. Please confirm if you've made the transfer.",
           data: {
-            buttons: [{ id: "recheck_payment", title: "Recheck" }],
+            buttons: [{ id: "payment_sent", title: "Recheck" }],
           },
         };
       }
@@ -513,6 +515,8 @@ export async function handleButtonClick(buttonId, customerId) {
         customerId,
         vendor_phone.rows[0].phone_number
       );
+
+      await sendPassImage(customerId)
 
       return {
         status: "success",

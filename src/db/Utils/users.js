@@ -24,8 +24,10 @@
 //   }
 // }
 
+const baseUrl = 'https://app.downtown.ng/'
 
 import pool from '../database.js';
+import axios from 'axios';
 
 // Function to get the user's name
 export async function getUserName(whatsappId) {

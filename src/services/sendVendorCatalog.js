@@ -38,9 +38,7 @@ export async function sendArenaCatalog(to) {
             {
               title: "Food",
               product_items: [
-                {
-                  product_retailer_id: "28fjyk9fr3",
-                },
+                
                 {
                   product_retailer_id: "44b0khv39e",
                 },
@@ -63,9 +61,6 @@ export async function sendArenaCatalog(to) {
                   product_retailer_id: "euas01isag",
                 },
                 {
-                  product_retailer_id: "euy5dj4gos",
-                },
-                {
                   product_retailer_id: "j4ng5gbr91",
                 },
                 {
@@ -75,9 +70,6 @@ export async function sendArenaCatalog(to) {
                   product_retailer_id: "n4md5ca0ql",
                 },
                 {
-                  product_retailer_id: "s951b3acsz",
-                },
-                {
                   product_retailer_id: "sd6or84l3k",
                 },
                 {
@@ -85,9 +77,6 @@ export async function sendArenaCatalog(to) {
                 },
                 {
                   product_retailer_id: "4in2gswzsa",
-                },
-                {
-                  product_retailer_id: "4wjy8mij32",
                 },
                 {
                   product_retailer_id: "5pa7vjt2s7",
@@ -112,6 +101,18 @@ export async function sendArenaCatalog(to) {
                 },
                 {
                   product_retailer_id: "stryje2uao",
+                },
+                {
+                  product_retailer_id: "euy5dj4gos",
+                },
+                {
+                  product_retailer_id: "s951b3acsz",
+                },
+                {
+                  product_retailer_id: "4wjy8mij32",
+                },
+                {
+                  product_retailer_id: "28fjyk9fr3",
                 },
               ],
             },
@@ -152,15 +153,9 @@ export async function sendBestmanCatalog(to) {
             {
               title: "Food",
               product_items: [
-                {
-                  product_retailer_id: "0qoh95acyw",
-                },
-                {
-                  product_retailer_id: "55yxzxwd6y",
-                },
-                {
-                  product_retailer_id: "6ea89olj5y",
-                },
+                //food items
+                
+                
                 {
                   product_retailer_id: "6ncrgiqowk",
                 },
@@ -170,21 +165,13 @@ export async function sendBestmanCatalog(to) {
                 {
                   product_retailer_id: "9uuxzyinl3",
                 },
-                {
-                  product_retailer_id: "ai46479kt6",
-                },
-                {
-                  product_retailer_id: "fpl4wv1jqi",
-                },
+                
+                
                 {
                   product_retailer_id: "nzgih18vxo",
                 },
-                {
-                  product_retailer_id: "q3wbk8a1qh",
-                },
-                {
-                  product_retailer_id: "t7gq4tnrqr",
-                },
+                
+                
                 {
                   product_retailer_id: "uuqvr976iz",
                 },
@@ -194,9 +181,7 @@ export async function sendBestmanCatalog(to) {
                 {
                   product_retailer_id: "ykxwg8twzf",
                 },
-                {
-                  product_retailer_id: "zggh8vz9wz",
-                },
+                
                 {
                   product_retailer_id: "0os37g0kt7",
                 },
@@ -206,9 +191,7 @@ export async function sendBestmanCatalog(to) {
                 {
                   product_retailer_id: "40eq627eiz",
                 },
-                {
-                  product_retailer_id: "47cunuy9s2",
-                },
+                
                 {
                   product_retailer_id: "8yn6ly86o4",
                 },
@@ -230,17 +213,49 @@ export async function sendBestmanCatalog(to) {
                 {
                   product_retailer_id: "n1iwco48v6",
                 },
-                {
-                  product_retailer_id: "t9yjfefhyl",
-                },
-                {
-                  product_retailer_id: "une890w6wq",
-                },
+                
+                
                 {
                   product_retailer_id: "uogh75dzzf",
                 },
                 {
                   product_retailer_id: "y853r1wppi",
+                },
+
+                //drinks
+                {
+                  product_retailer_id: "55yxzxwd6y",
+                },
+                {
+                  product_retailer_id: "6ea89olj5y",
+                },
+                {
+                  product_retailer_id: "ai46479kt6",
+                },
+                {
+                  product_retailer_id: "q3wbk8a1qh",
+                },
+                {
+                  product_retailer_id: "zggh8vz9wz",
+                },
+                {
+                  product_retailer_id: "47cunuy9s2",
+                },
+                {
+                  product_retailer_id: "une890w6wq",
+                },
+                //snacks
+                {
+                  product_retailer_id: "0qoh95acyw",
+                },
+                {
+                  product_retailer_id: "fpl4wv1jqi",
+                },
+                {
+                  product_retailer_id: "t7gq4tnrqr",
+                },
+                {
+                  product_retailer_id: "t9yjfefhyl",
                 },
               ],
             },
@@ -281,14 +296,34 @@ export async function sendFamotCatalog(to) {
             {
               title: "Food",
               product_items: [
+                //food
+                
+                
+                
+                {
+                  product_retailer_id: "uqfi9opf7x",
+                },
+                
+                {
+                  product_retailer_id: "40eq627eiz",
+                },
+                {
+                  product_retailer_id: "7rshheo9iy",
+                },
+                {
+                  product_retailer_id: "abz02fljsz",
+                },
+                
+                //drink
+                {
+                  product_retailer_id: "ardwfsar5t",
+                },
+                //snacks
                 {
                   product_retailer_id: "39gdluahn6",
                 },
                 {
                   product_retailer_id: "a1mxq21n6d",
-                },
-                {
-                  product_retailer_id: "ardwfsar5t",
                 },
                 {
                   product_retailer_id: "b17ok1ouzh",
@@ -318,9 +353,6 @@ export async function sendFamotCatalog(to) {
                   product_retailer_id: "t2571yrs80",
                 },
                 {
-                  product_retailer_id: "uqfi9opf7x",
-                },
-                {
                   product_retailer_id: "w8syi0bcwj",
                 },
                 {
@@ -331,15 +363,6 @@ export async function sendFamotCatalog(to) {
                 },
                 {
                   product_retailer_id: "53mcqpctpp",
-                },
-                {
-                  product_retailer_id: "40eq627eiz",
-                },
-                {
-                  product_retailer_id: "7rshheo9iy",
-                },
-                {
-                  product_retailer_id: "abz02fljsz",
                 },
                 {
                   product_retailer_id: "f58aq6irld",
@@ -428,9 +451,7 @@ export async function sendReneesCatalog(to) {
                 {
                   product_retailer_id: "9kel4eh4i6",
                 },
-                {
-                  product_retailer_id: "ac0esxwcaz",
-                },
+                
                 {
                   product_retailer_id: "ee5pqazyba",
                 },
@@ -443,9 +464,7 @@ export async function sendReneesCatalog(to) {
                 {
                   product_retailer_id: "p32m3tdiwh",
                 },
-                {
-                  product_retailer_id: "pqs5ml8px6",
-                },
+                
                 {
                   product_retailer_id: "prvtk5t52o",
                 },
@@ -455,9 +474,7 @@ export async function sendReneesCatalog(to) {
                 {
                   product_retailer_id: "ztp2ycc8wc",
                 },
-                {
-                  product_retailer_id: "06qhmkptxm",
-                },
+                
                 {
                   product_retailer_id: "1d0nsob25b",
                 },
@@ -470,9 +487,7 @@ export async function sendReneesCatalog(to) {
                 {
                   product_retailer_id: "9y5gfbp6tg",
                 },
-                {
-                  product_retailer_id: "gw73ix1u3z",
-                },
+                
                 {
                   product_retailer_id: "hyqbcruuql",
                 },
@@ -496,6 +511,22 @@ export async function sendReneesCatalog(to) {
                 },
                 {
                   product_retailer_id: "x8dpxfknnr",
+                },
+                //swallow
+                {
+                  product_retailer_id: "ac0esxwcaz",
+                },
+                {
+                  product_retailer_id: "pqs5ml8px6",
+                },
+                {
+                  product_retailer_id: "06qhmkptxm",
+                },
+                {
+                  product_retailer_id: "gw73ix1u3z",
+                },
+                {
+                  product_retailer_id: "ydk0zbp5x9",
                 },
               ],
             },
@@ -542,24 +573,18 @@ export async function sendRukamatCatalog(to) {
                 {
                   product_retailer_id: "3bc85ty9mh",
                 },
-                {
-                  product_retailer_id: "455waa0xux",
-                },
+                
                 {
                   product_retailer_id: "4zzkb17f7k",
                 },
-                {
-                  product_retailer_id: "b42cugvddk",
-                },
+                
                 {
                   product_retailer_id: "by99dfe18y",
                 },
                 {
                   product_retailer_id: "cdkio4b7x2",
                 },
-                {
-                  product_retailer_id: "dppq5kyzch",
-                },
+                
                 {
                   product_retailer_id: "g3mxixqw0a",
                 },
@@ -572,9 +597,7 @@ export async function sendRukamatCatalog(to) {
                 {
                   product_retailer_id: "xh4wmx09je",
                 },
-                {
-                  product_retailer_id: "yoadi424om",
-                },
+                
                 {
                   product_retailer_id: "yu8l37ynu6",
                 },
@@ -587,9 +610,7 @@ export async function sendRukamatCatalog(to) {
                 {
                   product_retailer_id: "bhqn77nj4w",
                 },
-                {
-                  product_retailer_id: "c7p1vokgyv",
-                },
+                
                 {
                   product_retailer_id: "g8unqdibtz",
                 },
@@ -604,6 +625,22 @@ export async function sendRukamatCatalog(to) {
                 },
                 {
                   product_retailer_id: "ybjgk1a0px",
+                },
+                //soups
+                {
+                  product_retailer_id: "455waa0xux",
+                },
+                {
+                  product_retailer_id: "b42cugvddk",
+                },
+                {
+                  product_retailer_id: "dppq5kyzch",
+                },
+                {
+                  product_retailer_id: "yoadi424om",
+                },
+                {
+                  product_retailer_id: "c7p1vokgyv",
                 },
               ],
             },
@@ -665,18 +702,9 @@ export async function sendYomiceCatalog(to) {
                 {
                   product_retailer_id: "k6v6hn9kra",
                 },
-                {
-                  product_retailer_id: "lxrd7bcsay",
-                },
-                {
-                  product_retailer_id: "sq34r2e675",
-                },
-                {
-                  product_retailer_id: "tk8yvam8dg",
-                },
-                {
-                  product_retailer_id: "vw0212lfcd",
-                },
+                
+                
+                
                 {
                   product_retailer_id: "xkjtgvptpa",
                 },
@@ -706,6 +734,19 @@ export async function sendYomiceCatalog(to) {
                 },
                 {
                   product_retailer_id: "lqleg4d8oh",
+                },
+                //soups
+                {
+                  product_retailer_id: "lxrd7bcsay",
+                },
+                {
+                  product_retailer_id: "sq34r2e675",
+                },
+                {
+                  product_retailer_id: "tk8yvam8dg",
+                },
+                {
+                  product_retailer_id: "vw0212lfcd",
                 },
               ],
             },
@@ -773,15 +814,11 @@ export async function sendAfricanKitchenCatalog(to) {
                 {
                   product_retailer_id: "nazvem4pgg",
                 },
-                {
-                  product_retailer_id: "qd12flt1sb",
-                },
+                
                 {
                   product_retailer_id: "sffdinjv25",
                 },
-                {
-                  product_retailer_id: "sh6e1gyl49",
-                },
+                
                 {
                   product_retailer_id: "vxww1o8o00",
                 },
@@ -811,6 +848,13 @@ export async function sendAfricanKitchenCatalog(to) {
                 },
                 {
                   product_retailer_id: "wpfwtwahpa",
+                },
+                //soup
+                {
+                  product_retailer_id: "qd12flt1sb",
+                },
+                {
+                  product_retailer_id: "sh6e1gyl49",
                 },
               ],
             },
