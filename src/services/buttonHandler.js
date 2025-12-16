@@ -131,6 +131,7 @@ export async function handleButtonClick(buttonId, customerId) {
     case "proceed_payment":
       const { getOrderStack } = await import("./orderStack.js");
       const orderStack = getOrderStack(customerId);
+      console.log('order stack:', orderStack)
 
       if (orderStack.length === 0) {
         return {
@@ -139,77 +140,18 @@ export async function handleButtonClick(buttonId, customerId) {
         };
       }
 
-      //   // Get user details
-      //   const { getUserName } = await import('../db/Utils/users.js');
-      //   const userName = await getUserName(customerId);
-
-      //   // Get vendor phone numbers
-      //   const pool = (await import('../db/database.js')).default;
-
-      //   // Create orders in database for each pack
-      //   const createdOrders = [];
-      //   for (const pack of orderStack) {
-      //     // Get vendor phone
-      //     const vendorResult = await pool.query(
-      //       'SELECT phone_number FROM vendors WHERE id = $1',
-      //       [pack.vendorId]
-      //     );
-      //     const vendorPhone = vendorResult.rows[0]?.phone_number;
-
-      //     // Format food names
-      //     const foodNames = pack.items.map(item => {
-      //       if (item.quantity_type === 'per_price') {
-      //         return `${item.name} (₦${item.price})`;
-      //       }
-      //       return `${item.name} x${item.quantity}`;
-      //     }).join(', ');
-
-      //     // Normalize location to snake_case
-      //     const normalizeLocation = (loc) => {
-      //       if (loc === 'Pickup') return 'pickup';
-      //       return loc.toLowerCase().replace(/\s+/g, '_');
-      //     };
-
-      //     // Create order
-      //     try {
-      //       const orderResponse = await fetch(`${process.env.API_BASE_URL || 'http://localhost:3000'}/orders/`, {
-      //         method: 'POST',
-      //         headers: { 'Content-Type': 'application/json' },
-      //         body: JSON.stringify({
-      //           user_id: customerId,
-      //           vendor_phone_number: vendorPhone,
-      //           user_name: userName || 'Customer',
-      //           vendor_name: pack.vendor,
-      //           food_name: foodNames,
-      //           order_type: pack.delivery_location === 'Pickup' ? 'pick_up' : 'delivery',
-      //           price: pack.total.toString(),
-      //           user_location: normalizeLocation(pack.delivery_location),
-      //           user_phone_number: customerId
-      //         })
-      //       });
-
-      //       if (orderResponse.ok) {
-      //         const orderData = await orderResponse.json();
-      //         createdOrders.push({ pack, success: true });
-      //       } else {
-      //         console.error('Order creation failed:', await orderResponse.text());
-      //         createdOrders.push({ pack, success: false });
-      //       }
-      //     } catch (error) {
-      //       console.error('Order creation error:', error);
-      //       createdOrders.push({ pack, success: false });
-      //     }
-      //   }
-
       let orderDetails = "";
-
-      console.log(orderStack);
-
+      grandTotal = 0; // Initialize grandTotal to 0
+      
       const { pushOrderPack, getStackSummary } = await import(
         "./orderStack.js"
       );
       let stackSummary = getStackSummary(customerId);
-      console.log(stackSummary);
+      console.log('stack summary',stackSummary);
+
+      // Calculate total pack fee once (pack count * 200)
+      const packCount = orderStack.length;
+      const totalPackFee = packCount * 200;
 
       let vendorName = null;
 
@@ -224,36 +166,24 @@ export async function handleButtonClick(buttonId, customerId) {
           })
           .join("\n");
 
-        // Determine fee type
-        let fee = null;
-        let feeLabel = null;
-
-        if (pack.delivery_location !== "Pickup") {
-          fee = 100;
-          feeLabel = "Delivery Fee";
-        } else {
-          fee = 50;
-          feeLabel = "Pickup Fee";
-        }
-
-        // Add fee into pack total
-        const packTotalWithFee = pack.total + fee;
+        // Determine delivery/pickup fee
+        let deliveryFee = pack.delivery_location !== "Pickup" ? 100 : 50;
+        let feeLabel = pack.delivery_location !== "Pickup" ? "Delivery Fee" : "Pickup Fee";
 
         vendorName = pack.vendor;
 
-        // Build summary string
-        packFee = (stackSummary?.packCount || 1) * 200;
-        grandTotal += packFee;
-        orderDetails += `Pack ${i + 1} from ${
-          pack.vendor
-        }:\n${packItems}\nPack fee: ₦${packFee}\n${feeLabel}: ₦${fee}`;
+        // Build summary string (show pack fee per pack for clarity)
+        orderDetails += `Pack ${i + 1} from ${pack.vendor}:\n${packItems}\n${feeLabel}: ₦${deliveryFee}\nPack Subtotal: ₦${pack.total + deliveryFee}\n\n`;
 
-        // Add to grand total (without pack fee here)
-        grandTotal += packTotalWithFee;
+        // Add to grand total: pack.total + delivery/pickup fee
+        grandTotal += pack.total + deliveryFee;
       });
 
-      // ⭐ NEW: Add PACK COUNT fee here
-      // packCount * 200
+      // Add total pack fee to grand total
+      grandTotal += totalPackFee;
+      
+      // Add pack fee summary to order details
+      orderDetails += `Pack Fee (${packCount} pack${packCount > 1 ? 's' : ''} x ₦200): ₦${totalPackFee}\n`;
 
       const vendorResult = await pool.query(
         `SELECT phone_number FROM vendors WHERE name = $1`,
@@ -272,16 +202,18 @@ export async function handleButtonClick(buttonId, customerId) {
         );
         console.log("account assigned", account_details);
       }
+      
       return {
         status: "success",
         response_type: "payment",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: ` Payment Details\nYour Order:\n${orderDetails}\n===================\n*Total: ₦${grandTotal}*\n===================\n*\nAccount Number: ${account_details.account_number}\nBank: ${account_details.bank_name}\n\n*`,
+        message: `Payment Details\nYour Order:\n${orderDetails}===================\n*Total: ₦${grandTotal}*\n===================\n\nAccount Number: ${account_details.account_number}\nBank: ${account_details.bank_name}\n\n`,
         data: {
-          buttons: [{ id: "payment_sent", title: " Payment Sent" }],
+          buttons: [{ id: "payment_sent", title: "Payment Sent" }],
         },
       };
+
 
     case "add_new_pack":
       return {
@@ -383,6 +315,10 @@ export async function handleButtonClick(buttonId, customerId) {
       const { clearFailedOrder } = await import("./sessionManager.js");
       clearOrderStack(customerId);
       clearFailedOrder(customerId);
+      const { clearPendingOrder } = await import(
+        "./sessionManager.js"
+      );
+      clearPendingOrder(customerId);
 
       return {
         status: "success",
@@ -536,7 +472,7 @@ export async function handleButtonClick(buttonId, customerId) {
           "./sessionManager.js"
         );
         const pendingOrder = getPendingOrder(customerId);
-        console.log(pendingOrder);
+        console.log("pending order: ", pendingOrder);
 
         if (!pendingOrder?.orderSummary) {
           return {
@@ -548,17 +484,28 @@ export async function handleButtonClick(buttonId, customerId) {
         const { pushOrderPack, getStackSummary } = await import(
           "./orderStack.js"
         );
+        console.log("pending order summary: ", pendingOrder.orderSummary);
         const { getAllVendors } = await import("../db/Utils/vendor.js");
         const vendors = await getAllVendors();
         const vendor = vendors.find((v) => v.id === vendorId);
 
         const packTotal = pendingOrder.orderSummary.items.reduce(
           (sum, item) => {
-            return sum + parseFloat(item.total);
+            // if total exists, trust it
+            if (typeof item.total === "number") {
+              return sum + item.total;
+            }
+
+            // otherwise calculate it
+            const price = Number(item.price) || 0;
+            const quantity = Number(item.quantity) || 0;
+
+            return sum + price;
           },
           0
         );
-        console.log(packTotal)
+
+        console.log("pack total:", packTotal);
 
         pushOrderPack(customerId, {
           items: pendingOrder.orderSummary.items,

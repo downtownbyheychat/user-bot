@@ -36,7 +36,7 @@ export async function createOrder(user_id, vendor_id, user_name, vendor_name, fo
        }
     );
 
-    console.log(response);
+    console.log(response.data.data); 
 
 
     return response.data.data;
@@ -44,4 +44,20 @@ export async function createOrder(user_id, vendor_id, user_name, vendor_name, fo
     console.log(err);
     return err;
   }
+}
+
+export async function CheckUserOrder(user_id) {
+    try {
+      const response = await axios.get(`${baseUrl}orders/${user_id}`)
+      console.log(response.data.data)
+      const status = response.data.data;
+      if (status.vendor_notified===true) {
+        //send user that their order has been notified
+      }
+      if (status.status === 'accepted') {
+        //send user that their order has been accepted
+      }
+    } catch (err) {
+      console.log('error from checking user order: ', err)
+    }
 }

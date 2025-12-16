@@ -4,6 +4,7 @@ import {
   generateOrderSummary,
   ORDER_SUMMARY_INTENTS,
 } from "../ai/orderSummary.js";
+import { clearOrderStack } from "./orderStack.js";
 import { orderStatusMessages, paymentMessages } from "./orderStatusManager.js";
 
 export async function processMessage(customerId, message) {
@@ -15,6 +16,7 @@ export async function processMessage(customerId, message) {
       );
       clearPendingOrder(customerId);
       clearFailedOrder(customerId);
+      clearOrderStack(customerId)
       return {
         status: "success",
         response_type: "order_cancelled",
@@ -157,9 +159,21 @@ export async function processMessage(customerId, message) {
         }
       }
 
-      let packTotal = pendingOrder.orderSummary.items.reduce((sum, item) => {
-        return sum + parseFloat(item.total);
-      }, 0);
+      const packTotal = pendingOrder.orderSummary.items.reduce(
+          (sum, item) => {
+            // if total exists, trust it
+            if (typeof item.total === "number") {
+              return sum + item.total;
+            }
+
+            // otherwise calculate it
+            const price = Number(item.price) || 0;
+            const quantity = Number(item.quantity) || 0;
+
+            return sum + price;
+          },
+          0
+        );
 
       pushOrderPack(customerId, {
         items: pendingOrder.orderSummary.items,
