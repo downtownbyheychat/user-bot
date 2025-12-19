@@ -1,5 +1,7 @@
 import { getUserName } from "../db/Utils/users.js";
 import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasSwallowWithoutSoup, hasOnlyFreeSoup, getAllVendors, checkVendorStatus, getAvailableSoups } from "../db/Utils/vendor.js";
+import { sendAfricanKitchenCatalog, sendAlphaCatalog, sendArenaCatalog, sendBestmanCatalog, sendChefMayoCatalog, sendExceedingGraceCatalog, sendFamotCatalog, sendReneesCatalog, sendRukamatCatalog, sendYomiceCatalog, sendTestvendor } from "../services/sendVendorCatalog.js";
+
 
 
 export const intentHandlers = {
@@ -8,11 +10,12 @@ export const intentHandlers = {
         // Fetch the user's name from the database
         const userName = await getUserName(customerId);
         console.log(`[Greeting] Fetched userName: ${userName}`);
+        console.log('customer id', customerId)
 
         // Get available vendors
         const vendors = await getAllVendors();
         
-        const greetingMessage = `Sup ${userName || "{name}"}! \nWelcome back to Downtown, where you chat, order, and eat. Fast.`;
+        const greetingMessage = `Sup ${userName || ""}👋! \nDowntown is active. Select food shop`;
         
         // Create restaurant list response
         let restaurantResponse = null;
@@ -225,68 +228,102 @@ export const intentHandlers = {
         };
     }
 
-    if (menuItems.length > 10) {
-      const menuList = menuItems.map((item, i) => {
-        let priceDesc = '';
-        if (item.sale_quantity === 'per_price') {
-          priceDesc = `from ₦${item.price}`;
-        } else if (item.sale_quantity === 'per_piece') {
-          priceDesc = `₦${item.price} each`;
-        } else if (item.sale_quantity === 'full_pack') {
-          priceDesc = `₦${item.price} (Full Pack)`;
-        } else if (item.sale_quantity === 'half_pack') {
-          priceDesc = `₦${item.price} (Half Pack)`;
-        } else {
-          priceDesc = `₦${item.price}`;
-        }
-        return `${i + 1}. ${item.food_name} - ${priceDesc}`;
-      }).join('\n');
-      
+    if (menuItems.length) {
+
+      console.log('sending from intent handler')
+      if (vendorData.name==='AFRICAN KITCHEN'){
+        await sendAfricanKitchenCatalog(customerId)
+      } else if (vendorData.name==='ARENA'){
+        await sendArenaCatalog(customerId)
+      } else if (vendorData.name==='BESTMAN'){
+        await sendBestmanCatalog(customerId)
+      } else if (vendorData.name==='RUKAMAT'){
+        await sendRukamatCatalog(customerId)
+      } else if (vendorData.name==='FAMOT'){
+        await sendFamotCatalog(customerId)
+      } else if (vendorData.name==='RENEES CAFE'){
+        await sendReneesCatalog(customerId)
+      } else if (vendorData.name==="ALPHA'S PLACE"){
+        await sendAlphaCatalog(customerId)
+      } else if (vendorData.name==="YOMICE CAFE"){
+        await sendYomiceCatalog(customerId)
+      } else if (vendorData.name==="CHEF MAYO"){
+        await sendChefMayoCatalog(customerId)
+      } else if (vendorData.name==="EXCEEDING GRACE"){
+        await sendExceedingGraceCatalog(customerId)
+      } else if (vendorData.name === "Test vendor") {
+        await sendTestvendor(customerId)
+      }
+
       return {
         status: "success",
         response_type: "vendor_catalogue",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: ` ${vendorData.name} Menu:\n\n${menuList}\n\nJust tell me what you'd like to order!`
+        message: ``
       };
+
+      // const menuList = menuItems.map((item, i) => {
+      //   let priceDesc = '';
+      //   if (item.sale_quantity === 'per_price') {
+      //     priceDesc = `from ₦${item.price}`;
+      //   } else if (item.sale_quantity === 'per_piece') {
+      //     priceDesc = `₦${item.price} each`;
+      //   } else if (item.sale_quantity === 'full_pack') {
+      //     priceDesc = `₦${item.price} (Full Pack)`;
+      //   } else if (item.sale_quantity === 'half_pack') {
+      //     priceDesc = `₦${item.price} (Half Pack)`;
+      //   } else {
+      //     priceDesc = `₦${item.price}`;
+      //   }
+      //   return `${i + 1}. ${item.food_name} - ${priceDesc}`;
+      // }).join('\n');
+      
+      // return {
+      //   status: "success",
+      //   response_type: "vendor_catalogue",
+      //   customer_id: customerId,
+      //   timestamp: new Date().toISOString(),
+      //   message: ` ${vendorData.name} Menu:\n\n${menuList}\n\nJust tell me what you'd like to order!`
+      // };
     }
 
-    return {
-      status: "success",
-      response_type: "vendor_catalogue",
-      customer_id: customerId,
-      timestamp: new Date().toISOString(),
-      message: `Here's the menu for ${vendorData.name}:`,
-      data: {
-        list: {
-          header: `${vendorData.name} Menu`.substring(0, 60),
-          body: "Select an item to add to your order:",
-          button: "View Items",
-          sections: [{
-            title: "Menu Items",
-            rows: menuItems.map(item => {
-              let priceDesc = '';
-              if (item.sale_quantity === 'per_price') {
-                priceDesc = `from ₦${item.price}`;
-              } else if (item.sale_quantity === 'per_piece') {
-                priceDesc = `₦${item.price} each`;
-              } else if (item.sale_quantity === 'full_pack') {
-                priceDesc = `₦${item.price} (Full Pack)`;
-              } else if (item.sale_quantity === 'half_pack') {
-                priceDesc = `₦${item.price} (Half Pack)`;
-              } else {
-                priceDesc = `₦${item.price}`;
-              }
-              return {
-                id: `menu_${item.id}`,
-                title: item.food_name.substring(0, 24),
-                description: priceDesc.substring(0, 72)
-              };
-            })
-          }]
-        }
-      }
-    };
+    // return {
+    //   status: "success",
+    //   response_type: "vendor_catalogue",
+    //   customer_id: customerId,
+    //   timestamp: new Date().toISOString(),
+    //   message: `Here's the menu for ${vendorData.name}:`,
+    //   data: {
+    //     list: {
+    //       header: `${vendorData.name} Menu`.substring(0, 60),
+    //       body: "Select an item to add to your order:",
+    //       button: "View Items",
+    //       sections: [{
+    //         title: "Menu Items",
+    //         rows: menuItems.map(item => {
+    //           let priceDesc = '';
+    //           if (item.sale_quantity === 'per_price') {
+    //             priceDesc = `from ₦${item.price}`;
+    //           } else if (item.sale_quantity === 'per_piece') {
+    //             priceDesc = `₦${item.price} each`;
+    //           } else if (item.sale_quantity === 'full_pack') {
+    //             priceDesc = `₦${item.price} (Full Pack)`;
+    //           } else if (item.sale_quantity === 'half_pack') {
+    //             priceDesc = `₦${item.price} (Half Pack)`;
+    //           } else {
+    //             priceDesc = `₦${item.price}`;
+    //           }
+    //           return {
+    //             id: `menu_${item.id}`,
+    //             title: item.food_name.substring(0, 24),
+    //             description: priceDesc.substring(0, 72)
+    //           };
+    //         })
+    //       }]
+    //     }
+    //   }
+    // };
   }
 
 //   // Case 2: Items without vendor
@@ -780,7 +817,7 @@ if (!vendor && items.length > 0) {
           response_type: "delivery_prompt",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: `Order: ${itemsList} from ${vendorData.name}\n\n Pickup or Delivery?`,
+          message: `Order: ${itemsList} from ${vendorData.name}\n\n Pickup or Delivery?\n\nPickup - ₦50\nDelivery - ₦100`,
           data: {
             buttons: [
               { id: `pickup_${vendorData.id}`, title: " Pickup" },
@@ -792,24 +829,31 @@ if (!vendor && items.length > 0) {
 
       // Push validated order to stack
       const { pushOrderPack, getStackSummary } = await import('../services/orderStack.js');
-      
+
       const packTotal = validatedItems.reduce((sum, item) => {
         return sum + parseFloat(item.price);
       }, 0);
-      
+
+      // ADD DELIVERY PRICE HERE → ₦100
+      const deliveryFee = 100;
+
+      // Final total = pack + delivery fee
+      const finalPackTotal = packTotal + deliveryFee;
+
       // Update items to use database names
       const itemsWithDbNames = validatedItems.map(i => ({
         ...i,
         name: i.dbName || i.name
       }));
-      
+
       pushOrderPack(customerId, {
         items: itemsWithDbNames,
         vendor: vendorData.name,
         vendorId: vendorData.id,
         delivery_location,
-        total: packTotal
+        total: finalPackTotal
       });
+
       
       const stackSummary = getStackSummary(customerId);
 
@@ -818,7 +862,7 @@ if (!vendor && items.length > 0) {
         response_type: "order_summary",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: ` Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack Total: ₦${packTotal}\nVendor: ${vendorData.name}\nDelivery: ${delivery_location}\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
+        message: ` Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack: ₦${packTotal}\nVendor: ${vendorData.name}\nDelivery: ${delivery_location}\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
         data: {
           buttons: [
             { id: "proceed_payment", title: " Proceed to Payment" },

@@ -24,8 +24,10 @@
 //   }
 // }
 
+const baseUrl = 'https://app.downtown.ng/'
 
 import pool from '../database.js';
+import axios from 'axios';
 
 // Function to get the user's name
 export async function getUserName(whatsappId) {
@@ -36,14 +38,14 @@ export async function getUserName(whatsappId) {
     console.log(`[getUserName] Converted phoneNumber: ${phoneNumber}`);
 
     const result = await pool.query(
-      'SELECT first_name, last_name FROM users WHERE phone_number = $1',
+      'SELECT first_name FROM users WHERE phone_number = $1',
       [phoneNumber]
     );
 
     console.log(`[getUserName] Query result: ${JSON.stringify(result.rows)}`);
 
     if (result.rows.length > 0) {
-      const fullName = `${result.rows[0].first_name} ${result.rows[0].last_name}`.trim();
+      const fullName = `${result.rows[0].first_name}`.trim();
       console.log(`[getUserName] User found: ${fullName}`);
       return fullName;
     } else {

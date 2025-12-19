@@ -9,9 +9,10 @@ import {
   sendOTPVerificationFlow, 
   verifyOTP, 
   checkAndResendOTP,
-  handleUserOnboardingSubmission,
+  handleUserOnboardingSubmission, handleEmailChange,
   sendInvalidOTPMessage
 } from '../services/userOnboarding.js';
+import { processCart } from '../services/cartProcessor.js';
 
 dotenv.config();
 
@@ -56,6 +57,36 @@ app.get('/webhook', (req, res) => {
 });
 
 app.post('/webhook', async (req, res) => {
+    //display every message sent
+    const { entry } = req.body;
+  // console.log("FULL WEBHOOK DATA:");
+  // console.log(JSON.stringify(req.body, null, 2));
+  // ✅ Validate structure
+  
+  const changes = entry[0]?.changes;
+  
+  const value = changes[0]?.value;
+  const statuses = value?.statuses ? value.statuses[0] : null;
+  const messages = value?.messages ? value.messages[0] : null;
+
+
+  // ✅ If no message, stop here
+  if (!messages) return;
+
+  const messageId = messages.id;
+  const sender = messages.from;
+  const messageType = messages.type;
+  const textBody = messages.text?.body?.toLowerCase().trim() || "";
+
+  console.log("🟡 New incoming message:", {
+    sender,
+    messageId,
+    messageType,
+    textBody,
+  });
+  console.log("FULL MESSAGE:");
+console.log(JSON.stringify(messages, null, 2));
+
   try {
     const body = req.body;
 
@@ -268,7 +299,7 @@ async function processMessagesAsync(body) {
                     // Handle button interactions
                     if (message.type === 'interactive' && message.interactive.type === 'button_reply') {
                         const buttonId = message.interactive.button_reply.id;
-
+                        await sendTypingIndicator(customerId, message.id);
                         // Mark message as read
                         await markAsRead(message.id);
 
@@ -328,21 +359,26 @@ async function processMessagesAsync(body) {
                     if (message.type === 'interactive' && message.interactive.type === 'nfm_reply') {
                         const flowData = message.interactive.nfm_reply;
                         const userInput = JSON.parse(flowData.response_json);
-
+                        await sendTypingIndicator(customerId, message.id);
                         console.log('Flow Data:', userInput);
 
                         // Handle user onboarding flow submission
-                        if (userInput.screen_1_First_Name_0 && userInput.screen_1_Email_2) {
+                        if ((userInput.screen_1_First_Name_0 && userInput.screen_1_Email_2) || userInput.screen_0_Email_0) {
                             await handleUserOnboardingSubmission(customerId, userInput);
                             continue;
                         }
+                        if (userInput.screen_0_Email_0) {
+                            await handleEmailChange(customerId, userInput.screen_0_Email_0);
+                            continue;
+                        }
+
                     }
 
                     // Handle list interactions
                     if (message.type === 'interactive' && message.interactive.type === 'list_reply') {
                         const listItemId = message.interactive.list_reply.id;
                         console.log(' List item selected:', listItemId);
-
+                        await sendTypingIndicator(customerId, message.id);
                         // Mark message as read
                         await markAsRead(message.id);
 
@@ -367,6 +403,14 @@ async function processMessagesAsync(body) {
                             console.error('List handling error:', error);
                             await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");
                         }
+                    }
+
+                    //handle catalog submissions
+                    if (message.type === 'order') {
+                        await sendTypingIndicator(customerId, message.id);
+                        console.log("product reply:", JSON.stringify(message, null, 2));
+                        const userCart = JSON.stringify(message, null, 2)
+                        await processCart(message, message.from)
                     }
                 }
             }

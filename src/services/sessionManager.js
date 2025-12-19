@@ -3,11 +3,14 @@ const sessions = new Map();
 const failedOrders = new Map();
 
 export function setPendingOrder(customerId, orderData) {
-  sessions.set(customerId, {
+  return sessions.set(customerId, {
     ...orderData,
     timestamp: Date.now()
   });
 }
+
+export const paymentSessions = new Map();
+
 
 export function getPendingOrder(customerId) {
   return sessions.get(customerId) || null;
