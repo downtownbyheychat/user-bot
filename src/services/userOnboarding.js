@@ -65,13 +65,18 @@ export async function sendUserOnboardingFlow(phoneNumber) {
 // Handle user onboarding flow submission
 export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
   try {
+    console.log('Flow data received:', JSON.stringify(flowData, null, 2));
+    
     const payload = {
       first_name: flowData.screen_1_First_Name_0?.trim() || '',
       last_name: flowData.screen_1_Last_Name_1?.trim() || '',
-      email: flowData.screen_1_Email_2,
+      email: flowData.screen_1_Email_2?.trim(),
       university: 'Bells Tech',
       phone_number: phoneNumber
     };
+
+    console.log('Email extracted:', payload.email);
+    console.log('Email validation result:', isValidEmail(payload.email));
 
     if (!isValidEmail(payload.email)) {
       await axios({
@@ -228,7 +233,12 @@ export async function sendOTPFlowMessage(phoneNumber) {
 // Handle email update flow submission
 export async function handleEmailUpdateSubmission(phoneNumber, flowData) {
   try {
-    const newEmail = flowData.update_email_Email_0;
+    console.log('Email update flow data received:', JSON.stringify(flowData, null, 2));
+    
+    const newEmail = flowData.update_email_Email_0?.trim();
+    
+    console.log('New email extracted:', newEmail);
+    console.log('Email validation result:', isValidEmail(newEmail));
 
     if (!isValidEmail(newEmail)) {
       await axios({
