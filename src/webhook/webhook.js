@@ -363,12 +363,15 @@ async function processMessagesAsync(body) {
                         console.log('Flow Data:', userInput);
 
                         // Handle user onboarding flow submission
-                        if ((userInput.screen_1_First_Name_0 && userInput.screen_1_Email_2) || userInput.screen_0_Email_0) {
+                        if (userInput.screen_1_First_Name_0 && userInput.screen_1_Email_2) {
                             await handleUserOnboardingSubmission(customerId, userInput);
                             continue;
                         }
-                        if (userInput.screen_0_Email_0) {
-                            await handleEmailChange(customerId, userInput.screen_0_Email_0);
+                        
+                        // Handle email update flow submission
+                        if (userInput.update_email_Email_0) {
+                            const { handleEmailUpdateSubmission } = await import('../services/userOnboarding.js');
+                            await handleEmailUpdateSubmission(customerId, userInput);
                             continue;
                         }
 
