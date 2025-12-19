@@ -5,7 +5,7 @@ dotenv.config();
 
 const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
-const BASE_URL = 'https://downtownbyhai-api.onrender.com/';
+const BASE_URL = 'https://app.downtown.ng';
 
 // OTP session storage
 const otpSessions = new Map(); // { phoneNumber: { otp, expiresAt, email } }
