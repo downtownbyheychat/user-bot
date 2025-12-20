@@ -126,46 +126,46 @@ console.log(JSON.stringify(messages, null, 2));
 //           });
 
 //           if (message.type === 'text') {
-//             const customerId = message.from;
+//             const customerPhone = message.from;
 //             const userMessage = message.text.body;
 
-//             await saveChatMessage(customerId, userMessage, false);
+//             await saveChatMessage(customerPhone, userMessage, false);
 
 //             try {
-//               const responseData = await processMessage(customerId, userMessage);
+//               const responseData = await processMessage(customerPhone, userMessage);
               
-//               await saveChatMessage(customerId, responseData.message, true);
+//               await saveChatMessage(customerPhone, responseData.message, true);
 //               const buttons = responseData.data?.buttons || null;
-//               await sendMessage(customerId, responseData.message, buttons);
+//               await sendMessage(customerPhone, responseData.message, buttons);
               
 //               if (responseData.data?.order_summary?.items?.length > 0) {
-//                 await generateAndSendReceipt(customerId, responseData.data.order_summary);
+//                 await generateAndSendReceipt(customerPhone, responseData.data.order_summary);
 //               }
 //             } catch (error) {
 //               console.error('Error processing message:', error);
 //               const fallbackMessage = "Sorry, I'm currently overloaded. Please try again shortly.";
-//               await saveChatMessage(customerId, fallbackMessage, true);
-//               await sendMessage(customerId, fallbackMessage);
+//               await saveChatMessage(customerPhone, fallbackMessage, true);
+//               await sendMessage(customerPhone, fallbackMessage);
 //             }
 //           }
 
 //           // Handle button interactions
 //           if (message.type === 'interactive' && message.interactive.type === 'button_reply') {
 //             const buttonId = message.interactive.button_reply.id;
-//             const customerId = message.from;
+//             const customerPhone = message.from;
             
 //             try {
 //               const { handleButtonClick } = await import('../services/buttonHandler.js');
-//               const buttonResponse = await handleButtonClick(buttonId, customerId);
+//               const buttonResponse = await handleButtonClick(buttonId, customerPhone);
               
-//               await saveChatMessage(customerId, `[Button: ${buttonId}]`, false);
-//               await saveChatMessage(customerId, buttonResponse.message, true);
+//               await saveChatMessage(customerPhone, `[Button: ${buttonId}]`, false);
+//               await saveChatMessage(customerPhone, buttonResponse.message, true);
 //               const buttonButtons = buttonResponse.data?.buttons || null;
-//               await sendMessage(customerId, buttonResponse.message, buttonButtons);
+//               await sendMessage(customerPhone, buttonResponse.message, buttonButtons);
               
 //             } catch (error) {
 //               console.error('Button handling error:', error);
-//               await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");
+//               await sendMessage(customerPhone, "Sorry, that action isn't working right now. Please try again.");
 //             }
 //           }
 //         }
@@ -184,7 +184,7 @@ async function processMessagesAsync(body) {
                 const messages = change.value.messages;
 
                 for (const message of messages || []) {
-                    const customerId = message.from; // WhatsApp phone number of the user
+                    const customerPhone = message.from; // WhatsApp phone number of the user
 
 
                     // Fix: Prevent responding to messages not intended for the user
@@ -216,14 +216,14 @@ async function processMessagesAsync(body) {
                         const userMessage = message.text.body;
 
                         // Show read receipt and typing indicator for all messages
-                        await sendTypingIndicator(customerId, message.id);
+                        await sendTypingIndicator(customerPhone, message.id);
 
                         // Check if user exists
-                        let userCheck = await checkUserExists(customerId);
+                        let userCheck = await checkUserExists(customerPhone);
                         
                         if (!userCheck.exists) {
                             // User not registered, trigger onboarding
-                            await sendUserOnboardingFlow(customerId);
+                            await sendUserOnboardingFlow(customerPhone);
                             continue;
                         }
                         
@@ -231,24 +231,24 @@ async function processMessagesAsync(body) {
                             // User registered but not verified, check if message is OTP
                             const otpPattern = /^\d{4,6}$/;
                             if (otpPattern.test(userMessage.trim())) {
-                                const result = await verifyOTP(userMessage.trim(), customerId);
+                                const result = await verifyOTP(userMessage.trim(), customerPhone);
                                 
                                 if (result.success) {
                                     console.log(' OTP verified, sending welcome message');
-                                    await sendMessage(customerId, ' Email verified successfully!');
+                                    // await sendMessage(customerPhone, ' Email verified successfully!');
                                     continue;
                                 } else{
-                                    await sendInvalidOTPMessage(customerId);
+                                    await sendInvalidOTPMessage(customerPhone);
                                 }
                                 continue;
                             }
                             
                             // Check OTP expiry
-                            const otpCheck = await checkAndResendOTP(customerId);
+                            const otpCheck = await checkAndResendOTP(customerPhone);
                             if (otpCheck.expired) {
-                                await sendMessage(customerId, otpCheck.message);
+                                await sendMessage(customerPhone, otpCheck.message);
                             } else {
-                                await sendMessage(customerId, {
+                                await sendMessage(customerPhone, {
                                     message: ' Please verify your email first.\n\nReply with the OTP code sent to your email.',
                                     data: {
                                         buttons: [
@@ -262,52 +262,52 @@ async function processMessagesAsync(body) {
                         }
 
                         // Save the user message to the chat log
-                        await saveChatMessage(customerId, userMessage, false);
+                        await saveChatMessage(customerPhone, userMessage, false);
 
                         try {
                             
                             // Process the message and get the response
-                            const responseData = await processMessage(customerId, userMessage);
+                            const responseData = await processMessage(customerPhone, userMessage);
 
                             // Save the bot's response to the chat log
-                            await saveChatMessage(customerId, responseData.message, true);
+                            await saveChatMessage(customerPhone, responseData.message, true);
 
                             // Send the response to the user
-                            await sendMessage(customerId, responseData);
+                            await sendMessage(customerPhone, responseData);
                             
                             // Send additional message if present (e.g., restaurant list after greeting)
                             if (responseData.additionalMessage) {
-                                await saveChatMessage(customerId, responseData.additionalMessage.message, true);
-                                await sendMessage(customerId, responseData.additionalMessage);
+                                await saveChatMessage(customerPhone, responseData.additionalMessage.message, true);
+                                await sendMessage(customerPhone, responseData.additionalMessage);
                             }
                         } catch (error) {
                             console.error('Error processing message:', error);
                             const fallbackMessage = "Sorry, I'm currently overloaded. Please try again shortly.";
-                            await saveChatMessage(customerId, fallbackMessage, true);
-                            await sendMessage(customerId, fallbackMessage);
+                            await saveChatMessage(customerPhone, fallbackMessage, true);
+                            await sendMessage(customerPhone, fallbackMessage);
                         }
                     }
 
                     // Handle button interactions
                     if (message.type === 'interactive' && message.interactive.type === 'button_reply') {
                         const buttonId = message.interactive.button_reply.id;
-                        await sendTypingIndicator(customerId, message.id);
+                        await sendTypingIndicator(customerPhone, message.id);
                         // Mark message as read
                         await markAsRead(message.id);
 
                         // Handle resend OTP button
                         if (buttonId === 'resend_otp') {
-                            const userCheck = await checkUserExists(customerId);
+                            const userCheck = await checkUserExists(customerPhone);
                             if (userCheck.exists && !userCheck.verified) {
-                                const otpCheck = await checkAndResendOTP(customerId);
+                                const otpCheck = await checkAndResendOTP(customerPhone);
                                 if (otpCheck.expired) {
-                                    await sendMessage(customerId, otpCheck.message);
+                                    await sendMessage(customerPhone, otpCheck.message);
                                 } else if (otpCheck.session) {
-                                    await sendOTPVerificationFlow(customerId, otpCheck.session.email, otpCheck.session.name);
+                                    await sendOTPVerificationFlow(customerPhone, otpCheck.session.email, otpCheck.session.name);
                                     const { sendOTPFlowMessage } = await import('../services/userOnboarding.js');
-                                    await sendOTPFlowMessage(customerId);
+                                    await sendOTPFlowMessage(customerPhone);
                                 } else {
-                                    await sendMessage(customerId, 'No active OTP session found. Please restart registration.');
+                                    await sendMessage(customerPhone, 'No active OTP session found. Please restart registration.');
                                 }
                             }
                             continue;
@@ -315,10 +315,10 @@ async function processMessagesAsync(body) {
 
                         // Handle change email button
                         if (buttonId === 'change_email') {
-                            const userCheck = await checkUserExists(customerId);
+                            const userCheck = await checkUserExists(customerPhone);
                             if (userCheck.exists && !userCheck.verified) {
                                 const { sendChangeEmailFlow } = await import('../services/userOnboarding.js');
-                                await sendChangeEmailFlow(customerId);
+                                await sendChangeEmailFlow(customerPhone);
                             }
                             continue;
                         }
@@ -326,22 +326,22 @@ async function processMessagesAsync(body) {
                         try {
                             // Process the button click
                             const { handleButtonClick } = await import('../services/buttonHandler.js');
-                            const buttonResponse = await handleButtonClick(buttonId, customerId);
+                            const buttonResponse = await handleButtonClick(buttonId, customerPhone);
 
                             // Save the button interaction to the chat log
-                            await saveChatMessage(customerId, `[Button: ${buttonId}]`, false);
-                            await saveChatMessage(customerId, buttonResponse.message, true);
+                            await saveChatMessage(customerPhone, `[Button: ${buttonId}]`, false);
+                            await saveChatMessage(customerPhone, buttonResponse.message, true);
 
                             // Send the button response to the user
-                            await sendMessage(customerId, buttonResponse);
+                            await sendMessage(customerPhone, buttonResponse);
                             
                             // Send receipt if available
                             if (buttonResponse.data?.receipt_path) {
-                                await sendDocument(customerId, buttonResponse.data.receipt_path, 'receipt.pdf');
+                                await sendDocument(customerPhone, buttonResponse.data.receipt_path, 'receipt.pdf');
                             }
                         } catch (error) {
                             console.error('Button handling error:', error);
-                            await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");
+                            await sendMessage(customerPhone, "Sorry, that action isn't working right now. Please try again.");
                         }
                     }
 
@@ -351,12 +351,12 @@ async function processMessagesAsync(body) {
                     if (message.type === 'interactive' && message.interactive.type === 'nfm_reply') {
                         const flowData = message.interactive.nfm_reply;
                         const userInput = JSON.parse(flowData.response_json);
-                        await sendTypingIndicator(customerId, message.id);
+                        await sendTypingIndicator(customerPhone, message.id);
                         console.log('Flow Data:', JSON.stringify(userInput, null, 2));
 
                         // Handle user onboarding flow submission
                         if (userInput.screen_1_First_Name_0 && userInput.screen_1_Email_2) {
-                            await handleUserOnboardingSubmission(customerId, userInput);
+                            await handleUserOnboardingSubmission(customerPhone, userInput);
                             continue;
                         }
                         
@@ -364,7 +364,7 @@ async function processMessagesAsync(body) {
                         if (userInput.screen_0_Email_0) {
                             console.log('Email update flow detected');
                             const { handleEmailUpdateSubmission } = await import('../services/userOnboarding.js');
-                            await handleEmailUpdateSubmission(customerId, userInput);
+                            await handleEmailUpdateSubmission(customerPhone, userInput);
                             continue;
                         }
                         
@@ -376,36 +376,36 @@ async function processMessagesAsync(body) {
                     if (message.type === 'interactive' && message.interactive.type === 'list_reply') {
                         const listItemId = message.interactive.list_reply.id;
                         console.log(' List item selected:', listItemId);
-                        await sendTypingIndicator(customerId, message.id);
+                        await sendTypingIndicator(customerPhone, message.id);
                         // Mark message as read
                         await markAsRead(message.id);
 
                         try {
                             // Process the list selection
                             const { handleButtonClick } = await import('../services/buttonHandler.js');
-                            const listResponse = await handleButtonClick(listItemId, customerId);
+                            const listResponse = await handleButtonClick(listItemId, customerPhone);
                             console.log(' List response generated:', listResponse.message?.substring(0, 50));
 
                             // Save the list interaction to the chat log
-                            await saveChatMessage(customerId, `[List: ${listItemId}]`, false);
-                            await saveChatMessage(customerId, listResponse.message, true);
+                            await saveChatMessage(customerPhone, `[List: ${listItemId}]`, false);
+                            await saveChatMessage(customerPhone, listResponse.message, true);
 
                             // Send the list response to the user
-                            await sendMessage(customerId, listResponse);
+                            await sendMessage(customerPhone, listResponse);
                             
                             // Send receipt if available
                             if (listResponse.data?.receipt_path) {
-                                await sendDocument(customerId, listResponse.data.receipt_path, 'receipt.pdf');
+                                await sendDocument(customerPhone, listResponse.data.receipt_path, 'receipt.pdf');
                             }
                         } catch (error) {
                             console.error('List handling error:', error);
-                            await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");
+                            await sendMessage(customerPhone, "Sorry, that action isn't working right now. Please try again.");
                         }
                     }
 
                     //handle catalog submissions
                     if (message.type === 'order') {
-                        await sendTypingIndicator(customerId, message.id);
+                        await sendTypingIndicator(customerPhone, message.id);
                         console.log("product reply:", JSON.stringify(message, null, 2));
                         const userCart = JSON.stringify(message, null, 2)
                         await processCart(message, message.from)

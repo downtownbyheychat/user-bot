@@ -352,6 +352,8 @@ export async function verifyOTP(otp, phoneNumber) {
           }
         });
       } 
+
+      await sendMessage(phoneNumber, ' Email verified successfully!');
         // Send welcome message for new user onboarding
         sendOrderTemplateMessage(phoneNumber);
       
