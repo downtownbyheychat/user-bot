@@ -351,10 +351,10 @@ export async function verifyOTP(otp, phoneNumber) {
             }
           }
         });
-      } else {
+      } 
         // Send welcome message for new user onboarding
         sendOrderTemplateMessage(phoneNumber);
-      }
+      
       
       return { success: true };
     }
