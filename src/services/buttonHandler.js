@@ -517,8 +517,13 @@ export async function handleButtonClick(buttonId, customerId) {
         response_type: "payment_confirmed",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `Payment Confirmed Successfully!\n\nYour order has been forwarded to the vendor.\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}`,
-        data: { receipt_path: receiptPath },
+        message: `Payment Confirmed Successfully!\n\nYour order has been forwarded to the vendor.\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}\n\nNeed to cancel? Use the button below.`,
+        data: { 
+          receipt_path: receiptPath,
+          buttons: [
+            { id: "refund_order", title: "🔄 Cancel & Refund" }
+          ]
+        },
       };
     }
 
