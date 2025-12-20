@@ -115,6 +115,22 @@ export async function handleButtonClick(buttonId, customerId) {
       };
 
     case "confirm_cancel":
+      const cancelSession = paymentSessions.get(customerId);
+      
+      if (cancelSession && cancelSession.status === "CONFIRMED") {
+        return {
+          status: "success",
+          message:
+            " Order Cancelled\n\nYour order has been cancelled. Would you like to request a refund?",
+          data: {
+            buttons: [
+              { id: "refund_order", title: " Request Refund" },
+              { id: "start_ordering", title: " New Order" },
+            ],
+          },
+        };
+      }
+      
       return {
         status: "success",
         message:
@@ -127,6 +143,42 @@ export async function handleButtonClick(buttonId, customerId) {
         message:
           " Great! Your order is still active.\nWe'll keep you updated on the progress.",
       };
+
+    case "refund_order":
+      const session = paymentSessions.get(customerId);
+      
+      if (!session) {
+        return {
+          status: "error",
+          message: "No payment session found. Cannot process refund.",
+        };
+      }
+      
+      if (session.status !== "CONFIRMED") {
+        return {
+          status: "error",
+          message: "Payment not confirmed yet. Cannot process refund.",
+        };
+      }
+      
+      const { requestRefund } = await import("./refundHandler.js");
+      const refundResult = await requestRefund(
+        session.external_reference,
+        session.amount
+      );
+      
+      if (refundResult.success) {
+        paymentSessions.delete(customerId);
+        return {
+          status: "success",
+          message: ` Refund Processed\n\nYour refund of ₦${session.amount} has been initiated.\nIt will be processed within 24 hours.\n\nReference: ${session.external_reference}`,
+        };
+      } else {
+        return {
+          status: "error",
+          message: ` Refund Failed\n\n${refundResult.error}\n\nPlease contact support if you need assistance.`,
+        };
+      }
 
     case "proceed_payment":
       const { getOrderStack } = await import("./orderStack.js");
