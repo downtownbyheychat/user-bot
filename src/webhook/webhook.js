@@ -235,7 +235,7 @@ async function processMessagesAsync(body) {
                                 
                                 if (result.success) {
                                     console.log(' OTP verified, sending welcome message');
-                                    // await sendMessage(customerPhone, ' Email verified successfully!');
+                                    await sendMessage(customerPhone, ' Email verified successfully!');
                                     continue;
                                 } else{
                                     await sendInvalidOTPMessage(customerPhone);
