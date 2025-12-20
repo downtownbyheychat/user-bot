@@ -235,7 +235,7 @@ export async function handleEmailUpdateSubmission(phoneNumber, flowData) {
   try {
     console.log('Email update flow data received:', JSON.stringify(flowData, null, 2));
     
-    const newEmail = flowData.update_email_Email_0?.trim();
+    const newEmail = flowData.screen_0_Email_0?.trim();
     
     console.log('New email extracted:', newEmail);
     console.log('Email validation result:', isValidEmail(newEmail));

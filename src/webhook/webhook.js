@@ -360,7 +360,7 @@ async function processMessagesAsync(body) {
                         const flowData = message.interactive.nfm_reply;
                         const userInput = JSON.parse(flowData.response_json);
                         await sendTypingIndicator(customerId, message.id);
-                        console.log('Flow Data:', userInput);
+                        console.log('Flow Data:', JSON.stringify(userInput, null, 2));
 
                         // Handle user onboarding flow submission
                         if (userInput.screen_1_First_Name_0 && userInput.screen_1_Email_2) {
@@ -369,11 +369,14 @@ async function processMessagesAsync(body) {
                         }
                         
                         // Handle email update flow submission
-                        if (userInput.update_email_Email_0) {
+                        if (userInput.screen_0_Email_0) {
+                            console.log('Email update flow detected');
                             const { handleEmailUpdateSubmission } = await import('../services/userOnboarding.js');
                             await handleEmailUpdateSubmission(customerId, userInput);
                             continue;
                         }
+                        
+                        console.log('No matching flow handler found for:', Object.keys(userInput));
 
                     }
 
