@@ -150,7 +150,7 @@ export const intentHandlers = {
       };
     }
     
-    if (vendorStatus.status !== 'active') {
+    if (vendorStatus.status !== 'open') {
       const alternatives = await getAllVendors();
       
       if (alternatives.length > 10) {
@@ -485,7 +485,7 @@ if (!vendor && items.length > 0) {
       };
     }
     
-    if (vendorStatus.status !== 'active') {
+    if (vendorStatus.status !== 'open') {
       const alternatives = await getAllVendors();
       
       if (alternatives.length > 10) {
