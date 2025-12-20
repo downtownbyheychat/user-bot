@@ -6,18 +6,18 @@ const baseUrl = 'https://downtownbyhai-api.onrender.com/';
 
 //
 export async function createOrder(user_id, vendor_id, user_name, vendor_name, food_name, price, order_type, user_location, user_phone_number, vendor_phone_number){
-  console.log("Sending to server:", {
-  user_id,
-  vendor_id,
-  user_name,
-  vendor_name,
-  food_name,
-  price,
-  order_type,
-  user_location,
-  user_phone_number,
-  vendor_phone_number
-});
+//   console.log("Sending to server:", {
+//   user_id,
+//   vendor_id,
+//   user_name,
+//   vendor_name,
+//   food_name,
+//   price,
+//   order_type,
+//   user_location,
+//   user_phone_number,
+//   vendor_phone_number
+// });
 
     try {
     const response = await axios.post(

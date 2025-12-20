@@ -11,6 +11,48 @@ export function setPendingOrder(customerId, orderData) {
 
 export const paymentSessions = new Map();
 
+export function startRefundTimer(customerId, onFinalize) {
+  const session = paymentSessions.get(customerId);
+  if (!session) return;
+
+  // prevent duplicate timers
+  if (session.refundTimer) return;
+
+  const remaining =
+    session.refundDeadline - Date.now();
+
+  if (remaining <= 0) {
+    onFinalize(session);
+    return;
+  }
+
+  session.refundTimer = setTimeout(() => {
+    const latest = paymentSessions.get(customerId);
+
+    if (!latest) return;
+
+    // Only finalize if NOT refunded
+    if (latest.status === "CONFIRMED") {
+      onFinalize(latest);
+    }
+  }, remaining);
+
+  paymentSessions.set(customerId, session);
+}
+
+/**
+ * Check if refund window is still open
+ */
+export function canRefund(customerId) {
+  const session = paymentSessions.get(customerId);
+  if (!session) return false;
+
+  return (
+    session.status === "CONFIRMED" &&
+    Date.now() < session.refundDeadline
+  );
+}
+
 
 export function getPendingOrder(customerId) {
   return sessions.get(customerId) || null;

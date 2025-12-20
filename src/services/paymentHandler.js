@@ -2,11 +2,11 @@ import dotenv from "dotenv";
 import axios from "axios";
 dotenv.config();
 
-const baseUrl = 'https://downtownbyhai-api.onrender.com/'
+const baseUrl = 'https://app.downtown.ng/'
 const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 
-import { paymentSessions } from "./sessionManager.js";
+import { paymentSessions, canRefund } from "./sessionManager.js";
 
 export async function getAccount(vendor_phone, total, customer_id) {
   try {
@@ -44,25 +44,11 @@ export async function getAccount(vendor_phone, total, customer_id) {
 export async function confirmPayment(total, customer_id) {
   const session = paymentSessions.get(customer_id);
 
-  if (!session) {
-    console.log("No active payment session");
-    return
-  }
-
-  if (session.status === "CONFIRMED") {
-    console.log("Payment already confirmed" );
-    return
-  }
-
-  if (session.amount !== total) {
-    console.log("Amount mismatch");
-    return
-  }
-
-  // Optional: expiry check
+  if (!session) return null;
+  if (session.amount !== total) return null;
   if (Date.now() > session.expiresAt) {
     paymentSessions.delete(customer_id);
-    console.log("Payment session expired");
+    return null;
   }
 
   const response = await axios.post(
@@ -73,6 +59,28 @@ export async function confirmPayment(total, customer_id) {
     }
   );
 
-
   return response.data.data;
+}
+
+
+
+export async function finalizePayment(external_reference) {
+  const response = await axios.post(`${baseUrl}transactions/${external_reference}/finalize`)
+  console.log(response)
+}
+
+export function activateRefund(customerId) {
+  if (!canRefund(customerId)) {
+    console.log("❌ Refund window closed");
+    return;
+  }
+
+  const session = paymentSessions.get(customerId);
+
+  clearTimeout(session.refundTimer);
+
+  session.status = "REFUNDED";
+  paymentSessions.set(customerId, session);
+
+  console.log("✅ Refund activated");
 }
