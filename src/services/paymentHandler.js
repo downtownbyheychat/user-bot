@@ -8,14 +8,18 @@ const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 
 import { paymentSessions } from "./sessionManager.js";
 
-export async function getAccount(vendor_phone, total, customer_id) {
+export async function getAccount(vendor_phone, total, customer_id, delivery_type) {
   try {
+    // Calculate service fee based on delivery type
+    const service_fee = delivery_type === "Pickup" ? 50 : 100;
+    
     const response = await axios.post(
       `${baseUrl}transactions/${customer_id}/one-time-payment`,
       {
         amount: total,
         recipient_phone_number: vendor_phone,
         description: "one time payment",
+        service_fee: service_fee
       }
     );
 

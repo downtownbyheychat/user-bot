@@ -195,10 +195,16 @@ export async function handleButtonClick(buttonId, customerId) {
       if (vendorResult.rows.length > 0) {
         vendorNumber = vendorResult.rows[0].phone_number;
         console.log("vendor number :", vendorNumber);
+        
+        // Determine delivery type - if any pack has delivery, use delivery fee (100), otherwise pickup (50)
+        const hasDelivery = orderStack.some(pack => pack.delivery_location !== "Pickup");
+        const deliveryType = hasDelivery ? "Delivery" : "Pickup";
+        
         account_details = await getAccount(
           vendorNumber,
           grandTotal,
-          customerId
+          customerId,
+          deliveryType
         );
         console.log("account assigned", account_details);
       }
