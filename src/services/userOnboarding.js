@@ -331,18 +331,6 @@ export async function verifyOTP(otp, phoneNumber) {
     if (response.status === 200) {
       console.log(' OTP verified successfully');
       
-      // Manually update email_verified in database
-      try {
-        const pool = (await import('../db/database.js')).default;
-        await pool.query(
-          'UPDATE users SET email_verified = true WHERE phone_number = $1',
-          [phoneNumber]
-        );
-        console.log(' Database updated: email_verified = true');
-      } catch (dbError) {
-        console.error(' Failed to update database:', dbError.message);
-      }
-      
       // Check if this was an email change verification
       if (awaitingEmailChange.has(phoneNumber)) {
         awaitingEmailChange.delete(phoneNumber);
@@ -359,7 +347,7 @@ export async function verifyOTP(otp, phoneNumber) {
             to: phoneNumber,
             type: 'text',
             text: {
-              body: 'Email verified successfully! Your email has been updated.'
+              body: 'Your email has been updated.'
             }
           }
         });
