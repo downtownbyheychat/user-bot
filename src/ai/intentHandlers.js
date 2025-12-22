@@ -1083,6 +1083,8 @@ if (!vendor && items.length > 0) {
   "Find Restaurant": async (customerId, message) => {
     const vendors = await getAllVendors();
     
+    console.log(`[Find Restaurant] Total vendors: ${vendors.length}`);
+    
     if (vendors.length === 0) {
       return {
         status: "error",
@@ -1098,6 +1100,8 @@ if (!vendor && items.length > 0) {
       for (let i = 0; i < vendors.length; i += 10) {
         chunks.push(vendors.slice(i, i + 10));
       }
+      
+      console.log(`[Find Restaurant] Creating ${chunks.length} chunks`);
       
       return {
         status: "success",
