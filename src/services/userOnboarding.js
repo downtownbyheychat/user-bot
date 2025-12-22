@@ -347,7 +347,7 @@ export async function verifyOTP(otp, phoneNumber) {
             to: phoneNumber,
             type: 'text',
             text: {
-              body: 'Your email has been updated.'
+              body: 'Your email has been updated and verified successfully.'
             }
           }
         });
