@@ -2,7 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import { saveMessage, checkMessageExists, saveChatMessage } from '../db/mongodb.js';
 import { processMessage } from '../services/messageProcessor.js';
-import { formatForWhatsAppAPI } from '../services/messageFormatter.js';
+import { sendMessage } from '../services/messageSender.js';
 import { checkUserExists } from '../db/Utils/users.js';
 import { 
   sendUserOnboardingFlow, 
@@ -545,39 +545,6 @@ async function sendTypingIndicator(recipientPhoneNumber, messageId) {
         });
     } catch (error) {
         console.error('Error sending typing indicator:', error.message);
-    }
-}
-
-async function sendMessage(recipientPhoneNumber, responseData) {
-    // Handle both old format (text string) and new format (response object)
-    const response = typeof responseData === 'string' 
-        ? { message: responseData }
-        : responseData;
-
-    // Format the message for WhatsApp API
-    const formattedMessage = formatForWhatsAppAPI(response, recipientPhoneNumber);
-
-    if (formattedMessage) {
-        try {
-            // Send the message to the WhatsApp API
-            const apiResponse = await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${ACCESS_TOKEN}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formattedMessage)
-            });
-
-            // Check for errors in the API response
-            if (!apiResponse.ok) {
-                console.error('WhatsApp API Error:', apiResponse.status, await apiResponse.text());
-            }
-        } catch (error) {
-            console.error('Error sending message:', error.message);
-        }
-    } else {
-        console.error('Failed to format message for WhatsApp API.');
     }
 }
 
