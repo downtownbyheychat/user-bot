@@ -351,11 +351,10 @@ export async function verifyOTP(otp, phoneNumber) {
             }
           }
         });
-      } 
-
-      await sendMessage(phoneNumber, ' Email verified successfully!');
+      } // else {
         // Send welcome message for new user onboarding
-        sendOrderTemplateMessage(phoneNumber);
+        await sendOrderTemplateMessage(phoneNumber);
+     // }
       
       
       return { success: true };

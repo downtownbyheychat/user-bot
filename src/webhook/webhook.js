@@ -178,11 +178,7 @@ async function processMessagesAsync(body) {
     for (const entry of body.entry || []) {
         for (const change of entry.changes || []) {
             if (change.field === 'messages') {
-                
-
-
                 const messages = change.value.messages;
-
                 for (const message of messages || []) {
                     const customerPhone = message.from; // WhatsApp phone number of the user
 
