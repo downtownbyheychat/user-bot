@@ -76,6 +76,7 @@ export async function processMessage(customerId, message) {
           data: { ...response.data },
         };
       }
+    }
 
       // Otherwise use AI to parse correction
       // Don't prepend vendor if user is specifying a new vendor
@@ -219,15 +220,15 @@ export async function processMessage(customerId, message) {
         customer_id: customerId,
         timestamp: new Date().toISOString(),
         message: `📦 Pack Added to Cart
-Items:
-${itemsList}
-Pack Fee: ₦${packFee}
-Pack Total: ₦${finalTotal}
-Vendor: ${vendor?.name}
-Delivery: ${deliveryLocation}
-Total Packs: ${stackSummary.packCount}
+        Items:
+        ${itemsList}
+        Pack Fee: ₦${packFee}
+        Pack Total: ₦${finalTotal}
+        Vendor: ${vendor?.name}
+        Delivery: ${deliveryLocation}
+        Total Packs: ${stackSummary.packCount}
 
-What would you like to do next?`,
+        What would you like to do next?`,
 
         data: {
           buttons: [
@@ -290,3 +291,4 @@ What would you like to do next?`,
     };
   }
 }
+
