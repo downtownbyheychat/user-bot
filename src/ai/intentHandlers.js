@@ -1010,19 +1010,38 @@ if (!vendor && items.length > 0) {
     message: " Out for Delivery\nYour order is on its way! \nRider just picked it up — you can expect delivery in about 7-10 mins."
   }),
 
-  "Cancel Order": async (customerId, message) => ({
-    status: "success",
-    response_type: "order_management",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " Got it! You're still within the 2 min 30 sec grace window, so your order can be canceled \nWant me to go ahead and cancel it?",
-    data: {
-      buttons: [
-        { id: "confirm_cancel", title: "Yes, Cancel" },
-        { id: "keep_order", title: "Keep Order" }
-      ]
+  "Cancel Order": async (customerId, message) => {
+    const { getOrderStack } = await import("../services/orderStack.js");
+    const { getPendingOrder } = await import("../services/sessionManager.js");
+    
+    const orderStack = getOrderStack(customerId);
+    const pendingOrder = getPendingOrder(customerId);
+    
+    // Check if there's anything to cancel
+    if (orderStack.length === 0 && !pendingOrder) {
+      return {
+        status: "error",
+        response_type: "order_management",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: "You don't have any active orders to cancel."
+      };
     }
-  }),
+    
+    return {
+      status: "success",
+      response_type: "order_management",
+      customer_id: customerId,
+      timestamp: new Date().toISOString(),
+      message: " Got it! You're still within the 2 min 30 sec grace window, so your order can be canceled \nWant me to go ahead and cancel it?",
+      data: {
+        buttons: [
+          { id: "confirm_cancel", title: "Yes, Cancel" },
+          { id: "keep_order", title: "Keep Order" }
+        ]
+      }
+    };
+  },
 
   "Modify Order": async (customerId, message) => ({
     status: "success",
