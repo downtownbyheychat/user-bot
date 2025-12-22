@@ -125,94 +125,143 @@ export async function getVendorCatalogue(vendorId) {
 export async function validateOrderItem(vendorId, itemName, quantityType, price, quantity=1) {
   await enableSimilarity();
   try {
-    const result = await pool.query(
+    // First, check for exact match
+    const exactMatch = await pool.query(
       `SELECT * FROM menus 
        WHERE vendor_id = $1 
-       AND similarity(LOWER(food_name), LOWER($2)) > 0.5
-       ORDER BY similarity(LOWER(food_name), LOWER($2)) DESC
+       AND LOWER(food_name) = LOWER($2)
        LIMIT 1`,
       [vendorId, itemName]
     );
 
-    if (result.rows.length === 0) {
+    // If exact match found, proceed with validation
+    if (exactMatch.rows.length > 0) {
+      const item = exactMatch.rows[0];
+      return await validateItemDetails(item, quantityType, price, quantity, itemName);
+    }
+
+    // No exact match - find similar items
+    const similarItems = await pool.query(
+      `SELECT * FROM menus 
+       WHERE vendor_id = $1 
+       AND similarity(LOWER(food_name), LOWER($2)) > 0.3
+       ORDER BY similarity(LOWER(food_name), LOWER($2)) DESC
+       LIMIT 5`,
+      [vendorId, itemName]
+    );
+
+    if (similarItems.rows.length === 0) {
       return { valid: false, error: `${itemName} not available at this vendor` };
     }
 
-    const item = result.rows[0];
+    // Check if any items have a food_base (not '')
+    const itemsWithBase = similarItems.rows.filter(item => 
+      item.food_base && item.food_base !== ''
+    );
 
-    // Override quantity_type with database value unless AI detected per_price
-    if (quantityType !== 'per_price') {
-      quantityType = item.sale_quantity;
-    }
+    // If items have food_base, group by food_base and show top 5 from same base
+    if (itemsWithBase.length > 0) {
+      // Get the most similar item's food_base
+      const topItem = itemsWithBase[0];
+      const targetBase = topItem.food_base;
+      
+      // Filter items with same food_base
+      const sameBaseItems = similarItems.rows.filter(item => 
+        item.food_base === targetBase
+      ).slice(0, 5);
 
-    // if we have the quantity as per price wrongly specified
-    if (quantityType === 'per_price' && item.sale_quantity !== 'per_price') {
-      return { 
-        valid: false, 
-        error: `${item.food_name} is sold as ${item.sale_quantity}, not per price` 
+      if (sameBaseItems.length === 1) {
+        // Only one match with same base, use it
+        return await validateItemDetails(sameBaseItems[0], quantityType, price, quantity, itemName);
+      }
+
+      // Multiple matches - return for disambiguation
+      return {
+        valid: false,
+        needsDisambiguation: true,
+        suggestions: sameBaseItems.map(item => ({
+          id: item.id,
+          name: item.food_name,
+          price: item.price,
+          sale_quantity: item.sale_quantity
+        })),
+        error: `Did you mean one of these?`
       };
     }
-    
-    // if (item.sale_quantity !== quantityType && quantityType !== 'unknown') {
-    //   return { 
-    //     valid: false, 
-    //     error: `${itemName} is sold as ${item.sale_quantity}, not ${quantityType}` 
-    //   };
-    // }
 
-    if (item.sale_quantity === 'per_price') {
-      const minPrice = parseFloat(item.price);
-      
-      // Check if price is not provided or is null/undefined
-      if (!price || price === null || price === undefined) {
-        return { 
-          valid: false, 
-          error: `How much of ${item.food_name} do you want? Minimum price is ₦${minPrice}` 
-        };
-      }
-      
-      if (price < minPrice) {
-        return { 
-          valid: false, 
-          error: `Minimum price for ${item.food_name} is ₦${minPrice}` 
-        };
-      }
+    // No food_base - use most similar item
+    const bestMatch = similarItems.rows[0];
+    return await validateItemDetails(bestMatch, quantityType, price, quantity, itemName);
 
-      const maxPrice = 1500;
-      if (price > maxPrice) {
-        return { 
-          valid: false, 
-          error: `Maximum price that fits into one pack for ${item.food_name} is ₦${maxPrice}` 
-        };
-      }
-
-      if ((price - minPrice) % 100 !== 0) {
-        if ((price - minPrice) % 50 !== 0 && minPrice % 50 === 0) {
-
-            return { 
-            valid: false, 
-            error: `${item.food_name} must be in multiples of ₦100 from ₦${minPrice}` 
-            };
-        }
-      }
-    }
-
-    // For per_price items, use the validated user price
-    if (item.sale_quantity === 'per_price') {
-      result.rows[0].price = price;
-    }
-    // For other types, calculate price based on quantity
-    else {
-      quantityType = item.sale_quantity;
-      price = item.price * quantity;
-      result.rows[0].price = price;
-    }
-
-    return { valid: true, item: result.rows[0] };
   } catch (error) {
     console.error('Error validating item:', error);
     return { valid: false, error: 'Validation error occurred', notFoundAnywhere: false };
   }
+}
+
+// Helper function to validate item details
+async function validateItemDetails(item, quantityType, price, quantity, originalItemName) {
+  // Override quantity_type with database value unless AI detected per_price
+  if (quantityType !== 'per_price') {
+    quantityType = item.sale_quantity;
+  }
+
+  // if we have the quantity as per price wrongly specified
+  if (quantityType === 'per_price' && item.sale_quantity !== 'per_price') {
+    return { 
+      valid: false, 
+      error: `${item.food_name} is sold as ${item.sale_quantity}, not per price` 
+    };
+  }
+
+  if (item.sale_quantity === 'per_price') {
+    const minPrice = parseFloat(item.price);
+    
+    // Check if price is not provided or is null/undefined
+    if (!price || price === null || price === undefined) {
+      return { 
+        valid: false, 
+        error: `How much of ${item.food_name} do you want? Minimum price is ₦${minPrice}` 
+      };
+    }
+    
+    if (price < minPrice) {
+      return { 
+        valid: false, 
+        error: `Minimum price for ${item.food_name} is ₦${minPrice}` 
+      };
+    }
+
+    const maxPrice = 1500;
+    if (price > maxPrice) {
+      return { 
+        valid: false, 
+        error: `Maximum price that fits into one pack for ${item.food_name} is ₦${maxPrice}` 
+      };
+    }
+
+    if ((price - minPrice) % 100 !== 0) {
+      if ((price - minPrice) % 50 !== 0 && minPrice % 50 === 0) {
+        return { 
+          valid: false, 
+          error: `${item.food_name} must be in multiples of ₦100 from ₦${minPrice}` 
+        };
+      }
+    }
+  }
+
+  // For per_price items, use the validated user price
+  if (item.sale_quantity === 'per_price') {
+    item.price = price;
+  }
+  // For other types, calculate price based on quantity
+  else {
+    quantityType = item.sale_quantity;
+    price = item.price * quantity;
+    item.price = price;
+  }
+
+  return { valid: true, item: item };
 }
 
 
