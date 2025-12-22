@@ -122,9 +122,30 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
       data: {
         messaging_product: 'whatsapp',
         to: phoneNumber,
-        type: 'text',
-        text: {
-          body: 'An OTP has been sent to your email. Please reply with the OTP to verify your account.'
+        type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: {
+            text: 'An OTP has been sent to your email. Please reply with the OTP to verify your account.'
+          },
+          action: {
+            buttons: [
+              {
+                type: 'reply',
+                reply: {
+                  id: 'resend_otp',
+                  title: 'Resend OTP'
+                }
+              },
+              {
+                type: 'reply',
+                reply: {
+                  id: 'change_email',
+                  title: 'Change Email'
+                }
+              }
+            ]
+          }
         }
       }
     });
@@ -283,9 +304,30 @@ export async function handleEmailUpdateSubmission(phoneNumber, flowData) {
       data: {
         messaging_product: 'whatsapp',
         to: phoneNumber,
-        type: 'text',
-        text: {
-          body: 'Email updated! An OTP has been sent to your new email. Please reply with the OTP to verify.'
+        type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: {
+            text: 'Email updated! An OTP has been sent to your new email. Please reply with the OTP to verify.'
+          },
+          action: {
+            buttons: [
+              {
+                type: 'reply',
+                reply: {
+                  id: 'resend_otp',
+                  title: 'Resend OTP'
+                }
+              },
+              {
+                type: 'reply',
+                reply: {
+                  id: 'change_email',
+                  title: 'Change Email'
+                }
+              }
+            ]
+          }
         }
       }
     });
