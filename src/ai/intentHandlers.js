@@ -21,34 +21,13 @@ export const intentHandlers = {
         let restaurantResponse = null;
         if (vendors.length > 0) {
           if (vendors.length > 10) {
-            const chunks = [];
-            for (let i = 0; i < vendors.length; i += 10) {
-              chunks.push(vendors.slice(i, i + 10));
-            }
-            
+            const vendorList = vendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
             restaurantResponse = {
               status: "success",
-              response_type: "restaurant_list_multiple",
+              response_type: "restaurant_list",
               customer_id: customerId,
               timestamp: new Date().toISOString(),
-              message: "Select a restaurant to get started:",
-              chunks: chunks.map((chunk, idx) => ({
-                data: {
-                  list: {
-                    header: `Restaurants (${idx + 1}/${chunks.length})`,
-                    body: "Here are the available restaurants on campus:",
-                    button: "View Restaurants",
-                    sections: [{
-                      title: "Restaurants",
-                      rows: chunk.map(v => ({
-                        id: `vendor_${v.id}`,
-                        title: v.name.substring(0, 24),
-                        description: (v.description || "View menu").substring(0, 72)
-                      }))
-                    }]
-                  }
-                }
-              }))
+              message: ` Available Restaurants:\n\n${vendorList}\n\nJust mention the restaurant name to view their menu!`
             };
           } else {
             restaurantResponse = {
@@ -137,34 +116,13 @@ export const intentHandlers = {
       const alternatives = await getAllVendors();
       
       if (alternatives.length > 10) {
-        const chunks = [];
-        for (let i = 0; i < alternatives.length; i += 10) {
-          chunks.push(alternatives.slice(i, i + 10));
-        }
-        
+        const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
         return {
           status: "error",
-          response_type: "vendor_not_found_multiple",
+          response_type: "vendor_not_found",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: `Sorry, "${vendor}" is not in our system. Try these instead:`,
-          chunks: chunks.map((chunk, idx) => ({
-            data: {
-              list: {
-                header: `Available Restaurants (${idx + 1}/${chunks.length})`,
-                body: "Select a restaurant to view their menu:",
-                button: "View Restaurants",
-                sections: [{
-                  title: "Restaurants",
-                  rows: chunk.map(v => ({
-                    id: `vendor_${v.id}`,
-                    title: v.name.substring(0, 24),
-                    description: (v.description || "View menu").substring(0, 72)
-                  }))
-                }]
-              }
-            }
-          }))
+          message: `Sorry, "${vendor}" is not in our system.\n\n Available Restaurants:\n\n${altList}`
         };
       }
       
@@ -196,34 +154,13 @@ export const intentHandlers = {
       const alternatives = await getAllVendors();
       
       if (alternatives.length > 10) {
-        const chunks = [];
-        for (let i = 0; i < alternatives.length; i += 10) {
-          chunks.push(alternatives.slice(i, i + 10));
-        }
-        
+        const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
         return {
           status: "error",
-          response_type: "vendor_closed_multiple",
+          response_type: "vendor_closed",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: `Sorry, ${vendorStatus.name} is currently closed. Try these instead:`,
-          chunks: chunks.map((chunk, idx) => ({
-            data: {
-              list: {
-                header: `Available Now (${idx + 1}/${chunks.length})`,
-                body: "Select a restaurant to order from:",
-                button: "View Restaurants",
-                sections: [{
-                  title: "Open Restaurants",
-                  rows: chunk.map(v => ({
-                    id: `vendor_${v.id}`,
-                    title: v.name.substring(0, 24),
-                    description: (v.description || "View menu").substring(0, 72)
-                  }))
-                }]
-              }
-            }
-          }))
+          message: `Sorry, ${vendorStatus.name} is currently closed.\n\n Available Now:\n\n${altList}`
         };
       }
       
@@ -258,34 +195,13 @@ export const intentHandlers = {
     if (menuItems.length === 0) {
         const alternatives = await getAllVendors();
         if (alternatives.length > 10) {
-            const chunks = [];
-            for (let i = 0; i < alternatives.length; i += 10) {
-              chunks.push(alternatives.slice(i, i + 10));
-            }
-            
+            const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
             return {
                 status: "error",
-                response_type: "vendor_catalogue_multiple",
+                response_type: "vendor_catalogue",
                 customer_id: customerId,
                 timestamp: new Date().toISOString(),
-                message: `${vendorData.name} has no menu items available at the moment. Try these instead:`,
-                chunks: chunks.map((chunk, idx) => ({
-                  data: {
-                    list: {
-                      header: `Available Restaurants (${idx + 1}/${chunks.length})`,
-                      body: "Select a restaurant to view their menu:",
-                      button: "View Restaurants",
-                      sections: [{
-                        title: "Restaurants",
-                        rows: chunk.map(v => ({
-                          id: `vendor_${v.id}`,
-                          title: v.name.substring(0, 24),
-                          description: (v.description || "View menu").substring(0, 72)
-                        }))
-                      }]
-                    }
-                  }
-                }))
+                message: `${vendorData.name} has no menu items available at the moment.\n\n Available Restaurants:\n\n${altList}`
             };
         }
         return {
@@ -535,34 +451,13 @@ if (!vendor && items.length > 0) {
       const alternatives = await getAllVendors();
       
       if (alternatives.length > 10) {
-        const chunks = [];
-        for (let i = 0; i < alternatives.length; i += 10) {
-          chunks.push(alternatives.slice(i, i + 10));
-        }
-        
+        const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
         return {
           status: "error",
-          response_type: "vendor_not_found_multiple",
+          response_type: "vendor_not_found",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: `Sorry, "${vendor}" is not in our system. Try these instead:`,
-          chunks: chunks.map((chunk, idx) => ({
-            data: {
-              list: {
-                header: `Available Restaurants (${idx + 1}/${chunks.length})`,
-                body: "Select a restaurant to view their menu:",
-                button: "View Restaurants",
-                sections: [{
-                  title: "Restaurants",
-                  rows: chunk.map(v => ({
-                    id: `vendor_${v.id}`,
-                    title: v.name.substring(0, 24),
-                    description: (v.description || "View menu").substring(0, 72)
-                  }))
-                }]
-              }
-            }
-          }))
+          message: `Sorry, "${vendor}" is not in our system.\n\n Available Restaurants:\n\n${altList}`
         };
       }
       
@@ -594,34 +489,13 @@ if (!vendor && items.length > 0) {
       const alternatives = await getAllVendors();
       
       if (alternatives.length > 10) {
-        const chunks = [];
-        for (let i = 0; i < alternatives.length; i += 10) {
-          chunks.push(alternatives.slice(i, i + 10));
-        }
-        
+        const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
         return {
           status: "error",
-          response_type: "vendor_closed_multiple",
+          response_type: "vendor_closed",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: `Sorry, ${vendorStatus.name} is currently closed. Try these instead:`,
-          chunks: chunks.map((chunk, idx) => ({
-            data: {
-              list: {
-                header: `Available Now (${idx + 1}/${chunks.length})`,
-                body: "Select a restaurant to order from:",
-                button: "View Restaurants",
-                sections: [{
-                  title: "Open Restaurants",
-                  rows: chunk.map(v => ({
-                    id: `vendor_${v.id}`,
-                    title: v.name.substring(0, 24),
-                    description: (v.description || "View menu").substring(0, 72)
-                  }))
-                }]
-              }
-            }
-          }))
+          message: `Sorry, ${vendorStatus.name} is currently closed.\n\n Available Now:\n\n${altList}`
         };
       }
       
@@ -1083,8 +957,6 @@ if (!vendor && items.length > 0) {
   "Find Restaurant": async (customerId, message) => {
     const vendors = await getAllVendors();
     
-    console.log(`[Find Restaurant] Total vendors: ${vendors.length}`);
-    
     if (vendors.length === 0) {
       return {
         status: "error",
@@ -1096,36 +968,13 @@ if (!vendor && items.length > 0) {
     }
 
     if (vendors.length > 10) {
-      const chunks = [];
-      for (let i = 0; i < vendors.length; i += 10) {
-        chunks.push(vendors.slice(i, i + 10));
-      }
-      
-      console.log(`[Find Restaurant] Creating ${chunks.length} chunks`);
-      
+      const vendorList = vendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
       return {
         status: "success",
-        response_type: "menu_multiple",
+        response_type: "menu",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: "Select a restaurant to view their menu:",
-        chunks: chunks.map((chunk, idx) => ({
-          data: {
-            list: {
-              header: `Campus Restaurants (${idx + 1}/${chunks.length})`,
-              body: "Here are the available restaurants on campus:",
-              button: "View Restaurants",
-              sections: [{
-                title: "Restaurants",
-                rows: chunk.map(v => ({
-                  id: `vendor_${v.id}`,
-                  title: v.name.substring(0, 24),
-                  description: (v.description || "View menu").substring(0, 72)
-                }))
-              }]
-            }
-          }
-        }))
+        message: ` Available Restaurants:\n\n${vendorList}\n\nJust mention the restaurant name to view their menu!`
       };
     }
 
