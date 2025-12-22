@@ -72,7 +72,9 @@ export async function processMessage(customerId, message) {
       }
 
       // Otherwise use AI to parse correction
-      const messageWithVendor = failedOrder.vendor
+      // Don't prepend vendor if user is specifying a new vendor
+      const hasVendorKeywords = /\b(from|at)\s+\w+/i.test(message);
+      const messageWithVendor = failedOrder.vendor && !hasVendorKeywords
         ? `${message} from ${failedOrder.vendor}`
         : message;
       const correctionSummary = await generateOrderSummary(
