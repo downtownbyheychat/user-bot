@@ -34,6 +34,12 @@ export async function processMessage(customerId, message) {
     const awaitingInput = getAwaitingInput(customerId);
 
     if (failedOrder) {
+      // If user specifies a new vendor, clear the old failed order
+      const hasNewVendor = /\b(from|at)\s+\w+/i.test(message);
+      if (hasNewVendor && failedOrder.errorType === 'disambiguation') {
+        clearFailedOrder(customerId);
+        // Process as new order
+      } else {
       // If awaiting direct input (soup/swallow), parse message directly without AI
       if (awaitingInput) {
         const correctionSummary = {
