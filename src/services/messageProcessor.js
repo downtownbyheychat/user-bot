@@ -34,14 +34,13 @@ export async function processMessage(customerId, message) {
     const awaitingInput = getAwaitingInput(customerId);
 
     if (failedOrder) {
-      // If user specifies a new vendor, clear the old failed order
+      // If user specifies a new vendor, clear the old failed order and process as new
       const hasNewVendor = /\b(from|at)\s+\w+/i.test(message);
       if (hasNewVendor && failedOrder.errorType === 'disambiguation') {
         clearFailedOrder(customerId);
-        // Process as new order
-      } else {
-      // If awaiting direct input (soup/swallow), parse message directly without AI
-      if (awaitingInput) {
+        // Fall through to normal processing below
+      } else if (awaitingInput) {
+        // If awaiting direct input (soup/swallow), parse message directly without AI
         const correctionSummary = {
           vendor: failedOrder.vendor,
           items: [
@@ -75,10 +74,8 @@ export async function processMessage(customerId, message) {
           classification: { intent: "Food Ordering", confidence: 1.0 },
           data: { ...response.data },
         };
-      }
-    }
-
-      // Otherwise use AI to parse correction
+      } else {
+        // Otherwise use AI to parse correction
       // Don't prepend vendor if user is specifying a new vendor
       const hasVendorKeywords = /\b(from|at)\s+\w+/i.test(message);
       const messageWithVendor = failedOrder.vendor && !hasVendorKeywords
@@ -140,6 +137,7 @@ export async function processMessage(customerId, message) {
           classification: { intent: "Food Ordering", confidence: 1.0 },
           data: { ...response.data },
         };
+      }
       }
     }
 
