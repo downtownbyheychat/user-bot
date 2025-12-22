@@ -193,7 +193,7 @@ export async function handleButtonClick(buttonId, customerId) {
       }
 
       let orderDetails = "";
-      grandTotal = 0; // Initialize grandTotal to 0
+      grandTotal = 0;
       
       const { pushOrderPack, getStackSummary } = await import(
         "./orderStack.js"
@@ -201,11 +201,8 @@ export async function handleButtonClick(buttonId, customerId) {
       let stackSummary = getStackSummary(customerId);
       console.log('stack summary',stackSummary);
 
-      // Calculate total pack fee once (pack count * 200)
-      const packCount = orderStack.length;
-      const totalPackFee = packCount * 200;
-
       let vendorName = null;
+      let totalPackFee = 0;
 
       orderStack.forEach((pack, i) => {
         const packItems = pack.items
@@ -218,24 +215,26 @@ export async function handleButtonClick(buttonId, customerId) {
           })
           .join("\n");
 
-        // Determine delivery/pickup fee
         let deliveryFee = pack.delivery_location !== "Pickup" ? 100 : 50;
         let feeLabel = pack.delivery_location !== "Pickup" ? "Delivery Fee" : "Pickup Fee";
 
         vendorName = pack.vendor;
 
-        // Build summary string (show pack fee per pack for clarity)
-        orderDetails += `Pack ${i + 1} from ${pack.vendor}:\n${packItems}\n${feeLabel}: ₦${deliveryFee}\nPack Subtotal: ₦${pack.total + deliveryFee}\n\n`;
+        // Check if this pack has any items that require pack fee (pack = 'included')
+        const requiresPackFee = pack.items.some(item => item.pack === 'included');
+        const packFeeForThisPack = requiresPackFee ? 200 : 0;
+        totalPackFee += packFeeForThisPack;
 
-        // Add to grand total: pack.total + delivery/pickup fee
-        grandTotal += pack.total + deliveryFee;
+        const packSubtotal = pack.total + deliveryFee + packFeeForThisPack;
+        
+        orderDetails += `Pack ${i + 1} from ${pack.vendor}:\n${packItems}\n${feeLabel}: ₦${deliveryFee}\n`;
+        if (packFeeForThisPack > 0) {
+          orderDetails += `Pack Fee: ₦${packFeeForThisPack}\n`;
+        }
+        orderDetails += `Pack Subtotal: ₦${packSubtotal}\n\n`;
+
+        grandTotal += packSubtotal;
       });
-
-      // Add total pack fee to grand total
-      grandTotal += totalPackFee;
-      
-      // Add pack fee summary to order details
-      orderDetails += `Pack Fee (${packCount} pack${packCount > 1 ? 's' : ''} x ₦200): ₦${totalPackFee}\n`;
 
       const vendorResult = await pool.query(
         `SELECT phone_number FROM vendors WHERE name = $1`,
@@ -248,7 +247,6 @@ export async function handleButtonClick(buttonId, customerId) {
         vendorNumber = vendorResult.rows[0].phone_number;
         console.log("vendor number :", vendorNumber);
         
-        // Determine delivery type - if any pack has delivery, use delivery fee (100), otherwise pickup (50)
         const hasDelivery = orderStack.some(pack => pack.delivery_location !== "Pickup");
         const deliveryType = hasDelivery ? "Delivery" : "Pickup";
         
