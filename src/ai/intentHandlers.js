@@ -737,6 +737,66 @@ if (!vendor && items.length > 0) {
       );
       
       if (!validation.valid) {
+        // Check if disambiguation is needed
+        if (validation.needsDisambiguation && validation.suggestions) {
+          // Store disambiguation state
+          const { setFailedOrder } = await import('../services/sessionManager.js');
+          setFailedOrder(customerId, {
+            validatedItems,
+            failedItems,
+            vendor: vendorData.name,
+            vendorId: vendorData.id,
+            delivery_location,
+            errorType: 'disambiguation',
+            originalItems: items,
+            disambiguationItem: {
+              originalName: item.name,
+              quantity: item.quantity,
+              quantityType: item.quantity_type,
+              price: item.price,
+              suggestions: validation.suggestions
+            }
+          });
+          
+          // Return interactive list
+          return {
+            status: "error",
+            response_type: "disambiguation",
+            customer_id: customerId,
+            timestamp: new Date().toISOString(),
+            message: `Which "${item.name}" did you mean?`,
+            data: {
+              list: {
+                header: "Select Item",
+                body: `Multiple items match "${item.name}". Please select:`,
+                button: "Select Item",
+                sections: [{
+                  title: "Available Items",
+                  rows: validation.suggestions.map(s => {
+                    let priceDesc = '';
+                    if (s.sale_quantity === 'per_price') {
+                      priceDesc = `from ₦${s.price}`;
+                    } else if (s.sale_quantity === 'per_piece') {
+                      priceDesc = `₦${s.price} each`;
+                    } else if (s.sale_quantity === 'full_pack') {
+                      priceDesc = `₦${s.price} (Full Pack)`;
+                    } else if (s.sale_quantity === 'half_pack') {
+                      priceDesc = `₦${s.price} (Half Pack)`;
+                    } else {
+                      priceDesc = `₦${s.price}`;
+                    }
+                    return {
+                      id: `disambiguate_${s.id}`,
+                      title: s.name.substring(0, 24),
+                      description: priceDesc.substring(0, 72)
+                    };
+                  })
+                }]
+              }
+            }
+          };
+        }
+        
         validationErrors.push(validation.error);
         failedItems.push(item.name);
       } else {

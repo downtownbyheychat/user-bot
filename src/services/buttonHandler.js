@@ -768,6 +768,64 @@ export async function handleButtonClick(buttonId, customerId) {
         };
       }
 
+      // Handle disambiguation selection
+      if (buttonId.startsWith("disambiguate_")) {
+        const menuItemId = buttonId.substring(13);
+        const { getFailedOrder, clearFailedOrder } = await import("./sessionManager.js");
+        const failedOrder = getFailedOrder(customerId);
+        
+        if (!failedOrder || failedOrder.errorType !== 'disambiguation') {
+          return {
+            status: "error",
+            message: "No pending disambiguation found. Please place a new order.",
+          };
+        }
+        
+        // Get the selected item details
+        const result = await pool.query(
+          "SELECT * FROM menus WHERE id = $1",
+          [menuItemId]
+        );
+        
+        if (result.rows.length === 0) {
+          return {
+            status: "error",
+            message: "Sorry, I couldn't find that item.",
+          };
+        }
+        
+        const selectedItem = result.rows[0];
+        const disambiguationItem = failedOrder.disambiguationItem;
+        
+        // Rebuild order with selected item
+        const updatedItems = failedOrder.originalItems.map(item => {
+          if (item.name === disambiguationItem.originalName) {
+            return {
+              name: selectedItem.food_name,
+              quantity: disambiguationItem.quantity,
+              quantity_type: disambiguationItem.quantityType,
+              price: disambiguationItem.price // Carry over user's price if specified
+            };
+          }
+          return item;
+        });
+        
+        clearFailedOrder(customerId);
+        
+        // Re-process order with selected item
+        const { handleIntent } = await import("../ai/intentHandlers.js");
+        return await handleIntent(
+          "Food Ordering",
+          customerId,
+          "",
+          {
+            vendor: failedOrder.vendor,
+            items: updatedItems,
+            delivery_location: failedOrder.delivery_location
+          }
+        );
+      }
+
       // Handle menu item selection
       if (buttonId.startsWith("menu_") && !buttonId.includes("_next_")) {
         console.log(" Handling menu item selection:", buttonId);
