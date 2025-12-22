@@ -242,7 +242,15 @@ async function processMessagesAsync(body) {
                             // Check OTP expiry
                             const otpCheck = await checkAndResendOTP(customerPhone);
                             if (otpCheck.expired) {
-                                await sendMessage(customerPhone, otpCheck.message);
+                                await sendMessage(customerPhone, {
+                                    message: otpCheck.message, 
+                                    data: {
+                                        buttons: [
+                                            { id: 'resend_otp', title: 'Resend OTP' },
+                                            { id: 'change_email', title: 'Change Email' }
+                                        ]
+                                    },
+                                });
                             } else {
                                 await sendMessage(customerPhone, {
                                     message: ' Please verify your email first.\n\nReply with the OTP code sent to your email.',
