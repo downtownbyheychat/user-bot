@@ -11,7 +11,7 @@ export function formatForWhatsAppAPI(response, recipientPhoneNumber) {
         
         console.log(`📋 Sending list with ${limitedSections.length} sections, total rows: ${limitedSections.reduce((sum, s) => sum + s.rows.length, 0)}`);
         
-        return {
+        const payload = {
             messaging_product: "whatsapp",
             to: recipientPhoneNumber,
             type: "interactive",
@@ -26,6 +26,9 @@ export function formatForWhatsAppAPI(response, recipientPhoneNumber) {
                 }
             }
         };
+        
+        console.log('📤 WhatsApp List Payload:', JSON.stringify(payload, null, 2));
+        return payload;
     }
 
     // Handle button messages
