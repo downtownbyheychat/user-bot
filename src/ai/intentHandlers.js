@@ -967,15 +967,18 @@ if (!vendor && items.length > 0) {
       };
     }
 
-    if (vendors.length > 10) {
-      const vendorList = vendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
-      return {
-        status: "success",
-        response_type: "menu",
-        customer_id: customerId,
-        timestamp: new Date().toISOString(),
-        message: ` Available Restaurants:\n\n${vendorList}\n\nJust mention the restaurant name to view their menu!`
-      };
+    // Split vendors into sections of 10
+    const sections = [];
+    for (let i = 0; i < vendors.length; i += 10) {
+      const chunk = vendors.slice(i, i + 10);
+      sections.push({
+        title: sections.length === 0 ? "Restaurants" : `More Restaurants (${i + 1}-${i + chunk.length})`,
+        rows: chunk.map(v => ({
+          id: `vendor_${v.id}`,
+          title: v.name.substring(0, 24),
+          description: (v.description || "View menu").substring(0, 72)
+        }))
+      });
     }
 
     return {
@@ -989,14 +992,7 @@ if (!vendor && items.length > 0) {
           header: "Campus Restaurants",
           body: "Here are the available restaurants on campus:",
           button: "View Restaurants",
-          sections: [{
-            title: "Restaurants",
-            rows: vendors.map(v => ({
-              id: `vendor_${v.id}`,
-              title: v.name.substring(0, 24),
-              description: (v.description || "View menu").substring(0, 72)
-            }))
-          }]
+          sections
         }
       }
     };
