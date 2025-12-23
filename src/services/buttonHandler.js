@@ -220,8 +220,8 @@ export async function handleButtonClick(buttonId, customerId) {
 
         vendorName = pack.vendor;
 
-        // Check if this pack has any items that require pack fee (pack = 'included')
-        const requiresPackFee = pack.items.some(item => item.pack === 'included');
+        // Check if this pack has any items that require pack fee (pack = 'yes')
+        const requiresPackFee = pack.items.some(item => item.pack === 'yes');
         const packFeeForThisPack = requiresPackFee ? 200 : 0;
         totalPackFee += packFeeForThisPack;
 
