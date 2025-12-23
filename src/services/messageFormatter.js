@@ -2,6 +2,15 @@ export function formatForWhatsAppAPI(response, recipientPhoneNumber) {
     // Handle list messages
     if (response.data?.list) {
         const { header, body, button, sections, footer } = response.data.list;
+        
+        // WhatsApp limits: max 10 sections, max 10 rows per section
+        const limitedSections = sections.slice(0, 10).map(section => ({
+            ...section,
+            rows: section.rows.slice(0, 10)
+        }));
+        
+        console.log(`📋 Sending list with ${limitedSections.length} sections, total rows: ${limitedSections.reduce((sum, s) => sum + s.rows.length, 0)}`);
+        
         return {
             messaging_product: "whatsapp",
             to: recipientPhoneNumber,
@@ -13,7 +22,7 @@ export function formatForWhatsAppAPI(response, recipientPhoneNumber) {
                 ...(footer && { footer: { text: footer } }),
                 action: {
                     button,
-                    sections
+                    sections: limitedSections
                 }
             }
         };
