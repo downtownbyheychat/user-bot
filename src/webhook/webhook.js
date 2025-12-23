@@ -279,8 +279,15 @@ async function processMessagesAsync(body) {
                             // Send the response to the user
                             await sendMessage(customerPhone, responseData);
                             
+                            // Send multiple lists if present
+                            if (responseData.multipleLists) {
+                                for (const listMsg of responseData.multipleLists) {
+                                    await saveChatMessage(customerPhone, listMsg.message || '[Interactive List]', true);
+                                    await sendMessage(customerPhone, listMsg);
+                                }
+                            }
                             // Send additional message if present (e.g., restaurant list after greeting)
-                            if (responseData.additionalMessage) {
+                            else if (responseData.additionalMessage) {
                                 const additionalMsg = responseData.additionalMessage.message || '[Interactive List]';
                                 await saveChatMessage(customerPhone, additionalMsg, true);
                                 await sendMessage(customerPhone, responseData.additionalMessage);
