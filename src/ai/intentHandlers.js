@@ -20,39 +20,34 @@ export const intentHandlers = {
         // Create restaurant list response
         let restaurantResponse = null;
         if (vendors.length > 0) {
-          if (vendors.length > 10) {
-            const vendorList = vendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
-            restaurantResponse = {
-              status: "success",
-              response_type: "restaurant_list",
-              customer_id: customerId,
-              timestamp: new Date().toISOString(),
-              message: ` Available Restaurants:\n\n${vendorList}\n\nJust mention the restaurant name to view their menu!`
-            };
-          } else {
-            restaurantResponse = {
-              status: "success",
-              response_type: "restaurant_list",
-              customer_id: customerId,
-              timestamp: new Date().toISOString(),
-              message: "Select a restaurant to get started:",
-              data: {
-                list: {
-                  header: "Campus Restaurants",
-                  body: "Here are the available restaurants on campus:",
-                  button: "View Restaurants",
-                  sections: [{
-                    title: "Restaurants",
-                    rows: vendors.map(v => ({
-                      id: `vendor_${v.id}`,
-                      title: v.name.substring(0, 24),
-                      description: (v.description || "View menu").substring(0, 72)
-                    }))
-                  }]
-                }
-              }
-            };
+          const sections = [];
+          for (let i = 0; i < vendors.length; i += 10) {
+            const chunk = vendors.slice(i, i + 10);
+            sections.push({
+              title: sections.length === 0 ? "Restaurants" : `More Restaurants (${i + 1}-${i + chunk.length})`,
+              rows: chunk.map(v => ({
+                id: `vendor_${v.id}`,
+                title: v.name.substring(0, 24),
+                description: (v.description || "View menu").substring(0, 72)
+              }))
+            });
           }
+          
+          restaurantResponse = {
+            status: "success",
+            response_type: "restaurant_list",
+            customer_id: customerId,
+            timestamp: new Date().toISOString(),
+            message: "Select a restaurant to get started:",
+            data: {
+              list: {
+                header: "Campus Restaurants",
+                body: "Here are the available restaurants on campus:",
+                button: "View Restaurants",
+                sections
+              }
+            }
+          };
         }
         
         // Return both messages

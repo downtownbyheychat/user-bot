@@ -281,7 +281,8 @@ async function processMessagesAsync(body) {
                             
                             // Send additional message if present (e.g., restaurant list after greeting)
                             if (responseData.additionalMessage) {
-                                await saveChatMessage(customerPhone, responseData.additionalMessage.message, true);
+                                const additionalMsg = responseData.additionalMessage.message || '[Interactive List]';
+                                await saveChatMessage(customerPhone, additionalMsg, true);
                                 await sendMessage(customerPhone, responseData.additionalMessage);
                             }
                         } catch (error) {
