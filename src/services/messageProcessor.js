@@ -42,8 +42,8 @@ export async function processMessage(customerId, message) {
                 title: "Section 2 - Vegetables",
                 rows: [
                   { id: "item_10", title: "Carrot", description: "Crunchy carrot" },
-                //   { id: "item_11", title: "Tomato", description: "Red tomato" },
-                //   { id: "item_12", title: "Lettuce", description: "Green lettuce" },
+                  { id: "item_11", title: "Tomato", description: "Red tomato" },
+                  { id: "item_12", title: "Lettuce", description: "Green lettuce" },
                 //   { id: "item_13", title: "Cucumber", description: "Fresh cucumber" },
                 //   { id: "item_14", title: "Broccoli", description: "Green broccoli" },
                 //   { id: "item_15", title: "Spinach", description: "Leafy spinach" },
