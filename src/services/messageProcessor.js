@@ -11,7 +11,8 @@ export async function processMessage(customerId, message) {
   try {
     // Check for dummy test command
     if (message.toLowerCase().trim() === "dummy") {
-      return {
+      console.log('🧪 DUMMY command detected - generating test list');
+      const dummyResponse = {
         status: "success",
         response_type: "test_list",
         customer_id: customerId,
@@ -41,62 +42,64 @@ export async function processMessage(customerId, message) {
                 title: "Section 2 - Vegetables",
                 rows: [
                   { id: "item_10", title: "Carrot", description: "Crunchy carrot" },
-                  { id: "item_11", title: "Tomato", description: "Red tomato" },
-                  { id: "item_12", title: "Lettuce", description: "Green lettuce" },
-                  { id: "item_13", title: "Cucumber", description: "Fresh cucumber" },
-                  { id: "item_14", title: "Broccoli", description: "Green broccoli" },
-                  { id: "item_15", title: "Spinach", description: "Leafy spinach" },
-                  { id: "item_16", title: "Pepper", description: "Bell pepper" },
-                  { id: "item_17", title: "Onion", description: "White onion" },
-                  { id: "item_18", title: "Potato", description: "Brown potato" }
+                //   { id: "item_11", title: "Tomato", description: "Red tomato" },
+                //   { id: "item_12", title: "Lettuce", description: "Green lettuce" },
+                //   { id: "item_13", title: "Cucumber", description: "Fresh cucumber" },
+                //   { id: "item_14", title: "Broccoli", description: "Green broccoli" },
+                //   { id: "item_15", title: "Spinach", description: "Leafy spinach" },
+                //   { id: "item_16", title: "Pepper", description: "Bell pepper" },
+                //   { id: "item_17", title: "Onion", description: "White onion" },
+                //   { id: "item_18", title: "Potato", description: "Brown potato" }
                 ]
               },
-              {
-                title: "Section 3 - Drinks",
-                rows: [
-                  { id: "item_19", title: "Water", description: "Bottled water" },
-                  { id: "item_20", title: "Juice", description: "Orange juice" },
-                  { id: "item_21", title: "Soda", description: "Cola soda" },
-                  { id: "item_22", title: "Coffee", description: "Hot coffee" },
-                  { id: "item_23", title: "Tea", description: "Green tea" },
-                  { id: "item_24", title: "Milk", description: "Fresh milk" },
-                  { id: "item_25", title: "Smoothie", description: "Berry smoothie" },
-                  { id: "item_26", title: "Lemonade", description: "Fresh lemonade" },
-                  { id: "item_27", title: "Energy Drink", description: "Red bull" }
-                ]
-              },
-              {
-                title: "Section 4 - Snacks",
-                rows: [
-                  { id: "item_28", title: "Chips", description: "Potato chips" },
-                  { id: "item_29", title: "Cookies", description: "Chocolate cookies" },
-                  { id: "item_30", title: "Popcorn", description: "Butter popcorn" },
-                  { id: "item_31", title: "Nuts", description: "Mixed nuts" },
-                  { id: "item_32", title: "Crackers", description: "Wheat crackers" },
-                  { id: "item_33", title: "Pretzels", description: "Salted pretzels" },
-                  { id: "item_34", title: "Candy", description: "Gummy bears" },
-                  { id: "item_35", title: "Chocolate", description: "Dark chocolate" },
-                  { id: "item_36", title: "Granola Bar", description: "Oat granola bar" }
-                ]
-              },
-              {
-                title: "Section 5 - Meals",
-                rows: [
-                  { id: "item_37", title: "Pizza", description: "Pepperoni pizza" },
-                  { id: "item_38", title: "Burger", description: "Beef burger" },
-                  { id: "item_39", title: "Pasta", description: "Spaghetti pasta" },
-                  { id: "item_40", title: "Rice", description: "Fried rice" },
-                  { id: "item_41", title: "Sandwich", description: "Club sandwich" },
-                  { id: "item_42", title: "Salad", description: "Caesar salad" },
-                  { id: "item_43", title: "Soup", description: "Tomato soup" },
-                  { id: "item_44", title: "Tacos", description: "Chicken tacos" },
-                  { id: "item_45", title: "Sushi", description: "Salmon sushi" }
-                ]
-              }
+            //   {
+            //     title: "Section 3 - Drinks",
+            //     rows: [
+            //       { id: "item_19", title: "Water", description: "Bottled water" },
+            //       { id: "item_20", title: "Juice", description: "Orange juice" },
+            //       { id: "item_21", title: "Soda", description: "Cola soda" },
+            //       { id: "item_22", title: "Coffee", description: "Hot coffee" },
+            //       { id: "item_23", title: "Tea", description: "Green tea" },
+            //       { id: "item_24", title: "Milk", description: "Fresh milk" },
+            //       { id: "item_25", title: "Smoothie", description: "Berry smoothie" },
+            //       { id: "item_26", title: "Lemonade", description: "Fresh lemonade" },
+            //       { id: "item_27", title: "Energy Drink", description: "Red bull" }
+            //     ]
+            //   },
+            //   {
+            //     title: "Section 4 - Snacks",
+            //     rows: [
+            //       { id: "item_28", title: "Chips", description: "Potato chips" },
+            //       { id: "item_29", title: "Cookies", description: "Chocolate cookies" },
+            //       { id: "item_30", title: "Popcorn", description: "Butter popcorn" },
+            //       { id: "item_31", title: "Nuts", description: "Mixed nuts" },
+            //       { id: "item_32", title: "Crackers", description: "Wheat crackers" },
+            //       { id: "item_33", title: "Pretzels", description: "Salted pretzels" },
+            //       { id: "item_34", title: "Candy", description: "Gummy bears" },
+            //       { id: "item_35", title: "Chocolate", description: "Dark chocolate" },
+            //       { id: "item_36", title: "Granola Bar", description: "Oat granola bar" }
+            //     ]
+            //   },
+            //   {
+            //     title: "Section 5 - Meals",
+            //     rows: [
+            //       { id: "item_37", title: "Pizza", description: "Pepperoni pizza" },
+            //       { id: "item_38", title: "Burger", description: "Beef burger" },
+            //       { id: "item_39", title: "Pasta", description: "Spaghetti pasta" },
+            //       { id: "item_40", title: "Rice", description: "Fried rice" },
+            //       { id: "item_41", title: "Sandwich", description: "Club sandwich" },
+            //       { id: "item_42", title: "Salad", description: "Caesar salad" },
+            //       { id: "item_43", title: "Soup", description: "Tomato soup" },
+            //       { id: "item_44", title: "Tacos", description: "Chicken tacos" },
+            //       { id: "item_45", title: "Sushi", description: "Salmon sushi" }
+            //     ]
+            //   }
             ]
           }
         }
       };
+      console.log('🧪 DUMMY response created with', dummyResponse.data.list.sections.length, 'sections');
+      return dummyResponse;
     }
 
     // Check for cancel command

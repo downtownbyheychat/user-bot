@@ -555,10 +555,15 @@ async function sendMessage(recipientPhoneNumber, responseData) {
         ? { message: responseData }
         : responseData;
 
+    console.log('📨 sendMessage called for:', recipientPhoneNumber);
+    console.log('📨 Response type:', response.response_type);
+    console.log('📨 Has list data:', !!response.data?.list);
+
     // Format the message for WhatsApp API
     const formattedMessage = formatForWhatsAppAPI(response, recipientPhoneNumber);
 
     if (formattedMessage) {
+        console.log('✅ Message formatted successfully, type:', formattedMessage.type);
         try {
             // Send the message to the WhatsApp API
             const apiResponse = await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
@@ -572,13 +577,16 @@ async function sendMessage(recipientPhoneNumber, responseData) {
 
             // Check for errors in the API response
             if (!apiResponse.ok) {
-                console.error('WhatsApp API Error:', apiResponse.status, await apiResponse.text());
+                const errorText = await apiResponse.text();
+                console.error('❌ WhatsApp API Error:', apiResponse.status, errorText);
+            } else {
+                console.log('✅ Message sent successfully to WhatsApp');
             }
         } catch (error) {
-            console.error('Error sending message:', error.message);
+            console.error('❌ Error sending message:', error.message);
         }
     } else {
-        console.error('Failed to format message for WhatsApp API.');
+        console.error('❌ Failed to format message for WhatsApp API.');
     }
 }
 
