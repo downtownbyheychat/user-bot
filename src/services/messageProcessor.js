@@ -9,6 +9,50 @@ import { orderStatusMessages, paymentMessages } from "./orderStatusManager.js";
 
 export async function processMessage(customerId, message) {
   try {
+    // Check for dummy test command
+    if (message.toLowerCase().trim() === "dummy") {
+      return {
+        status: "success",
+        response_type: "test_list",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: "Here's a test list with 3 sections:",
+        data: {
+          list: {
+            header: "Test Multi-Section List",
+            body: "This is a dummy list with 3 sections to test the format",
+            button: "View Items",
+            sections: [
+              {
+                title: "Section 1 - Fruits",
+                rows: [
+                  { id: "item_1", title: "Apple", description: "Fresh red apple" },
+                  { id: "item_2", title: "Banana", description: "Yellow banana" },
+                  { id: "item_3", title: "Orange", description: "Juicy orange" }
+                ]
+              },
+              {
+                title: "Section 2 - Vegetables",
+                rows: [
+                  { id: "item_4", title: "Carrot", description: "Crunchy carrot" },
+                  { id: "item_5", title: "Tomato", description: "Red tomato" },
+                  { id: "item_6", title: "Lettuce", description: "Green lettuce" }
+                ]
+              },
+              {
+                title: "Section 3 - Drinks",
+                rows: [
+                  { id: "item_7", title: "Water", description: "Bottled water" },
+                  { id: "item_8", title: "Juice", description: "Orange juice" },
+                  { id: "item_9", title: "Soda", description: "Cola soda" }
+                ]
+              }
+            ]
+          }
+        }
+      };
+    }
+
     // Check for cancel command
     if (message.toLowerCase().trim() === "cancel") {
       const { clearPendingOrder, clearFailedOrder } = await import(
