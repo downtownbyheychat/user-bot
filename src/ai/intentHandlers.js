@@ -986,20 +986,47 @@ if (!vendor && items.length > 0) {
       };
     }
 
-    // Split vendors into sections of 10
-    const sections = [];
-    for (let i = 0; i < vendors.length; i += 10) {
-      const chunk = vendors.slice(i, i + 10);
-      sections.push({
-        title: sections.length === 0 ? "Restaurants" : `More Restaurants (${i + 1}-${i + chunk.length})`,
-        rows: chunk.map(v => ({
-          id: `vendor_${v.id}`,
-          title: v.name.substring(0, 24),
-          description: (v.description || "View menu").substring(0, 72)
-        }))
-      });
+    // If more than 10 vendors, return multiple lists
+    if (vendors.length > 10) {
+      const lists = [];
+      for (let i = 0; i < vendors.length; i += 10) {
+        const chunk = vendors.slice(i, i + 10);
+        const listNum = Math.floor(i / 10) + 1;
+        lists.push({
+          status: "success",
+          response_type: "menu",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: listNum === 1 ? "Select a restaurant (Part 1):" : `More restaurants (Part ${listNum}):`,
+          data: {
+            list: {
+              header: `Restaurants ${listNum}`,
+              body: `Available restaurants (${i + 1}-${i + chunk.length}):`,
+              button: "View Restaurants",
+              sections: [{
+                title: "Restaurants",
+                rows: chunk.map(v => ({
+                  id: `vendor_${v.id}`,
+                  title: v.name.substring(0, 24),
+                  description: (v.description || "View menu").substring(0, 72)
+                }))
+              }]
+            }
+          }
+        });
+      }
+      
+      return {
+        status: "success",
+        response_type: "menu",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: "Here are all available restaurants:",
+        multipleLists: lists
+      };
     }
 
+    // 10 or fewer vendors - single list
     return {
       status: "success",
       response_type: "menu",
@@ -1011,7 +1038,14 @@ if (!vendor && items.length > 0) {
           header: "Campus Restaurants",
           body: "Here are the available restaurants on campus:",
           button: "View Restaurants",
-          sections
+          sections: [{
+            title: "Restaurants",
+            rows: vendors.map(v => ({
+              id: `vendor_${v.id}`,
+              title: v.name.substring(0, 24),
+              description: (v.description || "View menu").substring(0, 72)
+            }))
+          }]
         }
       }
     };
