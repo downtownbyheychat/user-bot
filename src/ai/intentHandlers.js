@@ -23,10 +23,10 @@ export const intentHandlers = {
               response_type: "restaurant_list",
               customer_id: customerId,
               timestamp: new Date().toISOString(),
-              message: listNum === 1 ? "Select a restaurant (Part 1):" : `More restaurants (Part ${listNum}):`,
+              message: listNum === 1 ? "Select a restaurant (Part A):" : `More restaurants (Part ${String.fromCharCode(64 + listNum)}):`,
               data: {
                 list: {
-                  header: `Restaurants ${listNum}`,
+                  header: `Vendor List ${String.fromCharCode(64 + listNum)}`,
                   body: `Available restaurants on campus (${i + 1}-${i + chunk.length}):`,
                   button: "View Restaurants",
                   sections: [{
@@ -957,47 +957,82 @@ if (!vendor && items.length > 0) {
     }
   }),
 
-  "Find Restaurant": async (customerId, message) => {
-    const vendors = await getAllVendors();
-    
-    if (vendors.length === 0) {
-      return {
-        status: "error",
-        response_type: "menu",
-        customer_id: customerId,
-        timestamp: new Date().toISOString(),
-        message: "Sorry, no restaurants are available at the moment."
-      };
-    }
+ "Find Restaurant": async (customerId, message) => {
+  const vendors = await getAllVendors();
+  
+  if (vendors.length === 0) {
+    return {
+      status: "error",
+      response_type: "menu",
+      customer_id: customerId,
+      timestamp: new Date().toISOString(),
+      message: "Sorry, no restaurants are available at the moment."
+    };
+  }
 
-    if (vendors.length > 10) {
-      const vendorList = vendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
-      return {
+  if (vendors.length > 10) {
+    const lists = [];
+    for (let i = 0; i < vendors.length; i += 10) {
+      const chunk = vendors.slice(i, i + 10);
+      const listNum = Math.floor(i / 10) + 1;
+      lists.push({
         status: "success",
-        response_type: "menu",
+        response_type: "restaurant_list",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: ` Available Restaurants:\n\n${vendorList}\n\nJust mention the restaurant name to view their menu!`
-      };
+        message: listNum === 1 ? "Select a restaurant (Part 1):" : `More restaurants (Part ${listNum}):`,
+        data: {
+          list: {
+            header: `Vendor List ${listNum}`,
+            body: `Available restaurants on campus (${i + 1}-${i + chunk.length}):`,
+            button: "View Restaurants",
+            sections: [{
+              title: "Restaurants",
+              rows: chunk.map(v => ({
+                id: `vendor_${v.id}`,
+                title: v.name.substring(0, 24),
+                description: (v.description || "View menu").substring(0, 72)
+              }))
+            }]
+          }
+        }
+      });
     }
-
-    // 10 or fewer vendors - single list
+    
     return {
       status: "success",
       response_type: "menu",
       customer_id: customerId,
       timestamp: new Date().toISOString(),
       message: "Select a restaurant to view their menu:",
-      data: {
-        list: {
-          header: "Campus Restaurants",
-          body: "Here are the available restaurants on campus:",
-          button: "View Restaurants",
-          sections
-        }
-      }
+      multipleLists: lists
     };
-  },
+  }
+
+  // 10 or fewer vendors - single list
+  return {
+    status: "success",
+    response_type: "menu",
+    customer_id: customerId,
+    timestamp: new Date().toISOString(),
+    message: "Select a restaurant to view their menu:",
+    data: {
+      list: {
+        header: "Campus Restaurants",
+        body: "Here are the available restaurants on campus:",
+        button: "View Restaurants",
+        sections: [{
+          title: "Restaurants",
+          rows: vendors.map(v => ({
+            id: `vendor_${v.id}`,
+            title: v.name.substring(0, 24),
+            description: (v.description || "View menu").substring(0, 72)
+          }))
+        }]
+      }
+    }
+  };
+},
 
   "Track Order": async (customerId, message) => ({
     status: "success",
