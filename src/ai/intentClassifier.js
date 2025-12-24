@@ -32,16 +32,8 @@ Food Ordering & Delivery:
 - Cancel Order
 - Modify Order
 - View Order History
-- Order Issue & File Complaint
-- Daily Specials & Promotions
-- Recommendations
 
-Account & Payment:
-- Manage Account
-- Fund Wallet
-- View Balance
-- Update Name
-- View Account Details
+
 
 OUTPUT FORMAT:
 {
