@@ -59,8 +59,8 @@ app.get('/webhook', (req, res) => {
 app.post('/webhook', async (req, res) => {
     //display every message sent
     const { entry } = req.body;
-  // console.log("FULL WEBHOOK DATA:");
-  // console.log(JSON.stringify(req.body, null, 2));
+  console.log("FULL WEBHOOK DATA:");
+  console.log(JSON.stringify(req.body, null, 2));
   // ✅ Validate structure
   
   const changes = entry[0]?.changes;
@@ -279,9 +279,17 @@ async function processMessagesAsync(body) {
                             // Send the response to the user
                             await sendMessage(customerPhone, responseData);
                             
+                            // Send multiple lists if present
+                            if (responseData.multipleLists) {
+                                for (const listMsg of responseData.multipleLists) {
+                                    await saveChatMessage(customerPhone, listMsg.message || '[Interactive List]', true);
+                                    await sendMessage(customerPhone, listMsg);
+                                }
+                            }
                             // Send additional message if present (e.g., restaurant list after greeting)
-                            if (responseData.additionalMessage) {
-                                await saveChatMessage(customerPhone, responseData.additionalMessage.message, true);
+                            else if (responseData.additionalMessage) {
+                                const additionalMsg = responseData.additionalMessage.message || '[Interactive List]';
+                                await saveChatMessage(customerPhone, additionalMsg, true);
                                 await sendMessage(customerPhone, responseData.additionalMessage);
                             }
                         } catch (error) {
@@ -554,10 +562,15 @@ async function sendMessage(recipientPhoneNumber, responseData) {
         ? { message: responseData }
         : responseData;
 
+    console.log('📨 sendMessage called for:', recipientPhoneNumber);
+    console.log('📨 Response type:', response.response_type);
+    console.log('📨 Has list data:', !!response.data?.list);
+
     // Format the message for WhatsApp API
     const formattedMessage = formatForWhatsAppAPI(response, recipientPhoneNumber);
 
     if (formattedMessage) {
+        console.log('✅ Message formatted successfully, type:', formattedMessage.type);
         try {
             // Send the message to the WhatsApp API
             const apiResponse = await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
@@ -571,13 +584,16 @@ async function sendMessage(recipientPhoneNumber, responseData) {
 
             // Check for errors in the API response
             if (!apiResponse.ok) {
-                console.error('WhatsApp API Error:', apiResponse.status, await apiResponse.text());
+                const errorText = await apiResponse.text();
+                console.error('❌ WhatsApp API Error:', apiResponse.status, errorText);
+            } else {
+                console.log('✅ Message sent successfully to WhatsApp');
             }
         } catch (error) {
-            console.error('Error sending message:', error.message);
+            console.error('❌ Error sending message:', error.message);
         }
     } else {
-        console.error('Failed to format message for WhatsApp API.');
+        console.error('❌ Failed to format message for WhatsApp API.');
     }
 }
 

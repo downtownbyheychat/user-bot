@@ -8,47 +8,74 @@ import { createListSections } from "../utils/listHelper.js";
 export const intentHandlers = {
   "Greeting": async (customerId, message) => {
     try {
-        // Fetch the user's name from the database
         const userName = await getUserName(customerId);
-        console.log(`[Greeting] Fetched userName: ${userName}`);
-        console.log('customer id', customerId)
-
-        // Get available vendors
         const vendors = await getAllVendors();
-        
         const greetingMessage = `Sup ${userName || ""}👋! \nDowntown is active. Select food shop`;
         
-        // Create restaurant list response
-        let restaurantResponse = null;
-        if (vendors.length > 0) {
-          const sections = createListSections(
-            vendors,
-            v => ({
-              id: `vendor_${v.id}`,
-              title: v.name.substring(0, 24),
-              description: (v.description || "View menu").substring(0, 72)
-            }),
-            "Restaurants"
-          );
+        // If more than 10 vendors, return multiple lists
+        if (vendors.length > 10) {
+          const lists = [];
+          for (let i = 0; i < vendors.length; i += 10) {
+            const chunk = vendors.slice(i, i + 10);
+            const listNum = Math.floor(i / 10) + 1;
+            lists.push({
+              status: "success",
+              response_type: "restaurant_list",
+              customer_id: customerId,
+              timestamp: new Date().toISOString(),
+              message: listNum === 1 ? "Select a restaurant (Part 1):" : `More restaurants (Part ${listNum}):`,
+              data: {
+                list: {
+                  header: `Restaurants ${listNum}`,
+                  body: `Available restaurants on campus (${i + 1}-${i + chunk.length}):`,
+                  button: "View Restaurants",
+                  sections: [{
+                    title: "Restaurants",
+                    rows: chunk.map(v => ({
+                      id: `vendor_${v.id}`,
+                      title: v.name.substring(0, 24),
+                      description: (v.description || "View menu").substring(0, 72)
+                    }))
+                  }]
+                }
+              }
+            });
+          }
           
-          restaurantResponse = {
+          return {
             status: "success",
-            response_type: "restaurant_list",
+            response_type: "greeting",
             customer_id: customerId,
             timestamp: new Date().toISOString(),
-            message: "Select a restaurant to get started:",
-            data: {
-              list: {
-                header: "Campus Restaurants",
-                body: "Here are the available restaurants on campus:",
-                button: "View Restaurants",
-                sections
-              }
-            }
+            message: greetingMessage,
+            multipleLists: lists
           };
         }
         
-        // Return both messages
+        // 10 or fewer vendors - single list
+        const restaurantResponse = vendors.length > 0 ? {
+          status: "success",
+          response_type: "restaurant_list",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: "Select a restaurant to get started:",
+          data: {
+            list: {
+              header: "Campus Restaurants",
+              body: "Here are the available restaurants on campus:",
+              button: "View Restaurants",
+              sections: [{
+                title: "Restaurants",
+                rows: vendors.map(v => ({
+                  id: `vendor_${v.id}`,
+                  title: v.name.substring(0, 24),
+                  description: (v.description || "View menu").substring(0, 72)
+                }))
+              }]
+            }
+          }
+        } : null;
+        
         return {
           status: "success",
           response_type: "greeting",
@@ -922,16 +949,18 @@ if (!vendor && items.length > 0) {
       };
     }
 
-    const sections = createListSections(
-      vendors,
-      v => ({
-        id: `vendor_${v.id}`,
-        title: v.name.substring(0, 24),
-        description: (v.description || "View menu").substring(0, 72)
-      }),
-      "Restaurants"
-    );
+    if (vendors.length > 10) {
+      const vendorList = vendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
+      return {
+        status: "success",
+        response_type: "menu",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: ` Available Restaurants:\n\n${vendorList}\n\nJust mention the restaurant name to view their menu!`
+      };
+    }
 
+    // 10 or fewer vendors - single list
     return {
       status: "success",
       response_type: "menu",
