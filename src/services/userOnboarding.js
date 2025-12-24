@@ -1,6 +1,6 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
-import { sendMessage } from '../webhook/webhook';
+import { sendMessage } from '../services/utils.js';
 
 dotenv.config();
 
