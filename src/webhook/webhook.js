@@ -55,8 +55,8 @@ app.get('/webhook', (req, res) => {
 app.post('/webhook', async (req, res) => {
     //display every message sent
     const { entry } = req.body;
-  console.log("FULL WEBHOOK DATA:");
-  console.log(JSON.stringify(req.body, null, 2));
+//   console.log("FULL WEBHOOK DATA:");
+//   console.log(JSON.stringify(req.body, null, 2));
   // ✅ Validate structure
   
   const changes = entry[0]?.changes;

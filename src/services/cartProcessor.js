@@ -380,10 +380,14 @@ export async function processCart(cart, to) {
         console.log(
           `ERROR: Cannot order from multiple vendors! First vendor: ${firstVendorInfo.vendorName}, Current product vendor: ${currentVendorInfo.vendorName}`
         );
-        
-        // Optionally send a message to the user
-        await sendMultiVendorError(to, firstVendorInfo.vendorName, currentVendorInfo.vendorName);
-        
+
+        // Send a message to the user
+        await sendMultiVendorError(
+          to,
+          firstVendorInfo.vendorName,
+          currentVendorInfo.vendorName
+        );
+
         return; // Stop the function
       }
     }
@@ -420,7 +424,24 @@ export async function processCart(cart, to) {
       price,
       quantity,
       total,
+      saleQuantity: menu.sale_quantity,
+      startingPrice: menu.price,
     });
+  }
+
+  // Check for per_price items with prices below starting price
+  for (const item of itemsList) {
+    if (item.saleQuantity === "per_price") {
+      if (item.total < item.startingPrice) {
+        console.log(
+          `ERROR: Item "${item.name}" price (₦${item.total}) is below minimum starting price (₦${item.startingPrice})`
+        );
+        
+        await sendMinimumPriceError(to, item.name, item.startingPrice);
+        
+        return; // Stop the function
+      }
+    }
   }
 
   // Create consistent session data format
@@ -507,7 +528,7 @@ export async function processCart(cart, to) {
   }
 }
 
-// Optional: Function to notify user about multi-vendor error
+// Function to notify user about multi-vendor error
 async function sendMultiVendorError(to, firstVendor, secondVendor) {
   try {
     await axios({
@@ -528,5 +549,29 @@ async function sendMultiVendorError(to, firstVendor, secondVendor) {
     });
   } catch (error) {
     console.error("Failed to send multi-vendor error message", error);
+  }
+}
+
+// Function to notify user about minimum price error
+async function sendMinimumPriceError(to, itemName, startingPrice) {
+  try {
+    await axios({
+      url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+      method: "post",
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      data: JSON.stringify({
+        messaging_product: "whatsapp",
+        to,
+        type: "text",
+        text: {
+          body: `Sorry, "${itemName}" cannot be ordered below the minimum starting price of ₦${startingPrice}. Please adjust your order and try again.`,
+        },
+      }),
+    });
+  } catch (error) {
+    console.error("Failed to send minimum price error message", error);
   }
 }

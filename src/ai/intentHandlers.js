@@ -1,6 +1,7 @@
 import { getUserName } from "../db/Utils/users.js";
 import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasSwallowWithoutSoup, hasOnlyFreeSoup, getAllVendors, checkVendorStatus, getAvailableSoups } from "../db/Utils/vendor.js";
 import { sendAfricanKitchenCatalog, sendAlphaCatalog, sendArenaCatalog, sendBestmanCatalog, sendChefMayoCatalog, sendExceedingGraceCatalog, sendFamotCatalog, sendReneesCatalog, sendRukamatCatalog, sendYomiceCatalog, sendTestvendor } from "../services/sendVendorCatalog.js";
+import { createListSections } from "../utils/listHelper.js";
 
 
 
@@ -134,16 +135,15 @@ export const intentHandlers = {
     if (!vendorStatus) {
       const alternatives = await getAllVendors();
       
-      if (alternatives.length > 10) {
-        const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
-        return {
-          status: "error",
-          response_type: "vendor_not_found",
-          customer_id: customerId,
-          timestamp: new Date().toISOString(),
-          message: `Sorry, "${vendor}" is not in our system.\n\n Available Restaurants:\n\n${altList}`
-        };
-      }
+      const sections = createListSections(
+        alternatives,
+        v => ({
+          id: `vendor_${v.id}`,
+          title: v.name.substring(0, 24),
+          description: (v.description || "View menu").substring(0, 72)
+        }),
+        "Restaurants"
+      );
       
       return {
         status: "error",
@@ -156,14 +156,7 @@ export const intentHandlers = {
             header: "Available Restaurants",
             body: "Select a restaurant to view their menu:",
             button: "View Restaurants",
-            sections: [{
-              title: "Restaurants",
-              rows: alternatives.map(v => ({
-                id: `vendor_${v.id}`,
-                title: v.name.substring(0, 24),
-                description: (v.description || "View menu").substring(0, 72)
-              }))
-            }]
+            sections
           }
         }
       };
@@ -172,16 +165,15 @@ export const intentHandlers = {
     if (vendorStatus.status !== 'open') {
       const alternatives = await getAllVendors();
       
-      if (alternatives.length > 10) {
-        const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
-        return {
-          status: "error",
-          response_type: "vendor_closed",
-          customer_id: customerId,
-          timestamp: new Date().toISOString(),
-          message: `Sorry, ${vendorStatus.name} is currently closed.\n\n Available Now:\n\n${altList}`
-        };
-      }
+      const sections = createListSections(
+        alternatives,
+        v => ({
+          id: `vendor_${v.id}`,
+          title: v.name.substring(0, 24),
+          description: (v.description || "View menu").substring(0, 72)
+        }),
+        "Open Restaurants"
+      );
       
       return {
         status: "error",
@@ -194,14 +186,7 @@ export const intentHandlers = {
             header: "Available Now",
             body: `Sorry, ${vendorStatus.name} is currently closed. Try these instead:`,
             button: "View Restaurants",
-            sections: [{
-              title: "Open Restaurants",
-              rows: alternatives.map(v => ({
-                id: `vendor_${v.id}`,
-                title: v.name.substring(0, 24),
-                description: (v.description || "View menu").substring(0, 72)
-              }))
-            }]
+            sections
           }
         }
       };
@@ -213,16 +198,17 @@ export const intentHandlers = {
     
     if (menuItems.length === 0) {
         const alternatives = await getAllVendors();
-        if (alternatives.length > 10) {
-            const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
-            return {
-                status: "error",
-                response_type: "vendor_catalogue",
-                customer_id: customerId,
-                timestamp: new Date().toISOString(),
-                message: `${vendorData.name} has no menu items available at the moment.\n\n Available Restaurants:\n\n${altList}`
-            };
-        }
+        
+        const sections = createListSections(
+          alternatives,
+          v => ({
+            id: `vendor_${v.id}`,
+            title: v.name.substring(0, 24),
+            description: (v.description || "View menu").substring(0, 72)
+          }),
+          "Restaurants"
+        );
+        
         return {
             status: "error",
             response_type: "vendor_catalogue",
@@ -234,14 +220,7 @@ export const intentHandlers = {
                     header: "Available Restaurants",
                     body: "Select a restaurant to view their menu:",
                     button: "View Restaurants",
-                    sections: [{
-                        title: "Restaurants",
-                        rows: alternatives.map(v => ({
-                            id: `vendor_${v.id}`,
-                            title: v.name.substring(0, 24),
-                            description: (v.description || "View menu").substring(0, 72)
-                        }))
-                    }]
+                    sections
                 }
             }
         };
@@ -469,16 +448,15 @@ if (!vendor && items.length > 0) {
     if (!vendorStatus) {
       const alternatives = await getAllVendors();
       
-      if (alternatives.length > 10) {
-        const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
-        return {
-          status: "error",
-          response_type: "vendor_not_found",
-          customer_id: customerId,
-          timestamp: new Date().toISOString(),
-          message: `Sorry, "${vendor}" is not in our system.\n\n Available Restaurants:\n\n${altList}`
-        };
-      }
+      const sections = createListSections(
+        alternatives,
+        v => ({
+          id: `vendor_${v.id}`,
+          title: v.name.substring(0, 24),
+          description: (v.description || "View menu").substring(0, 72)
+        }),
+        "Restaurants"
+      );
       
       return {
         status: "error",
@@ -491,14 +469,7 @@ if (!vendor && items.length > 0) {
             header: "Available Restaurants",
             body: "Select a restaurant to view their menu:",
             button: "View Restaurants",
-            sections: [{
-              title: "Restaurants",
-              rows: alternatives.map(v => ({
-                id: `vendor_${v.id}`,
-                title: v.name.substring(0, 24),
-                description: (v.description || "View menu").substring(0, 72)
-              }))
-            }]
+            sections
           }
         }
       };
@@ -507,16 +478,15 @@ if (!vendor && items.length > 0) {
     if (vendorStatus.status !== 'open') {
       const alternatives = await getAllVendors();
       
-      if (alternatives.length > 10) {
-        const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
-        return {
-          status: "error",
-          response_type: "vendor_closed",
-          customer_id: customerId,
-          timestamp: new Date().toISOString(),
-          message: `Sorry, ${vendorStatus.name} is currently closed.\n\n Available Now:\n\n${altList}`
-        };
-      }
+      const sections = createListSections(
+        alternatives,
+        v => ({
+          id: `vendor_${v.id}`,
+          title: v.name.substring(0, 24),
+          description: (v.description || "View menu").substring(0, 72)
+        }),
+        "Open Restaurants"
+      );
       
       return {
         status: "error",
@@ -529,14 +499,7 @@ if (!vendor && items.length > 0) {
             header: "Available Now",
             body: "Select a restaurant to order from:",
             button: "View Restaurants",
-            sections: [{
-              title: "Open Restaurants",
-              rows: alternatives.map(v => ({
-                id: `vendor_${v.id}`,
-                title: v.name.substring(0, 24),
-                description: (v.description || "View menu").substring(0, 72)
-              }))
-            }]
+            sections
           }
         }
       };
@@ -1007,43 +970,14 @@ if (!vendor && items.length > 0) {
       };
     }
 
-    // If more than 10 vendors, return multiple lists
     if (vendors.length > 10) {
-      const lists = [];
-      for (let i = 0; i < vendors.length; i += 10) {
-        const chunk = vendors.slice(i, i + 10);
-        const listNum = Math.floor(i / 10) + 1;
-        lists.push({
-          status: "success",
-          response_type: "menu",
-          customer_id: customerId,
-          timestamp: new Date().toISOString(),
-          message: listNum === 1 ? "Select a restaurant (Part 1):" : `More restaurants (Part ${listNum}):`,
-          data: {
-            list: {
-              header: `Restaurants ${listNum}`,
-              body: `Available restaurants (${i + 1}-${i + chunk.length}):`,
-              button: "View Restaurants",
-              sections: [{
-                title: "Restaurants",
-                rows: chunk.map(v => ({
-                  id: `vendor_${v.id}`,
-                  title: v.name.substring(0, 24),
-                  description: (v.description || "View menu").substring(0, 72)
-                }))
-              }]
-            }
-          }
-        });
-      }
-      
+      const vendorList = vendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
       return {
         status: "success",
         response_type: "menu",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: "Here are all available restaurants:",
-        multipleLists: lists
+        message: ` Available Restaurants:\n\n${vendorList}\n\nJust mention the restaurant name to view their menu!`
       };
     }
 
@@ -1059,14 +993,7 @@ if (!vendor && items.length > 0) {
           header: "Campus Restaurants",
           body: "Here are the available restaurants on campus:",
           button: "View Restaurants",
-          sections: [{
-            title: "Restaurants",
-            rows: vendors.map(v => ({
-              id: `vendor_${v.id}`,
-              title: v.name.substring(0, 24),
-              description: (v.description || "View menu").substring(0, 72)
-            }))
-          }]
+          sections
         }
       }
     };
