@@ -1,5 +1,7 @@
 import { formatForWhatsAppAPI } from '../services/messageFormatter.js';
 
+const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
+const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 
 
 // async function sendMessage(to, text, buttons = null) {
