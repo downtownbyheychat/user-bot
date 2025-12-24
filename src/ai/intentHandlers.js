@@ -874,6 +874,27 @@ if (!vendor && items.length > 0) {
       };
     }
 
+      // Check for multiple pack items (full_pack or half_pack)
+      const packItems = validatedItems.filter(item => 
+        item.quantity_type === 'full_pack' || item.quantity_type === 'half_pack'
+      );
+      
+      if (packItems.length > 1) {
+        const packItemNames = packItems.map(i => i.dbName || i.name).join(', ');
+        return {
+          status: "error",
+          response_type: "validation_error",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `You can only order one pack item at a time.\n\nPack items in your order: ${packItemNames}\n\nPlease create separate orders for each pack item.`,
+          data: {
+            buttons: [
+              { id: "cancel_order", title: "Cancel Order" }
+            ]
+          }
+        };
+      }
+
       // Clear any failed order state on success
       const { clearFailedOrder } = await import('../services/sessionManager.js');
       clearFailedOrder(customerId);
