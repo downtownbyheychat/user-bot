@@ -1,5 +1,6 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
+import { sendMessage } from '../services/utils.js';
 
 dotenv.config();
 
@@ -393,7 +394,12 @@ export async function verifyOTP(otp, phoneNumber) {
             }
           }
         });
-      } // else {
+      } else{
+        await sendMessage(phoneNumber, 'Your account has been verified successfully!'); 
+        console.log(' Verification success message sent');
+      }
+      
+      // else {
         // Send welcome message for new user onboarding
         await sendOrderTemplateMessage(phoneNumber);
      // }
