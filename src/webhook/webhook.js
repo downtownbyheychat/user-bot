@@ -24,11 +24,6 @@ const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 
 
-console.log('Environment check:');
-console.log('VERIFY_TOKEN loaded:', !!VERIFY_TOKEN);
-console.log('ACCESS_TOKEN loaded:', !!ACCESS_TOKEN);
-console.log('PHONE_NUMBER_ID loaded:', !!PHONE_NUMBER_ID);
-
 
 app.use(express.json());
 app.use('/assests', express.static('assests'));
@@ -556,7 +551,7 @@ async function sendTypingIndicator(recipientPhoneNumber, messageId) {
     }
 }
 
-async function sendMessage(recipientPhoneNumber, responseData) {
+export async function sendMessage(recipientPhoneNumber, responseData) {
     // Handle both old format (text string) and new format (response object)
     const response = typeof responseData === 'string' 
         ? { message: responseData }
