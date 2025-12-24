@@ -7,7 +7,7 @@ dotenv.config();
 const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 
-
+console.log(`WhatsApp PHONE_NUMBER_ID: ${PHONE_NUMBER_ID}, ${PHONE_NUMBER_ID ? 'Loaded' : 'Missing'}`);
 // async function sendMessage(to, text, buttons = null) {
 //   try {
 //     let messageData = {
