@@ -22,6 +22,7 @@ import { createOrder } from "./orderHandler.js";
 
 const baseUrl = process.env.baseUrl;
 let grandTotal = 0;
+let vendorTotal = 0;    
 let account_details = null;
 let packFee = null;
 
@@ -205,36 +206,52 @@ export async function handleButtonClick(buttonId, customerId) {
       let totalPackFee = 0;
 
       orderStack.forEach((pack, i) => {
-        const packItems = pack.items
-          .map((item) => {
-            if (item.quantity_type === "per_price") {
-              return `  ${item.name} -- ₦${item.price}`;
-            } else {
-              return `  ${item.name} (x${item.quantity}) -- ₦${item.price}`;
-            }
-          })
-          .join("\n");
+  const packItems = pack.items
+    .map((item) => {
+      if (item.quantity_type === "per_price") {
+        return `  ${item.name} -- ₦${item.price}`;
+      } else {
+        return `  ${item.name} (x${item.quantity}) -- ₦${item.price}`;
+      }
+    })
+    .join("\n");
 
-        let deliveryFee = pack.delivery_location !== "Pickup" ? 100 : 50;
-        let feeLabel = pack.delivery_location !== "Pickup" ? "Delivery Fee" : "Pickup Fee";
+  vendorName = pack.vendor;
 
-        vendorName = pack.vendor;
+  // ✅ Items-only total
+  const itemsTotal = pack.total;
 
-        // Check if this pack has any items that require pack fee (pack = 'true')
-        const requiresPackFee = pack.items.some(item => item.pack === 'true');
-        const packFeeForThisPack = requiresPackFee ? 200 : 0;
-        totalPackFee += packFeeForThisPack;
+  // ✅ Pack fee (vendor receives this)
+  const requiresPackFee = pack.items.some(item => item.pack === "true");
+  const packFeeForThisPack = requiresPackFee ? 200 : 0;
 
-        const packSubtotal = pack.total + deliveryFee + packFeeForThisPack;
-        
-        orderDetails += `Pack ${i + 1} from ${pack.vendor}:\n${packItems}\n${feeLabel}: ₦${deliveryFee}\n`;
-        if (packFeeForThisPack > 0) {
-          orderDetails += `Pack Fee: ₦${packFeeForThisPack}\n`;
-        }
-        orderDetails += `Pack Subtotal: ₦${packSubtotal}\n\n`;
+  // ❌ Delivery / pickup fee (platform-only)
+  const deliveryFee = pack.delivery_location !== "Pickup" ? 100 : 50;
+  const feeLabel =
+    pack.delivery_location !== "Pickup" ? "Delivery Fee" : "Pickup Fee";
 
-        grandTotal += packSubtotal;
-      });
+  // ✅ Vendor gets items + pack fee
+  const vendorPackTotal = itemsTotal + packFeeForThisPack;
+  vendorTotal += vendorPackTotal;
+
+  // ✅ Customer pays everything
+  const customerPackTotal =
+    itemsTotal + packFeeForThisPack + deliveryFee;
+
+  grandTotal += customerPackTotal;
+
+  orderDetails += `Pack ${i + 1} from ${pack.vendor}:\n`;
+  orderDetails += `${packItems}\n`;
+  orderDetails += `Items Total: ₦${itemsTotal}\n`;
+
+  if (packFeeForThisPack > 0) {
+    orderDetails += `Pack Fee: ₦${packFeeForThisPack}\n`;
+  }
+
+  orderDetails += `${feeLabel}: ₦${deliveryFee}\n`;
+  orderDetails += `Pack Subtotal: ₦${customerPackTotal}\n\n`;
+});
+      console.log("vendor Total:", vendorTotal);
 
       const vendorResult = await pool.query(
         `SELECT phone_number FROM vendors WHERE name = $1`,
@@ -252,13 +269,15 @@ export async function handleButtonClick(buttonId, customerId) {
         
         account_details = await getAccount(
           vendorNumber,
-          grandTotal,
+          vendorTotal,
           customerId,
           deliveryType
         );
         console.log("account assigned", account_details);
       }
       
+      // await CopyAccNum(customerId, account_details.account_number, account_details.account_name);
+
       return {
         status: "success",
         response_type: "payment",
@@ -508,6 +527,7 @@ export async function handleButtonClick(buttonId, customerId) {
       await sendPassImage(customerId, order_details[0].vendor, finalPrice);
       const session = paymentSessions.get(customerId);
       session.status = "CONFIRMED";
+
       paymentSessions.set(customerId, session);
 
       return {
@@ -550,34 +570,43 @@ export async function handleButtonClick(buttonId, customerId) {
         const vendors = await getAllVendors();
         const vendor = vendors.find((v) => v.id === vendorId);
 
-        const packTotal = pendingOrder.orderSummary.items.reduce(
-          (sum, item) => {
-            // if total exists, trust it
-            if (typeof item.total === "number") {
-              return sum + item.total;
-            }
+        
 
-            // otherwise calculate it
-            const price = Number(item.price) || 0;
-            const quantity = Number(item.quantity) || 0;
+        const packSubTotal = pendingOrder.orderSummary.items.reduce(
+  (sum, item) => {
+    if (typeof item.total === "number") {
+      return sum + item.total;
+    }
 
-            return sum + price;
-          },
-          0
-        );
+    const price = Number(item.price) || 0;
+    const quantity = Number(item.quantity) || 1;
 
-        console.log("pack total:", packTotal);
+    return sum + price * quantity;
+  },
+  0
+);
+
+        
 
         pushOrderPack(customerId, {
           items: pendingOrder.orderSummary.items,
-          vendor: vendor?.name || "Unknown",
+          vendor: vendor?.name,
           vendorId,
           delivery_location: "Pickup",
-          total: packTotal,
+          total: packSubTotal+200, // add pack fee
         });
 
-        clearPendingOrder(customerId);
         const stackSummary = getStackSummary(customerId);
+const packCount = stackSummary.packCount;
+const PACK_FEE = 200;
+const packFeeTotal = packCount * PACK_FEE;
+
+const finalPackTotal = packSubTotal + packFeeTotal;
+
+        
+
+        // clearPendingOrder(customerId);
+        
         const itemsList = pendingOrder.orderSummary.items
           .map((i) => {
             if (i.quantity_type === "per_price") {
@@ -593,7 +622,7 @@ export async function handleButtonClick(buttonId, customerId) {
           response_type: "order_summary",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: ` Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nPickup: You'll collect from restaurant\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
+          message: ` Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack subtotal: ₦${finalPackTotal}\nPack Fee: ₦${packFeeTotal}\nVendor: ${vendor?.name}\nPickup: You'll collect from vendor\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
           data: {
             buttons: [
               { id: "proceed_payment", title: " Proceed to Payment" },

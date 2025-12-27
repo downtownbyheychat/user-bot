@@ -182,16 +182,8 @@ export async function processMessage(customerId, message) {
           0
         );
 
-      pushOrderPack(customerId, {
-        items: pendingOrder.orderSummary.items,
-        vendor: vendor?.name || "Unknown",
-        vendorId: pendingOrder.vendorId,
-        delivery_location: deliveryLocation,
-        total: packTotal,
-      });
 
-      // get pack summary
-      let stackSummary = getStackSummary(customerId) || { packCount: 1 };
+        let stackSummary = getStackSummary(customerId) || { packCount: 1 };
       console.log(stackSummary);
 
       // PACK FEE = packCount * 200
@@ -200,6 +192,17 @@ export async function processMessage(customerId, message) {
       // final total
       const finalTotal = packTotal + packFee;
 
+      
+      pushOrderPack(customerId, {
+        items: pendingOrder.orderSummary.items,
+        vendor: vendor?.name || "Unknown",
+        vendorId: pendingOrder.vendorId,
+        delivery_location: deliveryLocation,
+        total: finalTotal,
+      });
+
+      // get pack summary
+      
       clearPendingOrder(customerId);
 
       const itemsList = pendingOrder.orderSummary.items
