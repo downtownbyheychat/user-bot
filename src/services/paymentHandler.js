@@ -30,14 +30,13 @@ export async function getAccount(
 
     const external_reference = response.data.data.external_reference;
 
-    // ✅ CREATE PAYMENT SESSION
+    // CREATE PAYMENT SESSION
     paymentSessions.set(customer_id, {
       external_reference,
       amount: total,
       vendor_phone,
       status: "PENDING",
       createdAt: Date.now(),
-      expiresAt: Date.now() + 10 * 60 * 1000, // 10 mins
     });
 
     return response.data.data;
@@ -49,6 +48,7 @@ export async function getAccount(
 
 export async function confirmPayment(total, customer_id) {
   const session = paymentSessions.get(customer_id);
+  console.log("Payment session:", session);
 
   if (!session) {
     console.log("No active payment session");
@@ -64,56 +64,60 @@ export async function confirmPayment(total, customer_id) {
     console.log("Amount mismatch");
     return;
   }
+  console.log("Confirming payment...", session.amount, session.external_reference);
+  // Confirm payment
+  try {
+    const response = await axios.post(`${baseUrl}transactions/confirm`, {
+      amount: session.amount,
+      external_reference: session.external_reference,
+    });
 
-  if (Date.now() > session.expiresAt) {
-    paymentSessions.delete(customer_id);
-    console.log("Payment session expired");
-    return;
+    //check if the payment was successful
+    if (response.data.data.success === true) {
+      // Mark as confirmed
+      session.status = "CONFIRMED";
+      session.confirmedAt = Date.now();
+
+      paymentSessions.set(customer_id, session);
+
+      console.log("Payment confirmed. Finalizing in 2 minutes 30 seconds...");
+
+      //2 mins 30 secs timer to finalize
+      setTimeout(async () => {
+        try {
+          // Double-check session still exists & confirmed
+          const latestSession = paymentSessions.get(customer_id);
+
+          if (!latestSession || latestSession.status !== "CONFIRMED") {
+            console.log("Finalization aborted: session invalid");
+            return;
+          }
+
+          await finalizePayment(latestSession.external_reference);
+
+          latestSession.status = "FINALIZED";
+          paymentSessions.set(customer_id, latestSession);
+
+          console.log("Payment finalized successfully");
+        } catch (err) {
+          console.error("Finalization failed:", err);
+        }
+      }, 150000); // 2 mins 30 secs
+    }
+    return response.data.data;
+  } catch (err) {
+    console.log(err);
+    throw err;
   }
 
-  // Confirm payment
-  const response = await axios.post(`${baseUrl}transactions/confirm`, {
-    amount: session.amount,
-    external_reference: session.external_reference,
-  });
-
-  // ✅ Mark as confirmed
-  session.status = "CONFIRMED";
-  session.confirmedAt = Date.now();
-
-  paymentSessions.set(customer_id, session);
-
-  console.log("Payment confirmed. Finalizing in 2 minutes 30 seconds...");
-
-  //2 mins 30 secs
-  setTimeout(async () => {
-    try {
-      // Double-check session still exists & confirmed
-      const latestSession = paymentSessions.get(customer_id);
-
-      if (!latestSession || latestSession.status !== "CONFIRMED") {
-        console.log("Finalization aborted: session invalid");
-        return;
-      }
-
-      await finalizePayment(latestSession.external_reference);
-
-      latestSession.status = "FINALIZED";
-      paymentSessions.set(customer_id, latestSession);
-
-      console.log("Payment finalized successfully");
-    } catch (err) {
-      console.error("Finalization failed:", err);
-    }
-  }, 150000); // 2 mins 30 secs
-
-  return response.data.data;
+  
 }
-
 
 export async function finalizePayment(external_reference) {
   try {
-    const response = await axios.post(`${baseUrl}transactions/${external_reference}/finalize`);
+    const response = await axios.post(
+      `${baseUrl}transactions/${external_reference}/finalize`
+    );
 
     return response.data.data;
   } catch (err) {
@@ -123,8 +127,10 @@ export async function finalizePayment(external_reference) {
 }
 
 export async function refundPayment(external_reference) {
-    try {
-    const response = await axios.post(`${baseUrl}transactions/${external_reference}/refund`);
+  try {
+    const response = await axios.post(
+      `${baseUrl}transactions/${external_reference}/refund`
+    );
 
     return response.data.data;
   } catch (err) {

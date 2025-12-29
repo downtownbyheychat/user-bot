@@ -22,7 +22,7 @@ import { createOrder } from "./orderHandler.js";
 
 const baseUrl = process.env.baseUrl;
 let grandTotal = 0;
-let vendorTotal = 0;    
+let vendorTotal = 0;
 let account_details = null;
 let packFee = null;
 
@@ -117,7 +117,7 @@ export async function handleButtonClick(buttonId, customerId) {
 
     case "confirm_cancel":
       const cancelSession = paymentSessions.get(customerId);
-      
+
       if (cancelSession && cancelSession.status === "CONFIRMED") {
         return {
           status: "success",
@@ -131,7 +131,7 @@ export async function handleButtonClick(buttonId, customerId) {
           },
         };
       }
-      
+
       return {
         status: "success",
         message:
@@ -147,27 +147,27 @@ export async function handleButtonClick(buttonId, customerId) {
 
     case "refund_order":
       const session = paymentSessions.get(customerId);
-      
+
       if (!session) {
         return {
           status: "error",
           message: "No payment session found. Cannot process refund.",
         };
       }
-      
+
       if (session.status !== "CONFIRMED") {
         return {
           status: "error",
           message: "Payment not confirmed yet. Cannot process refund.",
         };
       }
-      
+
       const { requestRefund } = await import("./refundHandler.js");
       const refundResult = await requestRefund(
         session.external_reference,
         session.amount
       );
-      
+
       if (refundResult.success) {
         paymentSessions.delete(customerId);
         return {
@@ -184,7 +184,7 @@ export async function handleButtonClick(buttonId, customerId) {
     case "proceed_payment":
       const { getOrderStack } = await import("./orderStack.js");
       const orderStack = getOrderStack(customerId);
-      console.log('order stack:', orderStack)
+      console.log("order stack:", orderStack);
 
       if (orderStack.length === 0) {
         return {
@@ -195,62 +195,61 @@ export async function handleButtonClick(buttonId, customerId) {
 
       let orderDetails = "";
       grandTotal = 0;
-      
+
       const { pushOrderPack, getStackSummary } = await import(
         "./orderStack.js"
       );
       let stackSummary = getStackSummary(customerId);
-      console.log('stack summary',stackSummary);
+      console.log("stack summary", stackSummary);
 
       let vendorName = null;
       let totalPackFee = 0;
 
       orderStack.forEach((pack, i) => {
-  const packItems = pack.items
-    .map((item) => {
-      if (item.quantity_type === "per_price") {
-        return `  ${item.name} -- ₦${item.price}`;
-      } else {
-        return `  ${item.name} (x${item.quantity}) -- ₦${item.price}`;
-      }
-    })
-    .join("\n");
+        const packItems = pack.items
+          .map((item) => {
+            if (item.quantity_type === "per_price") {
+              return `  ${item.name} -- ₦${item.price}`;
+            } else {
+              return `  ${item.name} (x${item.quantity}) -- ₦${item.price}`;
+            }
+          })
+          .join("\n");
 
-  vendorName = pack.vendor;
+        vendorName = pack.vendor;
 
-  // ✅ Items-only total
-  const itemsTotal = pack.total;
+        // Items-only total
+        const itemsTotal = pack.total;
 
-  // ✅ Pack fee (vendor receives this)
-  const requiresPackFee = pack.items.some(item => item.pack === "true");
-  const packFeeForThisPack = requiresPackFee ? 200 : 0;
+        // Pack fee (vendor receives this)
+        const requiresPackFee = pack.items.some((item) => item.pack === "true");
+        const packFeeForThisPack = requiresPackFee ? 200 : 0;
 
-  // ❌ Delivery / pickup fee (platform-only)
-  const deliveryFee = pack.delivery_location !== "Pickup" ? 100 : 50;
-  const feeLabel =
-    pack.delivery_location !== "Pickup" ? "Delivery Fee" : "Pickup Fee";
+        // Delivery / pickup fee (platform-only)
+        const deliveryFee = pack.delivery_location !== "Pickup" ? 100 : 50;
+        const feeLabel =
+          pack.delivery_location !== "Pickup" ? "Delivery Fee" : "Pickup Fee";
 
-  // ✅ Vendor gets items + pack fee
-  const vendorPackTotal = itemsTotal + packFeeForThisPack;
-  vendorTotal += vendorPackTotal;
+        // Vendor gets items + pack fee
+        const vendorPackTotal = itemsTotal + packFeeForThisPack;
+        vendorTotal += vendorPackTotal;
 
-  // ✅ Customer pays everything
-  const customerPackTotal =
-    itemsTotal + packFeeForThisPack + deliveryFee;
+        // Customer pays everything
+        const customerPackTotal = itemsTotal + packFeeForThisPack + deliveryFee;
 
-  grandTotal += customerPackTotal;
+        grandTotal += customerPackTotal;
 
-  orderDetails += `Pack ${i + 1} from ${pack.vendor}:\n`;
-  orderDetails += `${packItems}\n`;
-  orderDetails += `Items Total: ₦${itemsTotal}\n`;
+        orderDetails += `Pack ${i + 1} from ${pack.vendor}:\n`;
+        orderDetails += `${packItems}\n`;
+        orderDetails += `Items Total: ₦${itemsTotal}\n`;
 
-  if (packFeeForThisPack > 0) {
-    orderDetails += `Pack Fee: ₦${packFeeForThisPack}\n`;
-  }
+        if (packFeeForThisPack > 0) {
+          orderDetails += `Pack Fee: ₦${packFeeForThisPack}\n`;
+        }
 
-  orderDetails += `${feeLabel}: ₦${deliveryFee}\n`;
-  orderDetails += `Pack Subtotal: ₦${customerPackTotal}\n\n`;
-});
+        orderDetails += `${feeLabel}: ₦${deliveryFee}\n`;
+        orderDetails += `Pack Subtotal: ₦${customerPackTotal}\n\n`;
+      });
       console.log("vendor Total:", vendorTotal);
 
       const vendorResult = await pool.query(
@@ -263,19 +262,21 @@ export async function handleButtonClick(buttonId, customerId) {
       if (vendorResult.rows.length > 0) {
         vendorNumber = vendorResult.rows[0].phone_number;
         console.log("vendor number :", vendorNumber);
-        
-        const hasDelivery = orderStack.some(pack => pack.delivery_location !== "Pickup");
+
+        const hasDelivery = orderStack.some(
+          (pack) => pack.delivery_location !== "Pickup"
+        );
         const deliveryType = hasDelivery ? "Delivery" : "Pickup";
-        
+
         account_details = await getAccount(
           vendorNumber,
-          vendorTotal,
+          grandTotal,
           customerId,
           deliveryType
         );
         console.log("account assigned", account_details);
       }
-      
+
       // await CopyAccNum(customerId, account_details.account_number, account_details.account_name);
 
       return {
@@ -288,7 +289,6 @@ export async function handleButtonClick(buttonId, customerId) {
           buttons: [{ id: "payment_sent", title: "Payment Sent" }],
         },
       };
-
 
     case "add_new_pack":
       return {
@@ -390,9 +390,7 @@ export async function handleButtonClick(buttonId, customerId) {
       const { clearFailedOrder } = await import("./sessionManager.js");
       clearOrderStack(customerId);
       clearFailedOrder(customerId);
-      const { clearPendingOrder } = await import(
-        "./sessionManager.js"
-      );
+      const { clearPendingOrder } = await import("./sessionManager.js");
       clearPendingOrder(customerId);
 
       return {
@@ -409,8 +407,9 @@ export async function handleButtonClick(buttonId, customerId) {
         await import("./orderStack.js");
       const stack = getStack(customerId);
       console.log(stack);
+      const paysession = paymentSessions.get(customerId);
 
-      const confirm_payment = await confirmPayment(grandTotal, customerId);
+      const confirm_payment = await confirmPayment(paysession.amount, customerId);
       console.log(confirm_payment);
 
       // If NO payment received
@@ -536,11 +535,9 @@ export async function handleButtonClick(buttonId, customerId) {
         customer_id: customerId,
         timestamp: new Date().toISOString(),
         message: `Payment Confirmed Successfully!\n\nYour order has been forwarded to the vendor.\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}\n\nNeed to cancel? Use the button below.`,
-        data: { 
+        data: {
           receipt_path: receiptPath,
-          buttons: [
-            { id: "refund_order", title: "🔄 Cancel & Refund" }
-          ]
+          buttons: [{ id: "refund_order", title: "🔄 Cancel & Refund" }],
         },
       };
     }
@@ -562,51 +559,56 @@ export async function handleButtonClick(buttonId, customerId) {
           };
         }
 
-        const { pushOrderPack, getStackSummary } = await import(
-          "./orderStack.js"
-        );
+        const { pushOrderPack, getStackSummary, clearOrderStack, getOrderStack } =
+          await import("./orderStack.js");
         console.log("pending order summary: ", pendingOrder.orderSummary);
         const { getAllVendors } = await import("../db/Utils/vendor.js");
         const vendors = await getAllVendors();
         const vendor = vendors.find((v) => v.id === vendorId);
 
-        
-
         const packSubTotal = pendingOrder.orderSummary.items.reduce(
-  (sum, item) => {
-    if (typeof item.total === "number") {
-      return sum + item.total;
-    }
+          (sum, item) => {
+            if (typeof item.total === "number") {
+              return sum + item.total;
+            }
 
-    const price = Number(item.price) || 0;
-    const quantity = Number(item.quantity) || 1;
+            const price = Number(item.price) || 0;
+            const quantity = Number(item.quantity) || 1;
 
-    return sum + price * quantity;
-  },
-  0
-);
-
-        
+            return sum + price * quantity;
+          },
+          0
+        );
 
         pushOrderPack(customerId, {
           items: pendingOrder.orderSummary.items,
           vendor: vendor?.name,
           vendorId,
           delivery_location: "Pickup",
-          total: packSubTotal+200, // add pack fee
+          total: packSubTotal, // add pack fee
         });
 
         const stackSummary = getStackSummary(customerId);
-const packCount = stackSummary.packCount;
-const PACK_FEE = 200;
-const packFeeTotal = packCount * PACK_FEE;
+        const packCount = stackSummary.packCount;
+        const PACK_FEE = 200;
+        const packFeeTotal = packCount * PACK_FEE;
+        const pickupFee = 50;
 
-const finalPackTotal = packSubTotal + packFeeTotal;
+        const finalPackTotal = packSubTotal + packFeeTotal; // Pickup fee
+        clearOrderStack(customerId);
 
-        
+        pushOrderPack(customerId, {
+          items: pendingOrder.orderSummary.items,
+          vendor: vendor?.name,
+          vendorId,
+          delivery_location: "Pickup",
+          total: finalPackTotal, // add pack fee
+        });
+
+        console.log(getOrderStack(customerId));
 
         // clearPendingOrder(customerId);
-        
+
         const itemsList = pendingOrder.orderSummary.items
           .map((i) => {
             if (i.quantity_type === "per_price") {
@@ -800,59 +802,56 @@ const finalPackTotal = packSubTotal + packFeeTotal;
       // Handle disambiguation selection
       if (buttonId.startsWith("disambiguate_")) {
         const menuItemId = buttonId.substring(13);
-        const { getFailedOrder, clearFailedOrder } = await import("./sessionManager.js");
+        const { getFailedOrder, clearFailedOrder } = await import(
+          "./sessionManager.js"
+        );
         const failedOrder = getFailedOrder(customerId);
-        
-        if (!failedOrder || failedOrder.errorType !== 'disambiguation') {
+
+        if (!failedOrder || failedOrder.errorType !== "disambiguation") {
           return {
             status: "error",
-            message: "No pending disambiguation found. Please place a new order.",
+            message:
+              "No pending disambiguation found. Please place a new order.",
           };
         }
-        
+
         // Get the selected item details
-        const result = await pool.query(
-          "SELECT * FROM menus WHERE id = $1",
-          [menuItemId]
-        );
-        
+        const result = await pool.query("SELECT * FROM menus WHERE id = $1", [
+          menuItemId,
+        ]);
+
         if (result.rows.length === 0) {
           return {
             status: "error",
             message: "Sorry, I couldn't find that item.",
           };
         }
-        
+
         const selectedItem = result.rows[0];
         const disambiguationItem = failedOrder.disambiguationItem;
-        
+
         // Rebuild order with selected item
-        const updatedItems = failedOrder.originalItems.map(item => {
+        const updatedItems = failedOrder.originalItems.map((item) => {
           if (item.name === disambiguationItem.originalName) {
             return {
               name: selectedItem.food_name,
               quantity: disambiguationItem.quantity,
               quantity_type: disambiguationItem.quantityType,
-              price: disambiguationItem.price // Carry over user's price if specified
+              price: disambiguationItem.price, // Carry over user's price if specified
             };
           }
           return item;
         });
-        
+
         clearFailedOrder(customerId);
-        
+
         // Re-process order with selected item
         const { handleIntent } = await import("../ai/intentHandlers.js");
-        return await handleIntent(
-          "Food Ordering",
-          customerId,
-          "",
-          {
-            vendor: failedOrder.vendor,
-            items: updatedItems,
-            delivery_location: failedOrder.delivery_location
-          }
-        );
+        return await handleIntent("Food Ordering", customerId, "", {
+          vendor: failedOrder.vendor,
+          items: updatedItems,
+          delivery_location: failedOrder.delivery_location,
+        });
       }
 
       // Handle menu item selection
