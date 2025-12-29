@@ -4,7 +4,8 @@ import {
   generateOrderSummary,
   ORDER_SUMMARY_INTENTS,
 } from "../ai/orderSummary.js";
-import { clearOrderStack } from "./orderStack.js";
+import { clearOrderStack, getOrderStack } from "./orderStack.js";
+import pool from "../db/database.js";
 import { orderStatusMessages, paymentMessages } from "./orderStatusManager.js";
 
 export async function processMessage(customerId, message) {
@@ -186,11 +187,12 @@ export async function processMessage(customerId, message) {
         let stackSummary = getStackSummary(customerId) || { packCount: 1 };
       console.log(stackSummary);
 
-      // PACK FEE = packCount * 200
-      const packFee = Number(stackSummary.packCount) * 200;
+      
+
+     
 
       // final total
-      const finalTotal = packTotal + packFee;
+      const finalTotal = packTotal;
 
       
       pushOrderPack(customerId, {
@@ -201,7 +203,51 @@ export async function processMessage(customerId, message) {
         total: finalTotal,
       });
 
+      // checking if food items require pack fee
+        const itemsToCheck = getOrderStack(customerId);
+        console.log("items to check:", itemsToCheck);
+
+        let PACK_FEE = 200; // assume true until proven otherwise
+
+        for (const pack of itemsToCheck) {
+          for (const item of pack.items) {
+            const menuResult = await pool.query(
+              `SELECT pack FROM menus WHERE product_id = $1`,
+              [item.productId]
+            );
+
+            const menu = menuResult.rows[0];
+
+            // if item not found OR pack is false → cancel pack fee
+            if (!menu || menu.pack !== true) {
+              PACK_FEE = 0;
+              console.log("❌ no pack fee because of:", item.name);
+              break; // stop checking items
+            }
+
+            console.log("✅ pack allowed for:", item.name);
+          }
+
+          // stop checking other packs if already false
+          if (PACK_FEE === 0) break;
+        }
+
+        console.log("FINAL PACK FEE:", PACK_FEE);
+
+         // PACK FEE = packCount * 200
+      const packFee = Number(stackSummary.packCount) * PACK_FEE;
+
       // get pack summary
+
+      clearOrderStack(customerId);
+
+      pushOrderPack(customerId, {
+        items: pendingOrder.orderSummary.items,
+        vendor: vendor?.name || "Unknown",
+        vendorId: pendingOrder.vendorId,
+        delivery_location: deliveryLocation,
+        total: finalTotal + packFee,
+      });
       
       clearPendingOrder(customerId);
 

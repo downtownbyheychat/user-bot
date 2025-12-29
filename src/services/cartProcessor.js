@@ -426,6 +426,7 @@ export async function processCart(cart, to) {
       total,
       saleQuantity: menu.sale_quantity,
       startingPrice: menu.price,
+      productId: menu.product_id,
     });
   }
 

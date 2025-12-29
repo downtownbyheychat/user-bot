@@ -409,7 +409,10 @@ export async function handleButtonClick(buttonId, customerId) {
       console.log(stack);
       const paysession = paymentSessions.get(customerId);
 
-      const confirm_payment = await confirmPayment(paysession.amount, customerId);
+      const confirm_payment = await confirmPayment(
+        paysession.amount,
+        customerId
+      );
       console.log(confirm_payment);
 
       // If NO payment received
@@ -559,8 +562,12 @@ export async function handleButtonClick(buttonId, customerId) {
           };
         }
 
-        const { pushOrderPack, getStackSummary, clearOrderStack, getOrderStack } =
-          await import("./orderStack.js");
+        const {
+          pushOrderPack,
+          getStackSummary,
+          clearOrderStack,
+          getOrderStack,
+        } = await import("./orderStack.js");
         console.log("pending order summary: ", pendingOrder.orderSummary);
         const { getAllVendors } = await import("../db/Utils/vendor.js");
         const vendors = await getAllVendors();
@@ -589,10 +596,41 @@ export async function handleButtonClick(buttonId, customerId) {
         });
 
         const stackSummary = getStackSummary(customerId);
+
+        // checking if food items require pack fee
+        const itemsToCheck = getOrderStack(customerId);
+        console.log("items to check:", itemsToCheck);
+
+        let PACK_FEE = 200; // assume true until proven otherwise
+
+        for (const pack of itemsToCheck) {
+          for (const item of pack.items) {
+            const menuResult = await pool.query(
+              `SELECT pack FROM menus WHERE product_id = $1`,
+              [item.productId]
+            );
+
+            const menu = menuResult.rows[0];
+
+            // if item not found OR pack is false → cancel pack fee
+            if (!menu || menu.pack !== true) {
+              PACK_FEE = 0;
+              console.log("❌ no pack fee because of:", item.name);
+              break; // stop checking items
+            }
+
+            console.log("✅ pack allowed for:", item.name);
+          }
+
+          // stop checking other packs if already false
+          if (PACK_FEE === 0) break;
+        }
+
+        console.log("FINAL PACK FEE:", PACK_FEE);
+
         const packCount = stackSummary.packCount;
-        const PACK_FEE = 200;
+
         const packFeeTotal = packCount * PACK_FEE;
-        const pickupFee = 50;
 
         const finalPackTotal = packSubTotal + packFeeTotal; // Pickup fee
         clearOrderStack(customerId);
