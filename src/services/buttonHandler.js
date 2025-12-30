@@ -575,14 +575,8 @@ export async function handleButtonClick(buttonId, customerId) {
 
         const packSubTotal = pendingOrder.orderSummary.items.reduce(
           (sum, item) => {
-            if (typeof item.total === "number") {
-              return sum + item.total;
-            }
-
-            const price = Number(item.price) || 0;
-            const quantity = Number(item.quantity) || 1;
-
-            return sum + price * quantity;
+            // item.price is already multiplied by quantity in validation
+            return sum + (Number(item.price) || 0);
           },
           0
         );
