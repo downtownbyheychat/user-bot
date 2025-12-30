@@ -653,7 +653,8 @@ export async function handleButtonClick(buttonId, customerId) {
         );
 
         const packFee = await calculatePackFeeForItems(pendingOrder.orderSummary.items);
-        const packTotal = packSubTotal + packFee;
+        const pickupFee = 50; // Pickup fee
+        const packTotal = packSubTotal + packFee + pickupFee;
 
         pushOrderPack(customerId, {
           items: pendingOrder.orderSummary.items,
@@ -662,6 +663,7 @@ export async function handleButtonClick(buttonId, customerId) {
           delivery_location: "Pickup",
           itemsTotal: packSubTotal,
           packFee: packFee,
+          deliveryFee: pickupFee,
           total: packTotal,
         });
 
@@ -680,7 +682,7 @@ export async function handleButtonClick(buttonId, customerId) {
           response_type: "order_summary",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: ` Pack Added to Cart\n\nItems:\n${itemsList}\n\nItems Total: ₦${packSubTotal}${packFee > 0 ? `\nPack Fee: ₦${packFee}` : ''}\n---\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nPickup: You'll collect from vendor\n\nWhat would you like to do next?`,
+          message: ` Pack Added to Cart\n\nItems:\n${itemsList}\n\nItems Total: ₦${packSubTotal}${packFee > 0 ? `\nPack Fee: ₦${packFee}` : ''}\nPickup Fee: ₦${pickupFee}\n---\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nPickup: You'll collect from vendor\n\nWhat would you like to do next?`,
           data: {
             buttons: [
               { id: "proceed_payment", title: " Proceed to Payment" },

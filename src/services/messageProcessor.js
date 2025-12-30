@@ -166,7 +166,8 @@ export async function processMessage(customerId, message) {
       );
 
       const packFee = await calculatePackFeeForItems(pendingOrder.orderSummary.items);
-      const packTotal = packSubTotal + packFee;
+      const deliveryFee = 100; // Delivery fee
+      const packTotal = packSubTotal + packFee + deliveryFee;
 
       pushOrderPack(customerId, {
         items: pendingOrder.orderSummary.items,
@@ -175,6 +176,7 @@ export async function processMessage(customerId, message) {
         delivery_location: deliveryLocation,
         itemsTotal: packSubTotal,
         packFee: packFee,
+        deliveryFee: deliveryFee,
         total: packTotal,
       });
       
@@ -195,7 +197,7 @@ export async function processMessage(customerId, message) {
         response_type: "order_summary",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `📦 Pack Added to Cart\n\nItems:\n${itemsList}\n\nItems Total: ₦${packSubTotal}${packFee > 0 ? `\nPack Fee: ₦${packFee}` : ''}\n---\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nDelivery: ${deliveryLocation}\n\nWhat would you like to do next?`,
+        message: `📦 Pack Added to Cart\n\nItems:\n${itemsList}\n\nItems Total: ₦${packSubTotal}${packFee > 0 ? `\nPack Fee: ₦${packFee}` : ''}\nDelivery Fee: ₦${deliveryFee}\n---\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nDelivery: ${deliveryLocation}\n\nWhat would you like to do next?`,
 
 
         data: {
