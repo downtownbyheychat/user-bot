@@ -8,7 +8,7 @@ export async function calculatePackFeeForItems(items) {
   let PACK_FEE = 200;
 
   for (const item of items) {
-    if (!item.productId) {
+    if (!item.productId) { 
       console.log("⚠️ Item missing productId:", item);
       PACK_FEE = 0;
       break;
