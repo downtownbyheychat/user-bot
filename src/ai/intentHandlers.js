@@ -946,16 +946,16 @@ if (!vendor && items.length > 0) {
     };
   },
 
-  "Re-ordering": async (customerId, message) => ({
-    status: "success",
-    response_type: "reorder",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: "You wan run it back? \nNo wahala — you fit reorder your last meal in one tap.\nTap 'Reorder' below to bring back your previous order ",
-    data: {
-      buttons: [{ id: "reorder_last", title: " Reorder" }]
-    }
-  }),
+//   "Re-ordering": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "reorder",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: "You wan run it back? \nNo wahala — you fit reorder your last meal in one tap.\nTap 'Reorder' below to bring back your previous order ",
+//     data: {
+//       buttons: [{ id: "reorder_last", title: " Reorder" }]
+//     }
+//   }),
 
  "Find Restaurant": async (customerId, message) => {
   const vendors = await getAllVendors();
@@ -1034,13 +1034,7 @@ if (!vendor && items.length > 0) {
   };
 },
 
-  "Track Order": async (customerId, message) => ({
-    status: "success",
-    response_type: "order_tracking",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " Out for Delivery\nYour order is on its way! \nRider just picked it up — you can expect delivery in about 7-10 mins."
-  }),
+
 
   "Cancel Order": async (customerId, message) => {
     const { getOrderStack } = await import("../services/orderStack.js");
@@ -1065,78 +1059,86 @@ if (!vendor && items.length > 0) {
       response_type: "order_management",
       customer_id: customerId,
       timestamp: new Date().toISOString(),
-      message: " Got it! You're still within the 2 min 30 sec grace window, so your order can be canceled \nWant me to go ahead and cancel it?",
+      message: "Are you sure you want to cancel your order?",
       data: {
         buttons: [
           { id: "confirm_cancel", title: "Yes, Cancel" },
-          { id: "keep_order", title: "Keep Order" }
+          { id: "keep_order", title: "No, Keep Order" }
         ]
       }
     };
   },
 
-  "Modify Order": async (customerId, message) => ({
-    status: "success",
-    response_type: "order_management",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " Sure thing! You're still within your 2 min 30 sec grace window, so we can make changes to your order\nJust tell me what you'd like to update, maybe the meal, how much, or delivery spot?"
-  }),
+//   "Track Order": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "order_tracking",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: " Out for Delivery\nYour order is on its way! \nRider just picked it up — you can expect delivery in about 7-10 mins."
+//   }),
 
-  "View Order History": async (customerId, message) => ({
-    status: "success",
-    response_type: "order_history",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " Reorder (For Multiple Past Orders)\nYou get a few past orders \nWhich one you wan run back?\nPick from your last orders below \n\n1⃣ 2 packs jollof rice - ₦1,400\n2⃣ Shawarma + Coke - ₦2,000\n3⃣ Meat pie + juice - ₦1,200\n\nType the number or name of the order you wan repeat (e.g., '1' or 'jollof rice') "
-  }),
+//   "Modify Order": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "order_management",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: " Sure thing! You're still within your 2 min 30 sec grace window, so we can make changes to your order\nJust tell me what you'd like to update, maybe the meal, how much, or delivery spot?"
+//   }),
+
+//   "View Order History": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "order_history",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: " Reorder (For Multiple Past Orders)\nYou get a few past orders \nWhich one you wan run back?\nPick from your last orders below \n\n1⃣ 2 packs jollof rice - ₦1,400\n2⃣ Shawarma + Coke - ₦2,000\n3⃣ Meat pie + juice - ₦1,200\n\nType the number or name of the order you wan repeat (e.g., '1' or 'jollof rice') "
+//   }),
 
 
 
-  "Manage Account": async (customerId, message) => ({
-    status: "success",
-    response_type: "wallet_info",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " Here are your wallet details \nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint\n\n You can send money directly here to top up your Downtown balance."
-  }),
+//   "Manage Account": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "wallet_info",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: " Here are your wallet details \nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint\n\n You can send money directly here to top up your Downtown balance."
+//   }),
 
-  "View Balance": async (customerId, message) => ({
-    status: "success",
-    response_type: "wallet_balance",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " Your Downtown wallet balance is ₦2,500\nYou can use it for orders, tips, or quick re-ups — anytime."
-  }),
+//   "View Balance": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "wallet_balance",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: " Your Downtown wallet balance is ₦2,500\nYou can use it for orders, tips, or quick re-ups — anytime."
+//   }),
 
-  "Update Name": async (customerId, message) => ({
-    status: "success",
-    response_type: "account_management",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " To update your name, please provide your new name.",
-    data: {
-      required_info: ["new_name"]
-    }
-  }),
+//   "Update Name": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "account_management",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: " To update your name, please provide your new name.",
+//     data: {
+//       required_info: ["new_name"]
+//     }
+//   }),
 
-  "View Account Details": async (customerId, message) => ({
-    status: "success",
-    response_type: "account_management",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " Here are your account details:\n\nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint"
-  }),
+//   "View Account Details": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "account_management",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: " Here are your account details:\n\nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint"
+//   }),
 
   
 
-  "Fund Wallet": async (customerId, message) => ({
-    status: "success",
-    response_type: "wallet_funding",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " To fund your Downtown wallet, simply transfer money to the account below:\n\nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint\n\nOnce done, just send me a quick message with the amount funded and I'll update your balance right away!"
-  }),
+//   "Fund Wallet": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "wallet_funding",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: " To fund your Downtown wallet, simply transfer money to the account below:\n\nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint\n\nOnce done, just send me a quick message with the amount funded and I'll update your balance right away!"
+//   }),
 
   "Unknown": async (customerId, message) => {
     // Check if it looks like a food order attempt

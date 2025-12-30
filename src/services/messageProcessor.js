@@ -1,31 +1,28 @@
 import { classifyIntent } from "../ai/intentClassifier.js";
 import { handleIntent } from "../ai/intentHandlers.js";
-import {
-  generateOrderSummary,
-  ORDER_SUMMARY_INTENTS,
-} from "../ai/orderSummary.js";
-import { clearOrderStack, getOrderStack } from "./orderStack.js";
-import pool from "../db/database.js";
-import { orderStatusMessages, paymentMessages } from "./orderStatusManager.js";
+import {  generateOrderSummary, ORDER_SUMMARY_INTENTS} from "../ai/orderSummary.js";
+// import { clearOrderStack, getOrderStack } from "./orderStack.js";
+// import pool from "../db/database.js";
+// import { orderStatusMessages, paymentMessages } from "./orderStatusManager.js";
 
 export async function processMessage(customerId, message) {
   try {
-    // Check for cancel command
-    if (message.toLowerCase().trim() === "cancel") {
-      const { clearPendingOrder, clearFailedOrder } = await import(
-        "./sessionManager.js"
-      );
-      clearPendingOrder(customerId);
-      clearFailedOrder(customerId);
-      clearOrderStack(customerId)
-      return {
-        status: "success",
-        response_type: "order_cancelled",
-        customer_id: customerId,
-        timestamp: new Date().toISOString(),
-        message: "Order cancelled. Start fresh whenever you're ready! 😊",
-      };
-    }
+    // // Check for cancel command
+    // if (message.toLowerCase().trim() === "cancel") {
+    //   const { clearPendingOrder, clearFailedOrder } = await import(
+    //     "./sessionManager.js"
+    //   );
+    //   clearPendingOrder(customerId);
+    //   clearFailedOrder(customerId);
+    //   clearOrderStack(customerId)
+    //   return {
+    //     status: "success",
+    //     response_type: "order_cancelled",
+    //     customer_id: customerId,
+    //     timestamp: new Date().toISOString(),
+    //     message: "Order cancelled. Start fresh whenever you're ready! 😊",
+    //   };
+    // }
 
     // Check if user is correcting a failed order
     const { getFailedOrder, clearFailedOrder, getAwaitingInput } = await import(
@@ -72,7 +69,7 @@ export async function processMessage(customerId, message) {
         );
         return {
           ...response,
-          classification: { intent: "Food Ordering", confidence: 1.0 },
+          classification: { intent: "Food Ordering" },
           data: { ...response.data },
         };
       } else {
@@ -105,7 +102,7 @@ export async function processMessage(customerId, message) {
         );
         return {
           ...response,
-          classification: { intent: "Food Ordering", confidence: 1.0 },
+          classification: { intent: "Food Ordering" },
           data: { ...response.data },
         };
       }
@@ -135,7 +132,7 @@ export async function processMessage(customerId, message) {
         );
         return {
           ...response,
-          classification: { intent: "Food Ordering", confidence: 1.0 },
+          classification: { intent: "Food Ordering" },
           data: { ...response.data },
         };
       }
@@ -149,9 +146,7 @@ export async function processMessage(customerId, message) {
     const pendingOrder = getPendingOrder(customerId);
 
     if (pendingOrder?.awaitingAddress) {
-      const { pushOrderPack, getStackSummary } = await import(
-        "./orderStack.js"
-      );
+      const { pushOrderPack } = await import( "./orderStack.js");
       const { getAllVendors } = await import("../db/Utils/vendor.js");
       const { getUserHostel } = await import("../db/Utils/users.js");
       const vendors = await getAllVendors();
@@ -176,7 +171,7 @@ export async function processMessage(customerId, message) {
 
             // otherwise calculate it
             const price = Number(item.price) || 0;
-            const quantity = Number(item.quantity) || 0;
+            // const quantity = Number(item.quantity) || 0;
 
             return sum + price;
           },
@@ -184,15 +179,15 @@ export async function processMessage(customerId, message) {
         );
 
 
-        let stackSummary = getStackSummary(customerId) || { packCount: 1 };
-      console.log(stackSummary);
+    //     let stackSummary = getStackSummary(customerId) || { packCount: 1 };
+    //   console.log(stackSummary);
 
       
 
      
 
-      // final total
-      const finalTotal = packTotal;
+    //   // final total
+    //   const finalTotal = packTotal;
 
       
       pushOrderPack(customerId, {
@@ -200,54 +195,54 @@ export async function processMessage(customerId, message) {
         vendor: vendor?.name || "Unknown",
         vendorId: pendingOrder.vendorId,
         delivery_location: deliveryLocation,
-        total: finalTotal,
+        total: packTotal,
       });
 
-      // checking if food items require pack fee
-        const itemsToCheck = getOrderStack(customerId);
-        console.log("items to check:", itemsToCheck);
+    //   // checking if food items require pack fee
+    //     const itemsToCheck = getOrderStack(customerId);
+    //     console.log("items to check:", itemsToCheck);
 
-        let PACK_FEE = 200; // assume true until proven otherwise
+    //     let PACK_FEE = 200; // assume true until proven otherwise
 
-        for (const pack of itemsToCheck) {
-          for (const item of pack.items) {
-            const menuResult = await pool.query(
-              `SELECT pack FROM menus WHERE product_id = $1`,
-              [item.productId]
-            );
+    //     for (const pack of itemsToCheck) {
+    //       for (const item of pack.items) {
+    //         const menuResult = await pool.query(
+    //           `SELECT pack FROM menus WHERE product_id = $1`,
+    //           [item.productId]
+    //         );
 
-            const menu = menuResult.rows[0];
+    //         const menu = menuResult.rows[0];
 
-            // if item not found OR pack is false → cancel pack fee
-            if (!menu || menu.pack !== true) {
-              PACK_FEE = 0;
-              console.log("❌ no pack fee because of:", item.name);
-              break; // stop checking items
-            }
+    //         // if item not found OR pack is false → cancel pack fee
+    //         if (!menu || menu.pack !== true) {
+    //           PACK_FEE = 0;
+    //           console.log("❌ no pack fee because of:", item.name);
+    //           break; // stop checking items
+    //         }
 
-            console.log("✅ pack allowed for:", item.name);
-          }
+    //         console.log("✅ pack allowed for:", item.name);
+    //       }
 
-          // stop checking other packs if already false
-          if (PACK_FEE === 0) break;
-        }
+    //       // stop checking other packs if already false
+    //       if (PACK_FEE === 0) break;
+    //     }
 
-        console.log("FINAL PACK FEE:", PACK_FEE);
+    //     console.log("FINAL PACK FEE:", PACK_FEE);
 
-         // PACK FEE = packCount * 200
-      const packFee = Number(stackSummary.packCount) * PACK_FEE;
+    //      // PACK FEE = packCount * 200
+    //   const packFee = Number(stackSummary.packCount) * PACK_FEE;
 
-      // get pack summary
+    //   // get pack summary
 
-      clearOrderStack(customerId);
+    //   clearOrderStack(customerId);
 
-      pushOrderPack(customerId, {
-        items: pendingOrder.orderSummary.items,
-        vendor: vendor?.name || "Unknown",
-        vendorId: pendingOrder.vendorId,
-        delivery_location: deliveryLocation,
-        total: finalTotal + packFee,
-      });
+    //   pushOrderPack(customerId, {
+    //     items: pendingOrder.orderSummary.items,
+    //     vendor: vendor?.name || "Unknown",
+    //     vendorId: pendingOrder.vendorId,
+    //     delivery_location: deliveryLocation,
+    //     total: finalTotal + packFee,
+    //   });
       
       clearPendingOrder(customerId);
 
@@ -266,16 +261,8 @@ export async function processMessage(customerId, message) {
         response_type: "order_summary",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `📦 Pack Added to Cart
-        Items:
-        ${itemsList}
-        Pack Fee: ₦${packFee}
-        Pack Total: ₦${finalTotal}
-        Vendor: ${vendor?.name}
-        Delivery: ${deliveryLocation}
-        Total Packs: ${stackSummary.packCount}
+        message: `📦 Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nDelivery: ${deliveryLocation}\n\nWhat would you like to do next?`,
 
-        What would you like to do next?`,
 
         data: {
           buttons: [
@@ -289,7 +276,7 @@ export async function processMessage(customerId, message) {
 
     const classification = await classifyIntent(message);
     console.log(
-      `[processMessage] Classified intent: ${classification.intent} (Confidence: ${classification.confidence})`
+      `[processMessage] Classified intent: ${classification.intent}`
     );
     let orderSummary = null;
 
@@ -304,19 +291,19 @@ export async function processMessage(customerId, message) {
       orderSummary
     );
 
-    // Add payment handling ONLY for successful orders
-    if (
-      orderSummary?.items?.length > 0 &&
-      classification.intent === "Food Ordering" &&
-      response.status === "success" &&
-      response.response_type === "order_confirmation"
-    ) {
-      const paymentInfo = paymentMessages.firstTimePayment(
-        orderSummary.total_estimated || "2500",
-        "9182 XXXX 645"
-      );
-      response.data = { ...response.data, ...paymentInfo.data };
-    }
+    // // Add payment handling ONLY for successful orders
+    // if (
+    //   orderSummary?.items?.length > 0 &&
+    //   classification.intent === "Food Ordering" &&
+    //   response.status === "success" &&
+    //   response.response_type === "order_confirmation"
+    // ) {
+    //   const paymentInfo = paymentMessages.firstTimePayment(
+    //     orderSummary.total_estimated || "2500",
+    //     "9182 XXXX 645"
+    //   );
+    //   response.data = { ...response.data, ...paymentInfo.data };
+    // }
 
     return {
       ...response,

@@ -25,20 +25,14 @@ General Interaction:
 
 Food Ordering & Delivery:
 - Food Ordering (includes: placing orders, viewing specific vendor menus, asking about menu items)
-- Re-ordering
 - Find Restaurant (only for: browsing all restaurants, asking "what restaurants are available")
-- Track Order
-- Delivery Time
 - Cancel Order
-- Modify Order
-- View Order History
 
 
 
 OUTPUT FORMAT:
 {
   "intent": "<One of the intents above OR 'Unknown'>",
-  "confidence": "<High | Medium | Low>"
 }
 
 Now classify this message: "${message}"
@@ -62,7 +56,6 @@ Return ONLY the JSON response, no additional text or formatting.`;
     console.error('Intent classification error:', error);
     return {
       intent: "Unknown",
-      confidence: "Low"
     };
   }
 }

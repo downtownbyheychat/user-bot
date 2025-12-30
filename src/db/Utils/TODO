@@ -13,3 +13,15 @@ DONE: invalid Price (min)
 DONE: invalid Price (max)
 
 DONE: No order Summary
+
+orderHandler.js
+
+sendReciept.js
+
+sendVendorCatalog.js
+
+cartProcessor.js
+
+testFoodOrdering.js
+
+testVendor.js
