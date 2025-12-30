@@ -173,6 +173,8 @@ export async function processMessage(customerId, message) {
         vendor: vendor?.name || "Unknown",
         vendorId: pendingOrder.vendorId,
         delivery_location: deliveryLocation,
+        itemsTotal: packSubTotal,
+        packFee: packFee,
         total: packTotal,
       });
       
@@ -193,7 +195,7 @@ export async function processMessage(customerId, message) {
         response_type: "order_summary",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `📦 Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nDelivery: ${deliveryLocation}\n\nWhat would you like to do next?`,
+        message: `📦 Pack Added to Cart\n\nItems:\n${itemsList}\n\nItems Total: ₦${packSubTotal}${packFee > 0 ? `\nPack Fee: ₦${packFee}` : ''}\n---\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nDelivery: ${deliveryLocation}\n\nWhat would you like to do next?`,
 
 
         data: {

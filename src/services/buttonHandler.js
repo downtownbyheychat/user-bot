@@ -194,6 +194,7 @@ export async function handleButtonClick(buttonId, customerId) {
 
       let orderDetails = "";
       let grandTotal = 0;
+      let totalPackFee = 0;
       let vendorName = null;
 
       orderStack.forEach((pack, i) => {
@@ -208,10 +209,18 @@ export async function handleButtonClick(buttonId, customerId) {
           .join("\n");
 
         vendorName = pack.vendor;
+        const itemsTotal = pack.itemsTotal || pack.total;
+        const packFee = pack.packFee || 0;
+        
         grandTotal += pack.total;
+        totalPackFee += packFee;
 
         orderDetails += `Pack ${i + 1} from ${pack.vendor}:\n`;
         orderDetails += `${packItems}\n`;
+        orderDetails += `Items: ₦${itemsTotal}\n`;
+        if (packFee > 0) {
+          orderDetails += `Pack Fee: ₦${packFee}\n`;
+        }
         orderDetails += `Pack Total: ₦${pack.total}\n\n`;
       });
 
@@ -651,6 +660,8 @@ export async function handleButtonClick(buttonId, customerId) {
           vendor: vendor?.name,
           vendorId,
           delivery_location: "Pickup",
+          itemsTotal: packSubTotal,
+          packFee: packFee,
           total: packTotal,
         });
 
@@ -669,7 +680,7 @@ export async function handleButtonClick(buttonId, customerId) {
           response_type: "order_summary",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: ` Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nPickup: You'll collect from vendor\n\nWhat would you like to do next?`,
+          message: ` Pack Added to Cart\n\nItems:\n${itemsList}\n\nItems Total: ₦${packSubTotal}${packFee > 0 ? `\nPack Fee: ₦${packFee}` : ''}\n---\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nPickup: You'll collect from vendor\n\nWhat would you like to do next?`,
           data: {
             buttons: [
               { id: "proceed_payment", title: " Proceed to Payment" },
