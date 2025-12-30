@@ -184,7 +184,6 @@ export async function handleButtonClick(buttonId, customerId) {
     case "proceed_payment":
       const { getOrderStack } = await import("./orderStack.js");
       const orderStack = getOrderStack(customerId);
-      console.log("order stack:", orderStack);
 
       if (orderStack.length === 0) {
         return {
@@ -194,16 +193,8 @@ export async function handleButtonClick(buttonId, customerId) {
       }
 
       let orderDetails = "";
-      grandTotal = 0;
-
-      const { pushOrderPack, getStackSummary } = await import(
-        "./orderStack.js"
-      );
-      let stackSummary = getStackSummary(customerId);
-      console.log("stack summary", stackSummary);
-
+      let grandTotal = 0;
       let vendorName = null;
-      let totalPackFee = 0;
 
       orderStack.forEach((pack, i) => {
         const packItems = pack.items
@@ -217,67 +208,37 @@ export async function handleButtonClick(buttonId, customerId) {
           .join("\n");
 
         vendorName = pack.vendor;
-
-        // Items-only total
-        const itemsTotal = pack.total;
-
-        // Pack fee (vendor receives this)
-        const requiresPackFee = pack.items.some((item) => item.pack === true);
-        const packFeeForThisPack = requiresPackFee ? 200 : 0;
-
-        // Delivery / pickup fee (platform-only)
-        const deliveryFee = pack.delivery_location !== "Pickup" ? 100 : 50;
-        const feeLabel =
-          pack.delivery_location !== "Pickup" ? "Delivery Fee" : "Pickup Fee";
-
-        // Vendor gets items + pack fee
-        const vendorPackTotal = itemsTotal + packFeeForThisPack;
-        vendorTotal += vendorPackTotal;
-
-        // Customer pays everything
-        const customerPackTotal = itemsTotal + packFeeForThisPack + deliveryFee;
-
-        grandTotal += customerPackTotal;
+        grandTotal += pack.total;
 
         orderDetails += `Pack ${i + 1} from ${pack.vendor}:\n`;
         orderDetails += `${packItems}\n`;
-        orderDetails += `Items Total: ₦${itemsTotal}\n`;
-
-        if (packFeeForThisPack > 0) {
-          orderDetails += `Pack Fee: ₦${packFeeForThisPack}\n`;
-        }
-
-        orderDetails += `${feeLabel}: ₦${deliveryFee}\n`;
-        orderDetails += `Pack Subtotal: ₦${customerPackTotal}\n\n`;
+        orderDetails += `Pack Total: ₦${pack.total}\n\n`;
       });
-      console.log("vendor Total:", vendorTotal);
 
       const vendorResult = await pool.query(
         `SELECT phone_number FROM vendors WHERE name = $1`,
         [vendorName]
       );
-      let vendorNumber = null;
 
-      console.log("account initialised");
-      if (vendorResult.rows.length > 0) {
-        vendorNumber = vendorResult.rows[0].phone_number;
-        console.log("vendor number :", vendorNumber);
-
-        const hasDelivery = orderStack.some(
-          (pack) => pack.delivery_location !== "Pickup"
-        );
-        const deliveryType = hasDelivery ? "Delivery" : "Pickup";
-
-        account_details = await getAccount(
-          vendorNumber,
-          grandTotal,
-          customerId,
-          deliveryType
-        );
-        console.log("account assigned", account_details);
+      if (vendorResult.rows.length === 0) {
+        return {
+          status: "error",
+          message: "Vendor not found. Please try again.",
+        };
       }
 
-      // await CopyAccNum(customerId, account_details.account_number, account_details.account_name);
+      const vendorNumber = vendorResult.rows[0].phone_number;
+      const hasDelivery = orderStack.some(
+        (pack) => pack.delivery_location !== "Pickup"
+      );
+      const deliveryType = hasDelivery ? "Delivery" : "Pickup";
+
+      const account_details = await getAccount(
+        vendorNumber,
+        grandTotal,
+        customerId,
+        deliveryType
+      );
 
       return {
         status: "success",
@@ -289,6 +250,116 @@ export async function handleButtonClick(buttonId, customerId) {
           buttons: [{ id: "payment_sent", title: "Payment Sent" }],
         },
       };
+
+
+    // case "proceed_payment":
+    //   const { getOrderStack } = await import("./orderStack.js");
+    //   const orderStack = getOrderStack(customerId);
+    //   console.log("order stack:", orderStack);
+
+    //   if (orderStack.length === 0) {
+    //     return {
+    //       status: "error",
+    //       message: "No orders in your cart. Please add items first.",
+    //     };
+    //   }
+
+    //   let orderDetails = "";
+    //   grandTotal = 0;
+
+    //   const { pushOrderPack, getStackSummary } = await import(
+    //     "./orderStack.js"
+    //   );
+    //   let stackSummary = getStackSummary(customerId);
+    //   console.log("stack summary", stackSummary);
+
+    //   let vendorName = null;
+    //   let totalPackFee = 0;
+
+    //   orderStack.forEach((pack, i) => {
+    //     const packItems = pack.items
+    //       .map((item) => {
+    //         if (item.quantity_type === "per_price") {
+    //           return `  ${item.name} -- ₦${item.price}`;
+    //         } else {
+    //           return `  ${item.name} (x${item.quantity}) -- ₦${item.price}`;
+    //         }
+    //       })
+    //       .join("\n");
+
+    //     vendorName = pack.vendor;
+
+    //     // Items-only total
+    //     const itemsTotal = pack.total;
+
+    //     // Pack fee (vendor receives this)
+    //     const requiresPackFee = pack.items.some((item) => item.pack === true);
+    //     const packFeeForThisPack = requiresPackFee ? 200 : 0;
+
+    //     // Delivery / pickup fee (platform-only)
+    //     const deliveryFee = pack.delivery_location !== "Pickup" ? 100 : 50;
+    //     const feeLabel =
+    //       pack.delivery_location !== "Pickup" ? "Delivery Fee" : "Pickup Fee";
+
+    //     // Vendor gets items + pack fee
+    //     const vendorPackTotal = itemsTotal + packFeeForThisPack;
+    //     vendorTotal += vendorPackTotal;
+
+    //     // Customer pays everything
+    //     const customerPackTotal = itemsTotal + packFeeForThisPack + deliveryFee;
+
+    //     grandTotal += customerPackTotal;
+
+    //     orderDetails += `Pack ${i + 1} from ${pack.vendor}:\n`;
+    //     orderDetails += `${packItems}\n`;
+    //     orderDetails += `Items Total: ₦${itemsTotal}\n`;
+
+    //     if (packFeeForThisPack > 0) {
+    //       orderDetails += `Pack Fee: ₦${packFeeForThisPack}\n`;
+    //     }
+
+    //     orderDetails += `${feeLabel}: ₦${deliveryFee}\n`;
+    //     orderDetails += `Pack Subtotal: ₦${customerPackTotal}\n\n`;
+    //   });
+    //   console.log("vendor Total:", vendorTotal);
+
+    //   const vendorResult = await pool.query(
+    //     `SELECT phone_number FROM vendors WHERE name = $1`,
+    //     [vendorName]
+    //   );
+    //   let vendorNumber = null;
+
+    //   console.log("account initialised");
+    //   if (vendorResult.rows.length > 0) {
+    //     vendorNumber = vendorResult.rows[0].phone_number;
+    //     console.log("vendor number :", vendorNumber);
+
+    //     const hasDelivery = orderStack.some(
+    //       (pack) => pack.delivery_location !== "Pickup"
+    //     );
+    //     const deliveryType = hasDelivery ? "Delivery" : "Pickup";
+
+    //     account_details = await getAccount(
+    //       vendorNumber,
+    //       grandTotal,
+    //       customerId,
+    //       deliveryType
+    //     );
+    //     console.log("account assigned", account_details);
+    //   }
+
+    //   // await CopyAccNum(customerId, account_details.account_number, account_details.account_name);
+
+    //   return {
+    //     status: "success",
+    //     response_type: "payment",
+    //     customer_id: customerId,
+    //     timestamp: new Date().toISOString(),
+    //     message: `Payment Details\nYour Order:\n${orderDetails}===================\n*Total: ₦${grandTotal}*\n===================\n\nAccount Number: ${account_details.account_number}\nBank: ${account_details.bank_name}\n\n`,
+    //     data: {
+    //       buttons: [{ id: "payment_sent", title: "Payment Sent" }],
+    //     },
+    //   };
 
     case "add_new_pack":
       return {
@@ -504,7 +575,7 @@ export async function handleButtonClick(buttonId, customerId) {
         )
         .join("\n");
 
-      const finalPrice = Number(order_details[0].total) + packFee;
+      const finalPrice = Number(order_details[0].total);
 
       let order_type = null;
 
@@ -553,7 +624,6 @@ export async function handleButtonClick(buttonId, customerId) {
           "./sessionManager.js"
         );
         const pendingOrder = getPendingOrder(customerId);
-        console.log("pending order: ", pendingOrder);
 
         if (!pendingOrder?.orderSummary) {
           return {
@@ -562,84 +632,27 @@ export async function handleButtonClick(buttonId, customerId) {
           };
         }
 
-        const {
-          pushOrderPack,
-          getStackSummary,
-          clearOrderStack,
-          getOrderStack,
-        } = await import("./orderStack.js");
-        console.log("pending order summary: ", pendingOrder.orderSummary);
+        const { pushOrderPack } = await import("./orderStack.js");
         const { getAllVendors } = await import("../db/Utils/vendor.js");
+        const { calculatePackFeeForItems } = await import("./packFeeCalculator.js");
         const vendors = await getAllVendors();
         const vendor = vendors.find((v) => v.id === vendorId);
 
         const packSubTotal = pendingOrder.orderSummary.items.reduce(
-          (sum, item) => {
-            // item.price is already multiplied by quantity in validation
-            return sum + (Number(item.price) || 0);
-          },
+          (sum, item) => sum + (Number(item.price) || 0),
           0
         );
 
-        pushOrderPack(customerId, {
-          items: pendingOrder.orderSummary.items,
-          vendor: vendor?.name,
-          vendorId,
-          delivery_location: "Pickup",
-          total: packSubTotal, // add pack fee
-        });
-
-        const stackSummary = getStackSummary(customerId);
-
-        // checking if food items require pack fee
-        const itemsToCheck = getOrderStack(customerId);
-        console.log("items to check:", itemsToCheck);
-
-        let PACK_FEE = 200; // assume true until proven otherwise
-
-        for (const pack of itemsToCheck) {
-          for (const item of pack.items) {
-            const menuResult = await pool.query(
-              `SELECT pack FROM menus WHERE product_id = $1`,
-              [item.productId]
-            );
-
-            const menu = menuResult.rows[0];
-
-            // if item not found OR pack is false → cancel pack fee
-            if (!menu || menu.pack !== true) {
-              PACK_FEE = 0;
-              console.log("❌ no pack fee because of:", item.name);
-              break; // stop checking items
-            }
-
-            console.log("✅ pack allowed for:", item.name);
-          }
-
-          // stop checking other packs if already false
-          if (PACK_FEE === 0) break;
-        }
-
-        console.log("FINAL PACK FEE:", PACK_FEE);
-
-        const packCount = stackSummary.packCount;
-
-        const packFeeTotal = packCount * PACK_FEE;
-
-        const finalPackTotal = packSubTotal + packFeeTotal; // Pickup fee
-        clearOrderStack(customerId);
+        const packFee = await calculatePackFeeForItems(pendingOrder.orderSummary.items);
+        const packTotal = packSubTotal + packFee;
 
         pushOrderPack(customerId, {
           items: pendingOrder.orderSummary.items,
           vendor: vendor?.name,
           vendorId,
           delivery_location: "Pickup",
-          total: finalPackTotal, // add pack fee
+          total: packTotal,
         });
-
-        console.log(getOrderStack(customerId));
-
-        // clearPendingOrder(customerId);
 
         const itemsList = pendingOrder.orderSummary.items
           .map((i) => {
@@ -656,7 +669,7 @@ export async function handleButtonClick(buttonId, customerId) {
           response_type: "order_summary",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: ` Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack subtotal: ₦${finalPackTotal}\nPack Fee: ₦${packFeeTotal}\nVendor: ${vendor?.name}\nPickup: You'll collect from vendor\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
+          message: ` Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nPickup: You'll collect from vendor\n\nWhat would you like to do next?`,
           data: {
             buttons: [
               { id: "proceed_payment", title: " Proceed to Payment" },

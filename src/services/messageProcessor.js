@@ -1,9 +1,6 @@
 import { classifyIntent } from "../ai/intentClassifier.js";
 import { handleIntent } from "../ai/intentHandlers.js";
 import {  generateOrderSummary, ORDER_SUMMARY_INTENTS} from "../ai/orderSummary.js";
-// import { clearOrderStack, getOrderStack } from "./orderStack.js";
-// import pool from "../db/database.js";
-// import { orderStatusMessages, paymentMessages } from "./orderStatusManager.js";
 
 export async function processMessage(customerId, message) {
   try {
@@ -146,9 +143,10 @@ export async function processMessage(customerId, message) {
     const pendingOrder = getPendingOrder(customerId);
 
     if (pendingOrder?.awaitingAddress) {
-      const { pushOrderPack } = await import( "./orderStack.js");
+      const { pushOrderPack } = await import("./orderStack.js");
       const { getAllVendors } = await import("../db/Utils/vendor.js");
       const { getUserHostel } = await import("../db/Utils/users.js");
+      const { calculatePackFeeForItems } = await import("./packFeeCalculator.js");
       const vendors = await getAllVendors();
       const vendor = vendors.find((v) => v.id === pendingOrder.vendorId);
 
@@ -162,34 +160,14 @@ export async function processMessage(customerId, message) {
         }
       }
 
-      const packTotal = pendingOrder.orderSummary.items.reduce(
-          (sum, item) => {
-            // if total exists, trust it
-            if (typeof item.total === "number") {
-              return sum + item.total;
-            }
+      const packSubTotal = pendingOrder.orderSummary.items.reduce(
+        (sum, item) => sum + (Number(item.price) || 0),
+        0
+      );
 
-            // otherwise calculate it
-            const price = Number(item.price) || 0;
-            // const quantity = Number(item.quantity) || 0;
+      const packFee = await calculatePackFeeForItems(pendingOrder.orderSummary.items);
+      const packTotal = packSubTotal + packFee;
 
-            return sum + price;
-          },
-          0
-        );
-
-
-    //     let stackSummary = getStackSummary(customerId) || { packCount: 1 };
-    //   console.log(stackSummary);
-
-      
-
-     
-
-    //   // final total
-    //   const finalTotal = packTotal;
-
-      
       pushOrderPack(customerId, {
         items: pendingOrder.orderSummary.items,
         vendor: vendor?.name || "Unknown",
@@ -197,52 +175,6 @@ export async function processMessage(customerId, message) {
         delivery_location: deliveryLocation,
         total: packTotal,
       });
-
-    //   // checking if food items require pack fee
-    //     const itemsToCheck = getOrderStack(customerId);
-    //     console.log("items to check:", itemsToCheck);
-
-    //     let PACK_FEE = 200; // assume true until proven otherwise
-
-    //     for (const pack of itemsToCheck) {
-    //       for (const item of pack.items) {
-    //         const menuResult = await pool.query(
-    //           `SELECT pack FROM menus WHERE product_id = $1`,
-    //           [item.productId]
-    //         );
-
-    //         const menu = menuResult.rows[0];
-
-    //         // if item not found OR pack is false → cancel pack fee
-    //         if (!menu || menu.pack !== true) {
-    //           PACK_FEE = 0;
-    //           console.log("❌ no pack fee because of:", item.name);
-    //           break; // stop checking items
-    //         }
-
-    //         console.log("✅ pack allowed for:", item.name);
-    //       }
-
-    //       // stop checking other packs if already false
-    //       if (PACK_FEE === 0) break;
-    //     }
-
-    //     console.log("FINAL PACK FEE:", PACK_FEE);
-
-    //      // PACK FEE = packCount * 200
-    //   const packFee = Number(stackSummary.packCount) * PACK_FEE;
-
-    //   // get pack summary
-
-    //   clearOrderStack(customerId);
-
-    //   pushOrderPack(customerId, {
-    //     items: pendingOrder.orderSummary.items,
-    //     vendor: vendor?.name || "Unknown",
-    //     vendorId: pendingOrder.vendorId,
-    //     delivery_location: deliveryLocation,
-    //     total: finalTotal + packFee,
-    //   });
       
       clearPendingOrder(customerId);
 
