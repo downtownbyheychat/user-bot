@@ -786,7 +786,8 @@ if (!vendor && items.length > 0) {
         validatedItems.push({
           ...item,
           price: validation.item.price,
-          dbName: validation.item.food_name
+          dbName: validation.item.food_name,
+          productId: validation.item.product_id
         });
       }
     }
