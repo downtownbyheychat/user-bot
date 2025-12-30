@@ -28,29 +28,29 @@ let packFee = null;
 
 export async function handleButtonClick(buttonId, customerId) {
   switch (buttonId) {
-    case "visit_website":
-      return {
-        status: "success",
-        message: " Redirecting you to downtown.ng...",
-        action: "open_url",
-        url: "https://downtown.ng",
-      };
+    // case "visit_website":
+    //   return {
+    //     status: "success",
+    //     message: " Redirecting you to downtown.ng...",
+    //     action: "open_url",
+    //     url: "https://downtown.ng",
+    //   };
 
-    case "join_channel":
-      return {
-        status: "success",
-        message: " Opening WhatsApp channel...",
-        action: "open_url",
-        url: "https://whatsapp.com/channel/0029Vb73OpaLtOjL2pM98O34",
-      };
+    // case "join_channel":
+    //   return {
+    //     status: "success",
+    //     message: " Opening WhatsApp channel...",
+    //     action: "open_url",
+    //     url: "https://whatsapp.com/channel/0029Vb73OpaLtOjL2pM98O34",
+    //   };
 
-    case "chat_rep":
-      return {
-        status: "success",
-        message:
-          "‍ Connecting you to a live representative...\nPlease hold while we find someone to assist you.",
-        action: "transfer_to_human",
-      };
+    // case "chat_rep":
+    //   return {
+    //     status: "success",
+    //     message:
+    //       "‍ Connecting you to a live representative...\nPlease hold while we find someone to assist you.",
+    //     action: "transfer_to_human",
+    //   };
 
     case "view_restaurants":
       const { getAllVendors } = await import("../db/Utils/vendor.js");
@@ -102,18 +102,18 @@ export async function handleButtonClick(buttonId, customerId) {
           "Got an order? Say less \nJust drop it in this format so we can process it fast \n\n*Example:*\njollof rice - ₦1,400, 1 beef 1 egg from African Kitchen delivered to my hostel(location)\n\nMake sure to include the \n• Item name + quantity you want\n• Specify the vendor you're buying from\n• Specify the location the food is delivered to",
       };
 
-    case "reorder_last":
-      return {
-        status: "success",
-        message:
-          " Reordering your last meal:\n2x Jollof Rice + Chicken - ₦2,800\nDelivery to: Your usual spot\n\nConfirm this order?",
-        data: {
-          buttons: [
-            { id: "confirm_reorder", title: " Confirm" },
-            { id: "cancel_reorder", title: " Cancel" },
-          ],
-        },
-      };
+    // case "reorder_last":
+    //   return {
+    //     status: "success",
+    //     message:
+    //       " Reordering your last meal:\n2x Jollof Rice + Chicken - ₦2,800\nDelivery to: Your usual spot\n\nConfirm this order?",
+    //     data: {
+    //       buttons: [
+    //         { id: "confirm_reorder", title: " Confirm" },
+    //         { id: "cancel_reorder", title: " Cancel" },
+    //       ],
+    //     },
+    //   };
 
     case "confirm_cancel":
       const cancelSession = paymentSessions.get(customerId);
@@ -222,7 +222,7 @@ export async function handleButtonClick(buttonId, customerId) {
         const itemsTotal = pack.total;
 
         // Pack fee (vendor receives this)
-        const requiresPackFee = pack.items.some((item) => item.pack === "true");
+        const requiresPackFee = pack.items.some((item) => item.pack === true);
         const packFeeForThisPack = requiresPackFee ? 200 : 0;
 
         // Delivery / pickup fee (platform-only)
