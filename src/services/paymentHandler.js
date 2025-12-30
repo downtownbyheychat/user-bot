@@ -19,7 +19,7 @@ export async function getAccount(
     const service_fee = delivery_type === "Pickup" ? 50 : 100;
 
     const response = await axios.post(
-      `${baseUrl}transactions/${customer_id}/one-time-payment`,
+      `${baseUrl}transactions/${vendor_phone}/one-time-payment`,
       {
         amount: total,
         recipient_phone_number: vendor_phone,
