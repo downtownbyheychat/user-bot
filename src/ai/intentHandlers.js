@@ -846,6 +846,7 @@ if (!vendor && items.length > 0) {
         item.quantity_type === 'full_pack' || item.quantity_type === 'half_pack'
       );
       
+      // Check if user is trying to order more than one pack (either multiple items or quantity > 1)
       if (packItems.length > 1) {
         const packItemNames = packItems.map(i => i.dbName || i.name).join(', ');
         return {
@@ -854,6 +855,23 @@ if (!vendor && items.length > 0) {
           customer_id: customerId,
           timestamp: new Date().toISOString(),
           message: `You can only order one pack item at a time.\n\nPack items in your order: ${packItemNames}\n\nPlease create separate orders for each pack item.`,
+          data: {
+            buttons: [
+              { id: "cancel_order", title: "Cancel Order" }
+            ]
+          }
+        };
+      }
+      
+      // Check if any pack item has quantity > 1
+      const packWithMultipleQty = packItems.find(item => item.quantity > 1);
+      if (packWithMultipleQty) {
+        return {
+          status: "error",
+          response_type: "validation_error",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `You can only order one pack at a time.\n\nYou're trying to order ${packWithMultipleQty.quantity} packs of ${packWithMultipleQty.dbName || packWithMultipleQty.name}.\n\nPlease order one pack per order.`,
           data: {
             buttons: [
               { id: "cancel_order", title: "Cancel Order" }
