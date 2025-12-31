@@ -27,7 +27,7 @@ export async function sendArenaCatalog(to) {
           text: "Arena's menu",
         },
         body: {
-          text: "Discover the Arena's Menu. Note that each order is for a single pack.",
+          text: "Discover the Arena's Menu. ‼️Note that each order is for a single pack.",
         },
         action: {
           catalog_id: "1456615208749246",
@@ -139,7 +139,7 @@ export async function sendBestmanCatalog(to) {
           text: "Bestman's menu",
         },
         body: {
-          text: "Discover the Bestman's Menu. Note that each order is for a single pack.",
+          text: "Discover the Bestman's Menu. ‼️Note that each order is for a single pack.",
         },
         action: {
           catalog_id: "1456615208749246",
@@ -279,7 +279,7 @@ export async function sendFamotCatalog(to) {
           text: "Famot's menu",
         },
         body: {
-          text: "Discover the Famot's Menu. Note that each order is for a single pack.",
+          text: "Discover the Famot's Menu. ‼️Note that each order is for a single pack.",
         },
         action: {
           catalog_id: "1456615208749246",
@@ -413,7 +413,7 @@ export async function sendReneesCatalog(to) {
           text: "Renees Cafe's menu",
         },
         body: {
-          text: "Discover the Renees Cafe's Menu. Note that each order is for a single pack.",
+          text: "Discover the Renees Cafe's Menu. ‼️Note that each order is for a single pack.",
         },
         action: {
           catalog_id: "1456615208749246",
@@ -544,7 +544,7 @@ export async function sendRukamatCatalog(to) {
           text: "Rukamat's menu",
         },
         body: {
-          text: "Discover the Rukamat's Menu. Note that each order is for a single pack.",
+          text: "Discover the Rukamat's Menu. ‼️Note that each order is for a single pack.",
         },
         action: {
           catalog_id: "1456615208749246",
@@ -655,7 +655,7 @@ export async function sendYomiceCatalog(to) {
           text: "Yomice Cafe's menu",
         },
         body: {
-          text: "Discover the Yomice Cafe's Menu. Note that each order is for a single pack.",
+          text: "Discover the Yomice Cafe's Menu. ‼️Note that each order is for a single pack.",
         },
         action: {
           catalog_id: "1456615208749246",
@@ -758,7 +758,7 @@ export async function sendAfricanKitchenCatalog(to) {
           text: "African Kitchen's menu",
         },
         body: {
-          text: "Discover the African Kitchen's Menu. Note that each order is for a single pack.",
+          text: "Discover the African Kitchen's Menu. ‼️Note that each order is for a single pack.",
         },
         footer: {
           text: "Menu",
@@ -866,7 +866,7 @@ export async function sendAlphaCatalog(to) {
           text: "Alphas Place's menu",
         },
         body: {
-          text: "Discover the Alphas Place's Menu. Note that each order is for a single pack.",
+          text: "Discover the Alphas Place's Menu. ‼️Note that each order is for a single pack.",
         },
         action: {
           catalog_id: "1456615208749246",
@@ -986,7 +986,7 @@ export async function sendChefMayoCatalog(to) {
           text: "Chef mayo's menu",
         },
         body: {
-          text: "Discover the Chef Mayo's Menu. Note that each order is for a single pack.",
+          text: "Discover the Chef Mayo's Menu. ‼️Note that each order is for a single pack.",
         },
         action: {
           catalog_id: "1456615208749246",
@@ -1109,7 +1109,7 @@ export async function sendExceedingGraceCatalog(to) {
           text: "Exceeding grace's menu",
         },
         body: {
-          text: "Discover the Exceeding grace's Menu. Note that each order is for a single pack.",
+          text: "Discover the Exceeding grace's Menu. ‼️Note that each order is for a single pack.",
         },
         action: {
           catalog_id: "1456615208749246",
@@ -1235,7 +1235,7 @@ export async function sendTestvendor(to) {
           text: "Test vendor's menu",
         },
         body: {
-          text: "Discover the Test vendor's Menu. Note that each order is for a single pack.",
+          text: "Discover the Test vendor's Menu. ‼️Note that each order is for a single pack.",
         },
         action: {
           catalog_id: "1456615208749246",

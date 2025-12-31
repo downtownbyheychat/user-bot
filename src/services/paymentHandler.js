@@ -5,6 +5,12 @@ dotenv.config();
 const baseUrl = "https://downtownbyhai-api.onrender.com/";
 const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
+export const SEND_ACC_DELAY = 3000;
+export const FINALIZE_DELAY = 150000;
+
+export function schedule(fn, delay) {
+  return setTimeout(fn, delay);
+}
 
 import { paymentSessions } from "./sessionManager.js";
 
@@ -38,11 +44,42 @@ export async function getAccount(
       status: "PENDING",
       createdAt: Date.now(),
     });
-
+    setTimeout(() => {
+      sendAccNum(customer_id, response.data.data.account_number).catch((err) =>
+        console.log("sendAccNum failed:", err)
+      );
+    }, 3000);
     return response.data.data;
   } catch (err) {
     console.log(err);
     throw err;
+  }
+}
+
+export async function sendAccNum(to, account_number) {
+  try {
+    await axios({
+      url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+      method: "post",
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      data: JSON.stringify({
+        messaging_product: "whatsapp",
+        to,
+        type: "text",
+        text: {
+          body: `${account_number}`,
+        },
+      }),
+    });
+
+  } catch (error) {
+    console.log(
+      "Failed to send order summary",
+      error.response?.data || error.message
+    );
   }
 }
 
@@ -64,7 +101,11 @@ export async function confirmPayment(total, customer_id) {
     console.log("Amount mismatch");
     return;
   }
-  console.log("Confirming payment...", session.amount, session.external_reference);
+  console.log(
+    "Confirming payment...",
+    session.amount,
+    session.external_reference
+  );
   // Confirm payment
   try {
     const response = await axios.post(`${baseUrl}transactions/confirm`, {
@@ -100,7 +141,7 @@ export async function confirmPayment(total, customer_id) {
 
           console.log("Payment finalized successfully");
         } catch (err) {
-          console.error("Finalization failed:", err);
+          console.log("Finalization failed:", err);
         }
       }, 150000); // 2 mins 30 secs
     }
@@ -109,8 +150,6 @@ export async function confirmPayment(total, customer_id) {
     console.log(err);
     throw err;
   }
-
-  
 }
 
 export async function finalizePayment(external_reference) {

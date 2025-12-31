@@ -161,7 +161,7 @@ export async function processMessage(customerId, message) {
       }
 
       const packSubTotal = pendingOrder.orderSummary.items.reduce(
-        (sum, item) => sum + (Number(item.price) || 0),
+        (sum, item) => sum + (Number(item.total) || 0),
         0
       );
 
