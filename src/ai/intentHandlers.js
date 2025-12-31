@@ -838,6 +838,8 @@ if (!vendor && items.length > 0) {
       };
     }
 
+    console.log('******Validated Items:*******', validatedItems);
+
       // Check for multiple pack items (full_pack or half_pack)
       const packItems = validatedItems.filter(item => 
         item.quantity_type === 'full_pack' || item.quantity_type === 'half_pack'
