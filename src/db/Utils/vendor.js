@@ -261,7 +261,7 @@ async function validateItemDetails(item, quantityType, price, quantity, original
     item.price = price;
   }
 
-  return { valid: true, item: item, productId: item.product_id };
+  return { valid: true, item: item, productId: item.product_id, quantity_type: quantityType };
 }
 
 

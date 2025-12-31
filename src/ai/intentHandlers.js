@@ -782,10 +782,11 @@ if (!vendor && items.length > 0) {
         validationErrors.push(validation.error);
         failedItems.push(item.name);
       } else {
-        // Store validated item with database price
+        // Store validated item with database price and quantity_type
         validatedItems.push({
           ...item,
           price: validation.item.price,
+          quantity_type: validation.quantity_type,
           dbName: validation.item.food_name,
           productId: validation.item.product_id
         });
