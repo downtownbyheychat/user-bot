@@ -838,7 +838,7 @@ if (!vendor && items.length > 0) {
       };
     }
 
-    console.log('******Validated Items:*******', validatedItems);
+    console.log('******Validated Items:********', validatedItems);
 
       // Check for multiple pack items (full_pack or half_pack)
       const packItems = validatedItems.filter(item => 

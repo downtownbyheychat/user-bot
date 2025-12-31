@@ -894,8 +894,8 @@ export async function handleButtonClick(buttonId, customerId) {
             return {
               name: selectedItem.food_name,
               quantity: disambiguationItem.quantity,
-              quantity_type: disambiguationItem.quantityType,
-              price: disambiguationItem.price, // Carry over user's price if specified
+              quantity_type: selectedItem.sale_quantity,
+              price: disambiguationItem.price,
             };
           }
           return item;
@@ -976,12 +976,17 @@ export async function handleButtonClick(buttonId, customerId) {
           };
         }
 
+        const soupResult = await pool.query(
+          "SELECT sale_quantity FROM menus WHERE vendor_id = (SELECT id FROM vendors WHERE name = $1) AND LOWER(food_name) = LOWER($2)",
+          [failedOrder.vendor, soupName]
+        );
+
         const { handleIntent } = await import("../ai/intentHandlers.js");
         const mergedSummary = {
           vendor: failedOrder.vendor,
           items: [
             ...failedOrder.originalItems,
-            { name: soupName, quantity: 1, quantity_type: null },
+            { name: soupName, quantity: 1, quantity_type: soupResult.rows[0]?.sale_quantity || null },
           ],
           delivery_location: failedOrder.delivery_location,
         };
@@ -1010,12 +1015,17 @@ export async function handleButtonClick(buttonId, customerId) {
           };
         }
 
+        const swallowResult = await pool.query(
+          "SELECT sale_quantity FROM menus WHERE vendor_id = (SELECT id FROM vendors WHERE name = $1) AND LOWER(food_name) = LOWER($2)",
+          [failedOrder.vendor, swallowName]
+        );
+
         const { handleIntent } = await import("../ai/intentHandlers.js");
         const mergedSummary = {
           vendor: failedOrder.vendor,
           items: [
             ...failedOrder.originalItems,
-            { name: swallowName, quantity: 1, quantity_type: null },
+            { name: swallowName, quantity: 1, quantity_type: swallowResult.rows[0]?.sale_quantity || null },
           ],
           delivery_location: failedOrder.delivery_location,
         };
