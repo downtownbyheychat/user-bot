@@ -125,19 +125,33 @@ export async function getVendorCatalogue(vendorId) {
 export async function validateOrderItem(vendorId, itemName, quantityType, price, quantity=1) {
   await enableSimilarity();
   try {
-    // First, check for exact match
-    const exactMatch = await pool.query(
+    // First, check for exact matches (could be multiple with same name)
+    const exactMatches = await pool.query(
       `SELECT * FROM menus 
        WHERE vendor_id = $1 
-       AND LOWER(food_name) = LOWER($2)
-       LIMIT 1`,
+       AND LOWER(food_name) = LOWER($2)`,
       [vendorId, itemName]
     );
 
-    // If exact match found, proceed with validation
-    if (exactMatch.rows.length > 0) {
-      const item = exactMatch.rows[0];
-      return await validateItemDetails(item, quantityType, price, quantity, itemName);
+    // If exact matches found
+    if (exactMatches.rows.length > 0) {
+      // If only one exact match, use it
+      if (exactMatches.rows.length === 1) {
+        return await validateItemDetails(exactMatches.rows[0], quantityType, price, quantity, itemName);
+      }
+      
+      // Multiple exact matches - trigger disambiguation
+      return {
+        valid: false,
+        needsDisambiguation: true,
+        suggestions: exactMatches.rows.map(item => ({
+          id: item.id,
+          name: item.food_name,
+          price: item.price,
+          sale_quantity: item.sale_quantity
+        })),
+        error: `Did you mean one of these?`
+      };
     }
 
     // No exact match - find similar items
