@@ -128,6 +128,7 @@ export const intentHandlers = {
 
   const { vendor, items, delivery_location } = orderSummary;
 
+//   TODO: error code 400
   // Case 1: Vendor only, no items
   if (vendor && items.length === 0) {
     const vendorStatus = await checkVendorStatus(vendor);

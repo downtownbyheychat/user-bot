@@ -159,7 +159,7 @@ export async function processMessage(customerId, message) {
           deliveryLocation = message.replace(hostelKeywords, userHostel);
         }
       }
-
+    // TODO: price for direct order and total for catalogue
       const packSubTotal = pendingOrder.orderSummary.items.reduce(
         (sum, item) => sum + (Number(item.price) || 0),
         0
