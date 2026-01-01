@@ -7,6 +7,32 @@ const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const WEBHOOK_VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 
+//code to generate product retailer ID automatically
+function generateProductIds(vendorName, count) {
+  const prefix = vendorName
+  const ids = [];
+
+  for (let i = 1; i <= count; i++) {
+    const serial = String(i).padStart(3, "0");
+    ids.push(`${prefix}${serial}`);
+  }
+
+  return ids;
+}
+
+function buildSections(vendorName, count) {
+  const prefix = vendorName
+
+  return [
+    {
+      title: "Menu",
+      product_items: Array.from({ length: count }, (_, i) => ({
+        product_retailer_id: `${prefix}${String(i + 1).padStart(3, "0")}`,
+      })),
+    },
+  ];
+}
+
 export async function sendArenaCatalog(to) {
   await axios({
     url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
@@ -525,6 +551,8 @@ export async function sendReneesCatalog(to) {
   });
 }
 export async function sendRukamatCatalog(to) {
+  generateProductIds('ruk', 23);
+  const vendorSections = buildSections("ruk", 23);
   await axios({
     url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
     method: "post",
@@ -548,6 +576,8 @@ export async function sendRukamatCatalog(to) {
         },
         action: {
           catalog_id: "1456615208749246",
+
+          //just replace with vendorSections variable to auto generate product retailer IDs
           sections: [
             {
               title: "Food",
