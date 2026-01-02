@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:22.16.0-alpine
 
 # Install system dependencies for Puppeteer
 RUN apk add --no-cache \
@@ -10,7 +10,7 @@ RUN apk add --no-cache \
     ca-certificates \
     ttf-freefont
 
-# Tell Puppeteer to skip installing Chromium. We'll be using the installed package.
+# Tell Puppeteer to skip installing Chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
