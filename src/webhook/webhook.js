@@ -9,9 +9,12 @@ import {
   sendOTPVerificationFlow, 
   verifyOTP, 
   checkAndResendOTP,
-  handleUserOnboardingSubmission,
+  handleUserOnboardingSubmission, handleEmailChange,
   sendInvalidOTPMessage
 } from '../services/userOnboarding.js';
+import { processCart } from '../services/cartProcessor.js';
+import { sendMessage, sendDocument, sendTypingIndicator, markAsRead } from '../services/utils.js';
+import { getUserOrderStatus } from '../services/orderHandler.js';
 
 dotenv.config();
 
@@ -22,11 +25,6 @@ const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 
-
-console.log('Environment check:');
-console.log('VERIFY_TOKEN loaded:', !!VERIFY_TOKEN);
-console.log('ACCESS_TOKEN loaded:', !!ACCESS_TOKEN);
-console.log('PHONE_NUMBER_ID loaded:', !!PHONE_NUMBER_ID);
 
 
 app.use(express.json());
@@ -56,6 +54,36 @@ app.get('/webhook', (req, res) => {
 });
 
 app.post('/webhook', async (req, res) => {
+    //display every message sent
+    const { entry } = req.body;
+//   console.log("FULL WEBHOOK DATA:");
+//   console.log(JSON.stringify(req.body, null, 2));
+  // ✅ Validate structure
+  
+  const changes = entry[0]?.changes;
+  
+  const value = changes[0]?.value;
+  const statuses = value?.statuses ? value.statuses[0] : null;
+  const messages = value?.messages ? value.messages[0] : null;
+
+
+  // ✅ If no message, stop here
+  if (!messages) return;
+
+  const messageId = messages.id;
+  const sender = messages.from;
+  const messageType = messages.type;
+  const textBody = messages.text?.body?.toLowerCase().trim() || "";
+
+  console.log("🟡 New incoming message:", {
+    sender,
+    messageId,
+    messageType,
+    textBody,
+  });
+  console.log("FULL MESSAGE:");
+console.log(JSON.stringify(messages, null, 2));
+
   try {
     const body = req.body;
 
@@ -72,6 +100,8 @@ app.post('/webhook', async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 });
+
+app.post('/user-order-status', getUserOrderStatus)
 
 // async function processMessagesAsync(body) {
 //   for (const entry of body.entry || []) {
@@ -95,46 +125,46 @@ app.post('/webhook', async (req, res) => {
 //           });
 
 //           if (message.type === 'text') {
-//             const customerId = message.from;
+//             const customerPhone = message.from;
 //             const userMessage = message.text.body;
 
-//             await saveChatMessage(customerId, userMessage, false);
+//             await saveChatMessage(customerPhone, userMessage, false);
 
 //             try {
-//               const responseData = await processMessage(customerId, userMessage);
+//               const responseData = await processMessage(customerPhone, userMessage);
               
-//               await saveChatMessage(customerId, responseData.message, true);
+//               await saveChatMessage(customerPhone, responseData.message, true);
 //               const buttons = responseData.data?.buttons || null;
-//               await sendMessage(customerId, responseData.message, buttons);
+//               await sendMessage(customerPhone, responseData.message, buttons);
               
 //               if (responseData.data?.order_summary?.items?.length > 0) {
-//                 await generateAndSendReceipt(customerId, responseData.data.order_summary);
+//                 await generateAndSendReceipt(customerPhone, responseData.data.order_summary);
 //               }
 //             } catch (error) {
 //               console.error('Error processing message:', error);
 //               const fallbackMessage = "Sorry, I'm currently overloaded. Please try again shortly.";
-//               await saveChatMessage(customerId, fallbackMessage, true);
-//               await sendMessage(customerId, fallbackMessage);
+//               await saveChatMessage(customerPhone, fallbackMessage, true);
+//               await sendMessage(customerPhone, fallbackMessage);
 //             }
 //           }
 
 //           // Handle button interactions
 //           if (message.type === 'interactive' && message.interactive.type === 'button_reply') {
 //             const buttonId = message.interactive.button_reply.id;
-//             const customerId = message.from;
+//             const customerPhone = message.from;
             
 //             try {
 //               const { handleButtonClick } = await import('../services/buttonHandler.js');
-//               const buttonResponse = await handleButtonClick(buttonId, customerId);
+//               const buttonResponse = await handleButtonClick(buttonId, customerPhone);
               
-//               await saveChatMessage(customerId, `[Button: ${buttonId}]`, false);
-//               await saveChatMessage(customerId, buttonResponse.message, true);
+//               await saveChatMessage(customerPhone, `[Button: ${buttonId}]`, false);
+//               await saveChatMessage(customerPhone, buttonResponse.message, true);
 //               const buttonButtons = buttonResponse.data?.buttons || null;
-//               await sendMessage(customerId, buttonResponse.message, buttonButtons);
+//               await sendMessage(customerPhone, buttonResponse.message, buttonButtons);
               
 //             } catch (error) {
 //               console.error('Button handling error:', error);
-//               await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");
+//               await sendMessage(customerPhone, "Sorry, that action isn't working right now. Please try again.");
 //             }
 //           }
 //         }
@@ -147,13 +177,9 @@ async function processMessagesAsync(body) {
     for (const entry of body.entry || []) {
         for (const change of entry.changes || []) {
             if (change.field === 'messages') {
-                
-
-
                 const messages = change.value.messages;
-
                 for (const message of messages || []) {
-                    const customerId = message.from; // WhatsApp phone number of the user
+                    const customerPhone = message.from; // WhatsApp phone number of the user
 
 
                     // Fix: Prevent responding to messages not intended for the user
@@ -185,47 +211,47 @@ async function processMessagesAsync(body) {
                         const userMessage = message.text.body;
 
                         // Show read receipt and typing indicator for all messages
-                        await sendTypingIndicator(customerId, message.id);
+                        await sendTypingIndicator(customerPhone, message.id);
 
                         // Check if user exists
-                        let userCheck = await checkUserExists(customerId);
+                        let userCheck = await checkUserExists(customerPhone);
                         
                         if (!userCheck.exists) {
                             // User not registered, trigger onboarding
-                            await sendUserOnboardingFlow(customerId);
+                            await sendUserOnboardingFlow(customerPhone);
                             continue;
                         }
                         
                         if (!userCheck.verified) {
-                            // Check if user is changing email
-                            const { isAwaitingEmailChange, handleEmailChange, clearEmailChangeState } = await import('../services/userOnboarding.js');
-                            if (isAwaitingEmailChange(customerId)) {
-                                await handleEmailChange(customerId, userMessage.trim());
-                                clearEmailChangeState(customerId);
-                                continue;
-                            }
-                            
                             // User registered but not verified, check if message is OTP
                             const otpPattern = /^\d{4,6}$/;
                             if (otpPattern.test(userMessage.trim())) {
-                                const result = await verifyOTP(userMessage.trim(), customerId);
+                                const result = await verifyOTP(userMessage.trim(), customerPhone);
                                 
                                 if (result.success) {
                                     console.log(' OTP verified, sending welcome message');
-                                    await sendMessage(customerId, ' Email verified successfully!');
+                                    // await sendMessage(customerPhone, ' Email verified successfully!');
                                     continue;
                                 } else{
-                                    await sendInvalidOTPMessage(customerId);
+                                    await sendInvalidOTPMessage(customerPhone);
                                 }
                                 continue;
                             }
                             
                             // Check OTP expiry
-                            const otpCheck = await checkAndResendOTP(customerId);
+                            const otpCheck = await checkAndResendOTP(customerPhone);
                             if (otpCheck.expired) {
-                                await sendMessage(customerId, otpCheck.message);
+                                await sendMessage(customerPhone, {
+                                    message: otpCheck.message, 
+                                    data: {
+                                        buttons: [
+                                            { id: 'resend_otp', title: 'Resend OTP' },
+                                            { id: 'change_email', title: 'Change Email' }
+                                        ]
+                                    },
+                                });
                             } else {
-                                await sendMessage(customerId, {
+                                await sendMessage(customerPhone, {
                                     message: ' Please verify your email first.\n\nReply with the OTP code sent to your email.',
                                     data: {
                                         buttons: [
@@ -239,52 +265,60 @@ async function processMessagesAsync(body) {
                         }
 
                         // Save the user message to the chat log
-                        await saveChatMessage(customerId, userMessage, false);
+                        await saveChatMessage(customerPhone, userMessage, false);
 
                         try {
                             
                             // Process the message and get the response
-                            const responseData = await processMessage(customerId, userMessage);
+                            const responseData = await processMessage(customerPhone, userMessage);
 
                             // Save the bot's response to the chat log
-                            await saveChatMessage(customerId, responseData.message, true);
+                            await saveChatMessage(customerPhone, responseData.message, true);
 
                             // Send the response to the user
-                            await sendMessage(customerId, responseData);
+                            await sendMessage(customerPhone, responseData);
                             
+                            // Send multiple lists if present
+                            if (responseData.multipleLists) {
+                                for (const listMsg of responseData.multipleLists) {
+                                    await saveChatMessage(customerPhone, listMsg.message || '[Interactive List]', true);
+                                    await sendMessage(customerPhone, listMsg);
+                                }
+                            }
                             // Send additional message if present (e.g., restaurant list after greeting)
-                            if (responseData.additionalMessage) {
-                                await saveChatMessage(customerId, responseData.additionalMessage.message, true);
-                                await sendMessage(customerId, responseData.additionalMessage);
+                            else if (responseData.additionalMessage) {
+                                const additionalMsg = responseData.additionalMessage.message || '[Interactive List]';
+                                await saveChatMessage(customerPhone, additionalMsg, true);
+                                await sendMessage(customerPhone, responseData.additionalMessage);
                             }
                         } catch (error) {
                             console.error('Error processing message:', error);
                             const fallbackMessage = "Sorry, I'm currently overloaded. Please try again shortly.";
-                            await saveChatMessage(customerId, fallbackMessage, true);
-                            await sendMessage(customerId, fallbackMessage);
+                            await saveChatMessage(customerPhone, fallbackMessage, true);
+                            await sendMessage(customerPhone, fallbackMessage);
                         }
                     }
 
                     // Handle button interactions
                     if (message.type === 'interactive' && message.interactive.type === 'button_reply') {
                         const buttonId = message.interactive.button_reply.id;
-
+                        await sendTypingIndicator(customerPhone, message.id);
                         // Mark message as read
                         await markAsRead(message.id);
 
                         // Handle resend OTP button
                         if (buttonId === 'resend_otp') {
-                            const userCheck = await checkUserExists(customerId);
+                            const userCheck = await checkUserExists(customerPhone);
                             if (userCheck.exists && !userCheck.verified) {
-                                const otpCheck = await checkAndResendOTP(customerId);
+                                const otpCheck = await checkAndResendOTP(customerPhone);
                                 if (otpCheck.expired) {
-                                    await sendMessage(customerId, otpCheck.message);
+                                    await sendMessage(customerPhone, otpCheck.message);
                                 } else if (otpCheck.session) {
-                                    await sendOTPVerificationFlow(customerId, otpCheck.session.email, otpCheck.session.name);
+                                    await sendOTPVerificationFlow(customerPhone, otpCheck.session.email, otpCheck.session.name);
                                     const { sendOTPFlowMessage } = await import('../services/userOnboarding.js');
-                                    await sendOTPFlowMessage(customerId);
+                                    await sendOTPFlowMessage(customerPhone);
                                 } else {
-                                    await sendMessage(customerId, 'No active OTP session found. Please restart registration.');
+                                    await sendMessage(customerPhone, 'No active OTP session found. Please restart registration.');
                                 }
                             }
                             continue;
@@ -292,10 +326,10 @@ async function processMessagesAsync(body) {
 
                         // Handle change email button
                         if (buttonId === 'change_email') {
-                            const userCheck = await checkUserExists(customerId);
+                            const userCheck = await checkUserExists(customerPhone);
                             if (userCheck.exists && !userCheck.verified) {
                                 const { sendChangeEmailFlow } = await import('../services/userOnboarding.js');
-                                await sendChangeEmailFlow(customerId);
+                                await sendChangeEmailFlow(customerPhone);
                             }
                             continue;
                         }
@@ -303,22 +337,22 @@ async function processMessagesAsync(body) {
                         try {
                             // Process the button click
                             const { handleButtonClick } = await import('../services/buttonHandler.js');
-                            const buttonResponse = await handleButtonClick(buttonId, customerId);
+                            const buttonResponse = await handleButtonClick(buttonId, customerPhone);
 
                             // Save the button interaction to the chat log
-                            await saveChatMessage(customerId, `[Button: ${buttonId}]`, false);
-                            await saveChatMessage(customerId, buttonResponse.message, true);
+                            await saveChatMessage(customerPhone, `[Button: ${buttonId}]`, false);
+                            await saveChatMessage(customerPhone, buttonResponse.message, true);
 
                             // Send the button response to the user
-                            await sendMessage(customerId, buttonResponse);
+                            await sendMessage(customerPhone, buttonResponse);
                             
                             // Send receipt if available
                             if (buttonResponse.data?.receipt_path) {
-                                await sendDocument(customerId, buttonResponse.data.receipt_path, 'receipt.pdf');
+                                await sendDocument(customerPhone, buttonResponse.data.receipt_path, 'receipt.pdf');
                             }
                         } catch (error) {
                             console.error('Button handling error:', error);
-                            await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");
+                            await sendMessage(customerPhone, "Sorry, that action isn't working right now. Please try again.");
                         }
                     }
 
@@ -328,241 +362,70 @@ async function processMessagesAsync(body) {
                     if (message.type === 'interactive' && message.interactive.type === 'nfm_reply') {
                         const flowData = message.interactive.nfm_reply;
                         const userInput = JSON.parse(flowData.response_json);
-
-                        console.log('Flow Data:', userInput);
+                        await sendTypingIndicator(customerPhone, message.id);
+                        console.log('Flow Data:', JSON.stringify(userInput, null, 2));
 
                         // Handle user onboarding flow submission
                         if (userInput.screen_1_First_Name_0 && userInput.screen_1_Email_2) {
-                            await handleUserOnboardingSubmission(customerId, userInput);
+                            await handleUserOnboardingSubmission(customerPhone, userInput);
                             continue;
                         }
+                        
+                        // Handle email update flow submission
+                        if (userInput.screen_0_Email_0) {
+                            console.log('Email update flow detected');
+                            const { handleEmailUpdateSubmission } = await import('../services/userOnboarding.js');
+                            await handleEmailUpdateSubmission(customerPhone, userInput);
+                            continue;
+                        }
+                        
+                        console.log('No matching flow handler found for:', Object.keys(userInput));
+
                     }
 
                     // Handle list interactions
                     if (message.type === 'interactive' && message.interactive.type === 'list_reply') {
                         const listItemId = message.interactive.list_reply.id;
                         console.log(' List item selected:', listItemId);
-
+                        await sendTypingIndicator(customerPhone, message.id);
                         // Mark message as read
                         await markAsRead(message.id);
 
                         try {
                             // Process the list selection
                             const { handleButtonClick } = await import('../services/buttonHandler.js');
-                            const listResponse = await handleButtonClick(listItemId, customerId);
+                            const listResponse = await handleButtonClick(listItemId, customerPhone);
                             console.log(' List response generated:', listResponse.message?.substring(0, 50));
 
                             // Save the list interaction to the chat log
-                            await saveChatMessage(customerId, `[List: ${listItemId}]`, false);
-                            await saveChatMessage(customerId, listResponse.message, true);
+                            await saveChatMessage(customerPhone, `[List: ${listItemId}]`, false);
+                            await saveChatMessage(customerPhone, listResponse.message, true);
 
                             // Send the list response to the user
-                            await sendMessage(customerId, listResponse);
+                            await sendMessage(customerPhone, listResponse);
                             
                             // Send receipt if available
                             if (listResponse.data?.receipt_path) {
-                                await sendDocument(customerId, listResponse.data.receipt_path, 'receipt.pdf');
+                                await sendDocument(customerPhone, listResponse.data.receipt_path, 'receipt.pdf');
                             }
                         } catch (error) {
                             console.error('List handling error:', error);
-                            await sendMessage(customerId, "Sorry, that action isn't working right now. Please try again.");
+                            await sendMessage(customerPhone, "Sorry, that action isn't working right now. Please try again.");
                         }
+                    }
+
+                    //handle catalog submissions
+                    if (message.type === 'order') {
+                        await sendTypingIndicator(customerPhone, message.id);
+                        console.log("product reply:", JSON.stringify(message, null, 2));
+                        const userCart = JSON.stringify(message, null, 2)
+                        await processCart(message, message.from)
                     }
                 }
             }
         }
     }
 }
-
-
-
-
-// async function sendMessage(to, text, buttons = null) {
-//   try {
-//     let messageData = {
-//       messaging_product: 'whatsapp',
-//       to: to
-//     };
-
-//     if (buttons && buttons.length > 0) {
-//       messageData.type = 'interactive';
-//       messageData.interactive = {
-//         type: 'button',
-//         body: { text: text },
-//         action: {
-//           buttons: buttons.map(btn => {
-//             if (btn.type === 'url') {
-//               return {
-//                 type: 'url',
-//                 url: btn.url,
-//                 title: btn.title
-//               };
-//             } else if (btn.type === 'reply') {
-//               return {
-//                 type: 'reply',
-//                 reply: {
-//                   id: btn.id,
-//                   title: btn.title
-//                 }
-//               };
-//             }
-//           })
-//         }
-//       };
-//     } else {
-//       messageData.type = 'text';
-//       messageData.text = { body: text };
-//     }
-
-//     const response = await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-//       method: 'POST',
-//       headers: {
-//         'Authorization': `Bearer ${ACCESS_TOKEN}`,
-//         'Content-Type': 'application/json'
-//       },
-//       body: JSON.stringify(messageData)
-//     });
-
-//     if (!response.ok) {
-//       console.error('WhatsApp API Error:', response.status, await response.text());
-//     }
-//   } catch (error) {
-//     console.error('Error sending message:', error.message);
-//   }
-// }
-
-
-
-// async function sendMessage(to, text, buttons = null) {
-//     const response = {
-//         message: text,
-//         data: { buttons }
-//     };
-
-//     const formattedMessage = formatForWhatsAppAPI(response, to);
-
-//     if (formattedMessage) {
-//         try {
-//             const apiResponse = await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-//                 method: 'POST',
-//                 headers: {
-//                     'Authorization': `Bearer ${ACCESS_TOKEN}`,
-//                     'Content-Type': 'application/json'
-//                 },
-//                 body: JSON.stringify(formattedMessage)
-//             });
-
-//             if (!apiResponse.ok) {
-//                 console.error('WhatsApp API Error:', apiResponse.status, await apiResponse.text());
-//             }
-//         } catch (error) {
-//             console.error('Error sending message:', error.message);
-//         }
-//     }
-// }
-
-async function markAsRead(messageId) {
-    try {
-        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${ACCESS_TOKEN}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                messaging_product: 'whatsapp',
-                status: 'read',
-                message_id: messageId
-            })
-        });
-    } catch (error) {
-        console.error('Error marking message as read:', error.message);
-    }
-}
-
-async function sendTypingIndicator(recipientPhoneNumber, messageId) {
-    try {
-        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${ACCESS_TOKEN}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                messaging_product: 'whatsapp',
-                status: 'read',
-                message_id: messageId,
-                typing_indicator: {
-                    type: 'text'
-                }
-            })
-        });
-    } catch (error) {
-        console.error('Error sending typing indicator:', error.message);
-    }
-}
-
-async function sendMessage(recipientPhoneNumber, responseData) {
-    // Handle both old format (text string) and new format (response object)
-    const response = typeof responseData === 'string' 
-        ? { message: responseData }
-        : responseData;
-
-    // Format the message for WhatsApp API
-    const formattedMessage = formatForWhatsAppAPI(response, recipientPhoneNumber);
-
-    if (formattedMessage) {
-        try {
-            // Send the message to the WhatsApp API
-            const apiResponse = await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${ACCESS_TOKEN}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formattedMessage)
-            });
-
-            // Check for errors in the API response
-            if (!apiResponse.ok) {
-                console.error('WhatsApp API Error:', apiResponse.status, await apiResponse.text());
-            }
-        } catch (error) {
-            console.error('Error sending message:', error.message);
-        }
-    } else {
-        console.error('Failed to format message for WhatsApp API.');
-    }
-}
-
-async function sendDocument(recipientPhoneNumber, filePath, filename) {
-    try {
-        const fs = await import('fs');
-        const FormData = (await import('form-data')).default;
-        
-        const formData = new FormData();
-        formData.append('messaging_product', 'whatsapp');
-        formData.append('to', recipientPhoneNumber);
-        formData.append('type', 'document');
-        formData.append('document', fs.createReadStream(filePath), { filename });
-        
-        const apiResponse = await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${ACCESS_TOKEN}`,
-                ...formData.getHeaders()
-            },
-            body: formData
-        });
-
-        if (!apiResponse.ok) {
-            console.error('WhatsApp Document Send Error:', apiResponse.status, await apiResponse.text());
-        }
-    } catch (error) {
-        console.error('Error sending document:', error.message);
-    }
-}
-
 
 
 

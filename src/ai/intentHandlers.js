@@ -1,46 +1,37 @@
 import { getUserName } from "../db/Utils/users.js";
 import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendorMenuItems, validateOrderItem, hasSwallowWithoutSoup, hasOnlyFreeSoup, getAllVendors, checkVendorStatus, getAvailableSoups } from "../db/Utils/vendor.js";
+import { sendAfricanKitchenCatalog, sendAlphaCatalog, sendArenaCatalog, sendBestmanCatalog, sendChefMayoCatalog, sendExceedingGraceCatalog, sendFamotCatalog, sendReneesCatalog, sendRukamatCatalog, sendYomiceCatalog, sendTestvendor } from "../services/sendVendorCatalog.js";
+import { createListSections } from "../utils/listHelper.js";
+
 
 
 export const intentHandlers = {
   "Greeting": async (customerId, message) => {
     try {
-        // Fetch the user's name from the database
         const userName = await getUserName(customerId);
-        console.log(`[Greeting] Fetched userName: ${userName}`);
-
-        // Get available vendors
         const vendors = await getAllVendors();
+        const greetingMessage = `Sup ${userName || ""}👋! \nDowntown is active. Select food shop`;
         
-        const greetingMessage = `Sup ${userName || "{name}"}! \nWelcome back to Downtown, where you chat, order, and eat. Fast.`;
-        
-        // Create restaurant list response
-        let restaurantResponse = null;
-        if (vendors.length > 0) {
-          if (vendors.length > 10) {
-            const vendorList = vendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
-            restaurantResponse = {
+        // If more than 10 vendors, return multiple lists
+        if (vendors.length > 10) {
+          const lists = [];
+          for (let i = 0; i < vendors.length; i += 10) {
+            const chunk = vendors.slice(i, i + 10);
+            const listNum = Math.floor(i / 10) + 1;
+            lists.push({
               status: "success",
               response_type: "restaurant_list",
               customer_id: customerId,
               timestamp: new Date().toISOString(),
-              message: ` Available Restaurants:\n\n${vendorList}\n\nJust mention the restaurant name to view their menu!`
-            };
-          } else {
-            restaurantResponse = {
-              status: "success",
-              response_type: "restaurant_list",
-              customer_id: customerId,
-              timestamp: new Date().toISOString(),
-              message: "Select a restaurant to get started:",
+              message: listNum === 1 ? "Select a restaurant (Part A):" : `More restaurants (Part ${String.fromCharCode(64 + listNum)}):`,
               data: {
                 list: {
-                  header: "Campus Restaurants",
-                  body: "Here are the available restaurants on campus:",
+                  header: `Vendor List ${String.fromCharCode(64 + listNum)}`,
+                  body: `Available restaurants on campus (${i + 1}-${i + chunk.length}):`,
                   button: "View Restaurants",
                   sections: [{
                     title: "Restaurants",
-                    rows: vendors.map(v => ({
+                    rows: chunk.map(v => ({
                       id: `vendor_${v.id}`,
                       title: v.name.substring(0, 24),
                       description: (v.description || "View menu").substring(0, 72)
@@ -48,11 +39,43 @@ export const intentHandlers = {
                   }]
                 }
               }
-            };
+            });
           }
+          
+          return {
+            status: "success",
+            response_type: "greeting",
+            customer_id: customerId,
+            timestamp: new Date().toISOString(),
+            message: greetingMessage,
+            multipleLists: lists
+          };
         }
         
-        // Return both messages
+        // 10 or fewer vendors - single list
+        const restaurantResponse = vendors.length > 0 ? {
+          status: "success",
+          response_type: "restaurant_list",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: "Select a restaurant to get started:",
+          data: {
+            list: {
+              header: "Campus Restaurants",
+              body: "Here are the available restaurants on campus:",
+              button: "View Restaurants",
+              sections: [{
+                title: "Restaurants",
+                rows: vendors.map(v => ({
+                  id: `vendor_${v.id}`,
+                  title: v.name.substring(0, 24),
+                  description: (v.description || "View menu").substring(0, 72)
+                }))
+              }]
+            }
+          }
+        } : null;
+        
         return {
           status: "success",
           response_type: "greeting",
@@ -105,6 +128,7 @@ export const intentHandlers = {
 
   const { vendor, items, delivery_location } = orderSummary;
 
+//   TODO: error code 400
   // Case 1: Vendor only, no items
   if (vendor && items.length === 0) {
     const vendorStatus = await checkVendorStatus(vendor);
@@ -112,16 +136,15 @@ export const intentHandlers = {
     if (!vendorStatus) {
       const alternatives = await getAllVendors();
       
-      if (alternatives.length > 10) {
-        const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
-        return {
-          status: "error",
-          response_type: "vendor_not_found",
-          customer_id: customerId,
-          timestamp: new Date().toISOString(),
-          message: `Sorry, "${vendor}" is not in our system.\n\n Available Restaurants:\n\n${altList}`
-        };
-      }
+      const sections = createListSections(
+        alternatives,
+        v => ({
+          id: `vendor_${v.id}`,
+          title: v.name.substring(0, 24),
+          description: (v.description || "View menu").substring(0, 72)
+        }),
+        "Restaurants"
+      );
       
       return {
         status: "error",
@@ -134,32 +157,24 @@ export const intentHandlers = {
             header: "Available Restaurants",
             body: "Select a restaurant to view their menu:",
             button: "View Restaurants",
-            sections: [{
-              title: "Restaurants",
-              rows: alternatives.map(v => ({
-                id: `vendor_${v.id}`,
-                title: v.name.substring(0, 24),
-                description: (v.description || "View menu").substring(0, 72)
-              }))
-            }]
+            sections
           }
         }
       };
     }
     
-    if (vendorStatus.status !== 'active') {
+    if (vendorStatus.status !== 'open') {
       const alternatives = await getAllVendors();
       
-      if (alternatives.length > 10) {
-        const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
-        return {
-          status: "error",
-          response_type: "vendor_closed",
-          customer_id: customerId,
-          timestamp: new Date().toISOString(),
-          message: `Sorry, ${vendorStatus.name} is currently closed.\n\n Available Now:\n\n${altList}`
-        };
-      }
+      const sections = createListSections(
+        alternatives,
+        v => ({
+          id: `vendor_${v.id}`,
+          title: v.name.substring(0, 24),
+          description: (v.description || "View menu").substring(0, 72)
+        }),
+        "Open Restaurants"
+      );
       
       return {
         status: "error",
@@ -172,14 +187,7 @@ export const intentHandlers = {
             header: "Available Now",
             body: `Sorry, ${vendorStatus.name} is currently closed. Try these instead:`,
             button: "View Restaurants",
-            sections: [{
-              title: "Open Restaurants",
-              rows: alternatives.map(v => ({
-                id: `vendor_${v.id}`,
-                title: v.name.substring(0, 24),
-                description: (v.description || "View menu").substring(0, 72)
-              }))
-            }]
+            sections
           }
         }
       };
@@ -191,16 +199,17 @@ export const intentHandlers = {
     
     if (menuItems.length === 0) {
         const alternatives = await getAllVendors();
-        if (alternatives.length > 10) {
-            const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
-            return {
-                status: "error",
-                response_type: "vendor_catalogue",
-                customer_id: customerId,
-                timestamp: new Date().toISOString(),
-                message: `${vendorData.name} has no menu items available at the moment.\n\n Available Restaurants:\n\n${altList}`
-            };
-        }
+        
+        const sections = createListSections(
+          alternatives,
+          v => ({
+            id: `vendor_${v.id}`,
+            title: v.name.substring(0, 24),
+            description: (v.description || "View menu").substring(0, 72)
+          }),
+          "Restaurants"
+        );
+        
         return {
             status: "error",
             response_type: "vendor_catalogue",
@@ -212,81 +221,108 @@ export const intentHandlers = {
                     header: "Available Restaurants",
                     body: "Select a restaurant to view their menu:",
                     button: "View Restaurants",
-                    sections: [{
-                        title: "Restaurants",
-                        rows: alternatives.map(v => ({
-                            id: `vendor_${v.id}`,
-                            title: v.name.substring(0, 24),
-                            description: (v.description || "View menu").substring(0, 72)
-                        }))
-                    }]
+                    sections
                 }
             }
         };
     }
 
-    if (menuItems.length > 10) {
-      const menuList = menuItems.map((item, i) => {
-        let priceDesc = '';
-        if (item.sale_quantity === 'per_price') {
-          priceDesc = `from ₦${item.price}`;
-        } else if (item.sale_quantity === 'per_piece') {
-          priceDesc = `₦${item.price} each`;
-        } else if (item.sale_quantity === 'full_pack') {
-          priceDesc = `₦${item.price} (Full Pack)`;
-        } else if (item.sale_quantity === 'half_pack') {
-          priceDesc = `₦${item.price} (Half Pack)`;
-        } else {
-          priceDesc = `₦${item.price}`;
-        }
-        return `${i + 1}. ${item.food_name} - ${priceDesc}`;
-      }).join('\n');
-      
+    if (menuItems.length) {
+
+      console.log('sending from intent handler')
+      if (vendorData.name==='AFRICAN KITCHEN'){
+        await sendAfricanKitchenCatalog(customerId)
+      } else if (vendorData.name==='ARENA'){
+        await sendArenaCatalog(customerId)
+      } else if (vendorData.name==='BESTMAN'){
+        await sendBestmanCatalog(customerId)
+      } else if (vendorData.name==='RUKAMAT'){
+        await sendRukamatCatalog(customerId)
+      } else if (vendorData.name==='FAMOT'){
+        await sendFamotCatalog(customerId)
+      } else if (vendorData.name==='RENEES CAFE'){
+        await sendReneesCatalog(customerId)
+      } else if (vendorData.name==="ALPHA'S PLACE"){
+        await sendAlphaCatalog(customerId)
+      } else if (vendorData.name==="YOMICE CAFE"){
+        await sendYomiceCatalog(customerId)
+      } else if (vendorData.name==="CHEF MAYO"){
+        await sendChefMayoCatalog(customerId)
+      } else if (vendorData.name==="EXCEEDING GRACE"){
+        await sendExceedingGraceCatalog(customerId)
+      } else if (vendorData.name === "Test vendor") {
+        await sendTestvendor(customerId)
+      }
+
       return {
         status: "success",
         response_type: "vendor_catalogue",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: ` ${vendorData.name} Menu:\n\n${menuList}\n\nJust tell me what you'd like to order!`
+        message: ``
       };
+
+      // const menuList = menuItems.map((item, i) => {
+      //   let priceDesc = '';
+      //   if (item.sale_quantity === 'per_price') {
+      //     priceDesc = `from ₦${item.price}`;
+      //   } else if (item.sale_quantity === 'per_piece') {
+      //     priceDesc = `₦${item.price} each`;
+      //   } else if (item.sale_quantity === 'full_pack') {
+      //     priceDesc = `₦${item.price} (Full Pack)`;
+      //   } else if (item.sale_quantity === 'half_pack') {
+      //     priceDesc = `₦${item.price} (Half Pack)`;
+      //   } else {
+      //     priceDesc = `₦${item.price}`;
+      //   }
+      //   return `${i + 1}. ${item.food_name} - ${priceDesc}`;
+      // }).join('\n');
+      
+      // return {
+      //   status: "success",
+      //   response_type: "vendor_catalogue",
+      //   customer_id: customerId,
+      //   timestamp: new Date().toISOString(),
+      //   message: ` ${vendorData.name} Menu:\n\n${menuList}\n\nJust tell me what you'd like to order!`
+      // };
     }
 
-    return {
-      status: "success",
-      response_type: "vendor_catalogue",
-      customer_id: customerId,
-      timestamp: new Date().toISOString(),
-      message: `Here's the menu for ${vendorData.name}:`,
-      data: {
-        list: {
-          header: `${vendorData.name} Menu`.substring(0, 60),
-          body: "Select an item to add to your order:",
-          button: "View Items",
-          sections: [{
-            title: "Menu Items",
-            rows: menuItems.map(item => {
-              let priceDesc = '';
-              if (item.sale_quantity === 'per_price') {
-                priceDesc = `from ₦${item.price}`;
-              } else if (item.sale_quantity === 'per_piece') {
-                priceDesc = `₦${item.price} each`;
-              } else if (item.sale_quantity === 'full_pack') {
-                priceDesc = `₦${item.price} (Full Pack)`;
-              } else if (item.sale_quantity === 'half_pack') {
-                priceDesc = `₦${item.price} (Half Pack)`;
-              } else {
-                priceDesc = `₦${item.price}`;
-              }
-              return {
-                id: `menu_${item.id}`,
-                title: item.food_name.substring(0, 24),
-                description: priceDesc.substring(0, 72)
-              };
-            })
-          }]
-        }
-      }
-    };
+    // return {
+    //   status: "success",
+    //   response_type: "vendor_catalogue",
+    //   customer_id: customerId,
+    //   timestamp: new Date().toISOString(),
+    //   message: `Here's the menu for ${vendorData.name}:`,
+    //   data: {
+    //     list: {
+    //       header: `${vendorData.name} Menu`.substring(0, 60),
+    //       body: "Select an item to add to your order:",
+    //       button: "View Items",
+    //       sections: [{
+    //         title: "Menu Items",
+    //         rows: menuItems.map(item => {
+    //           let priceDesc = '';
+    //           if (item.sale_quantity === 'per_price') {
+    //             priceDesc = `from ₦${item.price}`;
+    //           } else if (item.sale_quantity === 'per_piece') {
+    //             priceDesc = `₦${item.price} each`;
+    //           } else if (item.sale_quantity === 'full_pack') {
+    //             priceDesc = `₦${item.price} (Full Pack)`;
+    //           } else if (item.sale_quantity === 'half_pack') {
+    //             priceDesc = `₦${item.price} (Half Pack)`;
+    //           } else {
+    //             priceDesc = `₦${item.price}`;
+    //           }
+    //           return {
+    //             id: `menu_${item.id}`,
+    //             title: item.food_name.substring(0, 24),
+    //             description: priceDesc.substring(0, 72)
+    //           };
+    //         })
+    //       }]
+    //     }
+    //   }
+    // };
   }
 
 //   // Case 2: Items without vendor
@@ -413,16 +449,15 @@ if (!vendor && items.length > 0) {
     if (!vendorStatus) {
       const alternatives = await getAllVendors();
       
-      if (alternatives.length > 10) {
-        const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
-        return {
-          status: "error",
-          response_type: "vendor_not_found",
-          customer_id: customerId,
-          timestamp: new Date().toISOString(),
-          message: `Sorry, "${vendor}" is not in our system.\n\n Available Restaurants:\n\n${altList}`
-        };
-      }
+      const sections = createListSections(
+        alternatives,
+        v => ({
+          id: `vendor_${v.id}`,
+          title: v.name.substring(0, 24),
+          description: (v.description || "View menu").substring(0, 72)
+        }),
+        "Restaurants"
+      );
       
       return {
         status: "error",
@@ -435,32 +470,24 @@ if (!vendor && items.length > 0) {
             header: "Available Restaurants",
             body: "Select a restaurant to view their menu:",
             button: "View Restaurants",
-            sections: [{
-              title: "Restaurants",
-              rows: alternatives.map(v => ({
-                id: `vendor_${v.id}`,
-                title: v.name.substring(0, 24),
-                description: (v.description || "View menu").substring(0, 72)
-              }))
-            }]
+            sections
           }
         }
       };
     }
     
-    if (vendorStatus.status !== 'active') {
+    if (vendorStatus.status !== 'open') {
       const alternatives = await getAllVendors();
       
-      if (alternatives.length > 10) {
-        const altList = alternatives.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
-        return {
-          status: "error",
-          response_type: "vendor_closed",
-          customer_id: customerId,
-          timestamp: new Date().toISOString(),
-          message: `Sorry, ${vendorStatus.name} is currently closed.\n\n Available Now:\n\n${altList}`
-        };
-      }
+      const sections = createListSections(
+        alternatives,
+        v => ({
+          id: `vendor_${v.id}`,
+          title: v.name.substring(0, 24),
+          description: (v.description || "View menu").substring(0, 72)
+        }),
+        "Open Restaurants"
+      );
       
       return {
         status: "error",
@@ -473,14 +500,7 @@ if (!vendor && items.length > 0) {
             header: "Available Now",
             body: "Select a restaurant to order from:",
             button: "View Restaurants",
-            sections: [{
-              title: "Open Restaurants",
-              rows: alternatives.map(v => ({
-                id: `vendor_${v.id}`,
-                title: v.name.substring(0, 24),
-                description: (v.description || "View menu").substring(0, 72)
-              }))
-            }]
+            sections
           }
         }
       };
@@ -488,6 +508,8 @@ if (!vendor && items.length > 0) {
     
     const vendorData = await getVendorByName(vendor);
 
+    // TODO: If the user does not provide the number of swallow request for it 
+    
     // Check if swallow is ordered without soup
     const swallowWithoutSoup = await hasSwallowWithoutSoup(vendorData.id, items);
     if (swallowWithoutSoup) {
@@ -700,14 +722,76 @@ if (!vendor && items.length > 0) {
       );
       
       if (!validation.valid) {
+        // Check if disambiguation is needed
+        if (validation.needsDisambiguation && validation.suggestions) {
+          // Store disambiguation state
+          const { setFailedOrder } = await import('../services/sessionManager.js');
+          setFailedOrder(customerId, {
+            validatedItems,
+            failedItems,
+            vendor: vendorData.name,
+            vendorId: vendorData.id,
+            delivery_location,
+            errorType: 'disambiguation',
+            originalItems: items,
+            disambiguationItem: {
+              originalName: item.name,
+              quantity: item.quantity,
+              quantityType: item.quantity_type,
+              price: item.price,
+              suggestions: validation.suggestions
+            }
+          });
+          
+          // Return interactive list
+          return {
+            status: "error",
+            response_type: "disambiguation",
+            customer_id: customerId,
+            timestamp: new Date().toISOString(),
+            message: `Which "${item.name}" did you mean?`,
+            data: {
+              list: {
+                header: "Select Item",
+                body: `Multiple items match "${item.name}". Please select:`,
+                button: "Select Item",
+                sections: [{
+                  title: "Available Items",
+                  rows: validation.suggestions.map(s => {
+                    let priceDesc = '';
+                    if (s.sale_quantity === 'per_price') {
+                      priceDesc = `from ₦${s.price}`;
+                    } else if (s.sale_quantity === 'per_piece') {
+                      priceDesc = `₦${s.price} each`;
+                    } else if (s.sale_quantity === 'full_pack') {
+                      priceDesc = `₦${s.price} (Full Pack)`;
+                    } else if (s.sale_quantity === 'half_pack') {
+                      priceDesc = `₦${s.price} (Half Pack)`;
+                    } else {
+                      priceDesc = `₦${s.price}`;
+                    }
+                    return {
+                      id: `disambiguate_${s.id}`,
+                      title: s.name.substring(0, 24),
+                      description: priceDesc.substring(0, 72)
+                    };
+                  })
+                }]
+              }
+            }
+          };
+        }
+        
         validationErrors.push(validation.error);
         failedItems.push(item.name);
       } else {
-        // Store validated item with database price
+        // Store validated item with database price and quantity_type
         validatedItems.push({
           ...item,
           price: validation.item.price,
-          dbName: validation.item.food_name
+          quantity_type: validation.quantity_type,
+          dbName: validation.item.food_name,
+          productId: validation.item.product_id
         });
       }
     }
@@ -758,6 +842,29 @@ if (!vendor && items.length > 0) {
       };
     }
 
+    console.log('******Validated Items:********', validatedItems);
+
+      // Check for multiple pack items (full_pack or half_pack)
+      const packItems = validatedItems.filter(item => 
+        item.quantity_type === 'full_pack' || item.quantity_type === 'half_pack'
+      );
+      
+      if (packItems.length > 1) {
+        const packItemNames = packItems.map(i => i.dbName || i.name).join(', ');
+        return {
+          status: "error",
+          response_type: "validation_error",
+          customer_id: customerId,
+          timestamp: new Date().toISOString(),
+          message: `You can only order one pack item at a time.\n\nPack items in your order: ${packItemNames}\n\nPlease create separate orders for each pack item.`,
+          data: {
+            buttons: [
+              { id: "cancel_order", title: "Cancel Order" }
+            ]
+          }
+        };
+      }
+
       // Clear any failed order state on success
       const { clearFailedOrder } = await import('../services/sessionManager.js');
       clearFailedOrder(customerId);
@@ -780,7 +887,7 @@ if (!vendor && items.length > 0) {
           response_type: "delivery_prompt",
           customer_id: customerId,
           timestamp: new Date().toISOString(),
-          message: `Order: ${itemsList} from ${vendorData.name}\n\n Pickup or Delivery?`,
+          message: `Order: ${itemsList} from ${vendorData.name}\n\n Pickup or Delivery?\n\nPickup - ₦50\nDelivery - ₦100`,
           data: {
             buttons: [
               { id: `pickup_${vendorData.id}`, title: " Pickup" },
@@ -792,24 +899,31 @@ if (!vendor && items.length > 0) {
 
       // Push validated order to stack
       const { pushOrderPack, getStackSummary } = await import('../services/orderStack.js');
-      
+
       const packTotal = validatedItems.reduce((sum, item) => {
         return sum + parseFloat(item.price);
       }, 0);
-      
+
+      // ADD DELIVERY PRICE HERE → ₦100
+      const deliveryFee = 100;
+
+      // Final total = pack + delivery fee
+      const finalPackTotal = packTotal + deliveryFee;
+
       // Update items to use database names
       const itemsWithDbNames = validatedItems.map(i => ({
         ...i,
         name: i.dbName || i.name
       }));
-      
+
       pushOrderPack(customerId, {
         items: itemsWithDbNames,
         vendor: vendorData.name,
         vendorId: vendorData.id,
         delivery_location,
-        total: packTotal
+        total: finalPackTotal
       });
+
       
       const stackSummary = getStackSummary(customerId);
 
@@ -818,7 +932,7 @@ if (!vendor && items.length > 0) {
         response_type: "order_summary",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: ` Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack Total: ₦${packTotal}\nVendor: ${vendorData.name}\nDelivery: ${delivery_location}\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
+        message: ` Pack Added to Cart\n\nItems:\n${itemsList}\n\nPack: ₦${packTotal}\nVendor: ${vendorData.name}\nDelivery: ${delivery_location}\n\nTotal Packs: ${stackSummary.packCount}\n\nWhat would you like to do next?`,
         data: {
           buttons: [
             { id: "proceed_payment", title: " Proceed to Payment" },
@@ -839,149 +953,199 @@ if (!vendor && items.length > 0) {
     };
   },
 
-  "Re-ordering": async (customerId, message) => ({
-    status: "success",
-    response_type: "reorder",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: "You wan run it back? \nNo wahala — you fit reorder your last meal in one tap.\nTap 'Reorder' below to bring back your previous order ",
-    data: {
-      buttons: [{ id: "reorder_last", title: " Reorder" }]
-    }
-  }),
+//   "Re-ordering": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "reorder",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: "You wan run it back? \nNo wahala — you fit reorder your last meal in one tap.\nTap 'Reorder' below to bring back your previous order ",
+//     data: {
+//       buttons: [{ id: "reorder_last", title: " Reorder" }]
+//     }
+//   }),
 
-  "Find Restaurant": async (customerId, message) => {
-    const vendors = await getAllVendors();
-    
-    if (vendors.length === 0) {
-      return {
-        status: "error",
-        response_type: "menu",
-        customer_id: customerId,
-        timestamp: new Date().toISOString(),
-        message: "Sorry, no restaurants are available at the moment."
-      };
-    }
+ "Find Restaurant": async (customerId, message) => {
+  const vendors = await getAllVendors();
+  
+  if (vendors.length === 0) {
+    return {
+      status: "error",
+      response_type: "menu",
+      customer_id: customerId,
+      timestamp: new Date().toISOString(),
+      message: "Sorry, no restaurants are available at the moment."
+    };
+  }
 
-    if (vendors.length > 10) {
-      const vendorList = vendors.map((v, i) => `${i + 1}. ${v.name}`).join('\n');
-      return {
+  if (vendors.length > 10) {
+    const lists = [];
+    for (let i = 0; i < vendors.length; i += 10) {
+      const chunk = vendors.slice(i, i + 10);
+      const listNum = Math.floor(i / 10) + 1;
+      lists.push({
         status: "success",
-        response_type: "menu",
+        response_type: "restaurant_list",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: ` Available Restaurants:\n\n${vendorList}\n\nJust mention the restaurant name to view their menu!`
-      };
+        message: listNum === 1 ? "Select a restaurant (Part 1):" : `More restaurants (Part ${listNum}):`,
+        data: {
+          list: {
+            header: `Vendor List ${listNum}`,
+            body: `Available restaurants on campus (${i + 1}-${i + chunk.length}):`,
+            button: "View Restaurants",
+            sections: [{
+              title: "Restaurants",
+              rows: chunk.map(v => ({
+                id: `vendor_${v.id}`,
+                title: v.name.substring(0, 24),
+                description: (v.description || "View menu").substring(0, 72)
+              }))
+            }]
+          }
+        }
+      });
     }
-
+    
     return {
       status: "success",
       response_type: "menu",
       customer_id: customerId,
       timestamp: new Date().toISOString(),
       message: "Select a restaurant to view their menu:",
+      multipleLists: lists
+    };
+  }
+
+  // 10 or fewer vendors - single list
+  return {
+    status: "success",
+    response_type: "menu",
+    customer_id: customerId,
+    timestamp: new Date().toISOString(),
+    message: "Select a restaurant to view their menu:",
+    data: {
+      list: {
+        header: "Campus Restaurants",
+        body: "Here are the available restaurants on campus:",
+        button: "View Restaurants",
+        sections: [{
+          title: "Restaurants",
+          rows: vendors.map(v => ({
+            id: `vendor_${v.id}`,
+            title: v.name.substring(0, 24),
+            description: (v.description || "View menu").substring(0, 72)
+          }))
+        }]
+      }
+    }
+  };
+},
+
+
+
+  "Cancel Order": async (customerId, message) => {
+    const { getOrderStack } = await import("../services/orderStack.js");
+    const { getPendingOrder } = await import("../services/sessionManager.js");
+    
+    const orderStack = getOrderStack(customerId);
+    const pendingOrder = getPendingOrder(customerId);
+    
+    // Check if there's anything to cancel
+    if (orderStack.length === 0 && !pendingOrder) {
+      return {
+        status: "error",
+        response_type: "order_management",
+        customer_id: customerId,
+        timestamp: new Date().toISOString(),
+        message: "You don't have any active orders to cancel."
+      };
+    }
+    
+    return {
+      status: "success",
+      response_type: "order_management",
+      customer_id: customerId,
+      timestamp: new Date().toISOString(),
+      message: "Are you sure you want to cancel your order?",
       data: {
-        list: {
-          header: "Campus Restaurants",
-          body: "Here are the available restaurants on campus:",
-          button: "View Restaurants",
-          sections: [{
-            title: "Restaurants",
-            rows: vendors.map(v => ({
-              id: `vendor_${v.id}`,
-              title: v.name.substring(0, 24),
-              description: (v.description || "View menu").substring(0, 72)
-            }))
-          }]
-        }
+        buttons: [
+          { id: "confirm_cancel", title: "Yes, Cancel" },
+          { id: "keep_order", title: "No, Keep Order" }
+        ]
       }
     };
   },
 
-  "Track Order": async (customerId, message) => ({
-    status: "success",
-    response_type: "order_tracking",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " Out for Delivery\nYour order is on its way! \nRider just picked it up — you can expect delivery in about 7-10 mins."
-  }),
+//   "Track Order": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "order_tracking",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: " Out for Delivery\nYour order is on its way! \nRider just picked it up — you can expect delivery in about 7-10 mins."
+//   }),
 
-  "Cancel Order": async (customerId, message) => ({
-    status: "success",
-    response_type: "order_management",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " Got it! You're still within the 2 min 30 sec grace window, so your order can be canceled \nWant me to go ahead and cancel it?",
-    data: {
-      buttons: [
-        { id: "confirm_cancel", title: "Yes, Cancel" },
-        { id: "keep_order", title: "Keep Order" }
-      ]
-    }
-  }),
+//   "Modify Order": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "order_management",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: " Sure thing! You're still within your 2 min 30 sec grace window, so we can make changes to your order\nJust tell me what you'd like to update, maybe the meal, how much, or delivery spot?"
+//   }),
 
-  "Modify Order": async (customerId, message) => ({
-    status: "success",
-    response_type: "order_management",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " Sure thing! You're still within your 2 min 30 sec grace window, so we can make changes to your order\nJust tell me what you'd like to update, maybe the meal, how much, or delivery spot?"
-  }),
-
-  "View Order History": async (customerId, message) => ({
-    status: "success",
-    response_type: "order_history",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " Reorder (For Multiple Past Orders)\nYou get a few past orders \nWhich one you wan run back?\nPick from your last orders below \n\n1⃣ 2 packs jollof rice - ₦1,400\n2⃣ Shawarma + Coke - ₦2,000\n3⃣ Meat pie + juice - ₦1,200\n\nType the number or name of the order you wan repeat (e.g., '1' or 'jollof rice') "
-  }),
+//   "View Order History": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "order_history",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: " Reorder (For Multiple Past Orders)\nYou get a few past orders \nWhich one you wan run back?\nPick from your last orders below \n\n1⃣ 2 packs jollof rice - ₦1,400\n2⃣ Shawarma + Coke - ₦2,000\n3⃣ Meat pie + juice - ₦1,200\n\nType the number or name of the order you wan repeat (e.g., '1' or 'jollof rice') "
+//   }),
 
 
 
-  "Manage Account": async (customerId, message) => ({
-    status: "success",
-    response_type: "wallet_info",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " Here are your wallet details \nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint\n\n You can send money directly here to top up your Downtown balance."
-  }),
+//   "Manage Account": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "wallet_info",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: " Here are your wallet details \nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint\n\n You can send money directly here to top up your Downtown balance."
+//   }),
 
-  "View Balance": async (customerId, message) => ({
-    status: "success",
-    response_type: "wallet_balance",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " Your Downtown wallet balance is ₦2,500\nYou can use it for orders, tips, or quick re-ups — anytime."
-  }),
+//   "View Balance": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "wallet_balance",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: " Your Downtown wallet balance is ₦2,500\nYou can use it for orders, tips, or quick re-ups — anytime."
+//   }),
 
-  "Update Name": async (customerId, message) => ({
-    status: "success",
-    response_type: "account_management",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " To update your name, please provide your new name.",
-    data: {
-      required_info: ["new_name"]
-    }
-  }),
+//   "Update Name": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "account_management",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: " To update your name, please provide your new name.",
+//     data: {
+//       required_info: ["new_name"]
+//     }
+//   }),
 
-  "View Account Details": async (customerId, message) => ({
-    status: "success",
-    response_type: "account_management",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " Here are your account details:\n\nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint"
-  }),
+//   "View Account Details": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "account_management",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: " Here are your account details:\n\nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint"
+//   }),
 
   
 
-  "Fund Wallet": async (customerId, message) => ({
-    status: "success",
-    response_type: "wallet_funding",
-    customer_id: customerId,
-    timestamp: new Date().toISOString(),
-    message: " To fund your Downtown wallet, simply transfer money to the account below:\n\nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint\n\nOnce done, just send me a quick message with the amount funded and I'll update your balance right away!"
-  }),
+//   "Fund Wallet": async (customerId, message) => ({
+//     status: "success",
+//     response_type: "wallet_funding",
+//     customer_id: customerId,
+//     timestamp: new Date().toISOString(),
+//     message: " To fund your Downtown wallet, simply transfer money to the account below:\n\nAccount Name: Downtown Wallet\nAccount Number: 9082 XXXX 372\nBank: Moniepoint\n\nOnce done, just send me a quick message with the amount funded and I'll update your balance right away!"
+//   }),
 
   "Unknown": async (customerId, message) => {
     // Check if it looks like a food order attempt

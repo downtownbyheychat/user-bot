@@ -1,5 +1,6 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
+import { sendMessage } from '../services/utils.js';
 
 dotenv.config();
 
@@ -65,13 +66,18 @@ export async function sendUserOnboardingFlow(phoneNumber) {
 // Handle user onboarding flow submission
 export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
   try {
+    console.log('Flow data received:', JSON.stringify(flowData, null, 2));
+    
     const payload = {
       first_name: flowData.screen_1_First_Name_0?.trim() || '',
       last_name: flowData.screen_1_Last_Name_1?.trim() || '',
-      email: flowData.screen_1_Email_2,
+      email: flowData.screen_1_Email_2?.trim(),
       university: 'Bells Tech',
       phone_number: phoneNumber
     };
+
+    console.log('Email extracted:', payload.email);
+    console.log('Email validation result:', isValidEmail(payload.email));
 
     if (!isValidEmail(payload.email)) {
       await axios({
@@ -117,9 +123,30 @@ export async function handleUserOnboardingSubmission(phoneNumber, flowData) {
       data: {
         messaging_product: 'whatsapp',
         to: phoneNumber,
-        type: 'text',
-        text: {
-          body: 'An OTP has been sent to your email. Please reply with the OTP to verify your account.'
+        type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: {
+            text: 'An OTP has been sent to your email. Please reply with the OTP to verify your account.'
+          },
+          action: {
+            buttons: [
+              {
+                type: 'reply',
+                reply: {
+                  id: 'resend_otp',
+                  title: 'Resend OTP'
+                }
+              },
+              {
+                type: 'reply',
+                reply: {
+                  id: 'change_email',
+                  title: 'Change Email'
+                }
+              }
+            ]
+          }
         }
       }
     });
@@ -186,17 +213,149 @@ export async function sendOTPFlowMessage(phoneNumber) {
         'Content-Type': 'application/json'
       },
       data: {
+        recipient_type: 'individual',
         messaging_product: 'whatsapp',
         to: phoneNumber,
-        type: 'text',
-        text: {
-          body: 'A new OTP has been sent to your email. Please reply with the OTP to verify your account.'
+        type: 'interactive',
+        interactive: {
+          type: 'flow',
+          header: {
+            type: 'text',
+            text: 'Downtown'
+          },
+          body: {
+            text: "Update your email"
+          },
+          action: {
+            name: 'flow',
+            parameters: {
+              flow_message_version: '3',
+              flow_token: 'unused',
+              flow_id: '2123429215130517',
+              flow_cta: 'Update',
+              flow_action: 'navigate',
+              flow_action_payload: {
+                screen: 'update_email',
+                data: {
+                  type: 'dynamic_object',
+                  value: {}
+                }
+              }
+            }
+          }
         }
       }
     });
     console.log(' OTP text message sent');
   } catch (error) {
     console.error(' Error sending OTP message:', error.response?.data || error.message);
+  }
+}
+
+// Handle email update flow submission
+export async function handleEmailUpdateSubmission(phoneNumber, flowData) {
+  try {
+    console.log('Email update flow data received:', JSON.stringify(flowData, null, 2));
+    
+    const newEmail = flowData.screen_0_Email_0?.trim();
+    
+    console.log('New email extracted:', newEmail);
+    console.log('Email validation result:', isValidEmail(newEmail));
+
+    if (!isValidEmail(newEmail)) {
+      await axios({
+        url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+        method: 'post',
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        data: {
+          messaging_product: 'whatsapp',
+          to: phoneNumber,
+          type: 'text',
+          text: {
+            body: 'Invalid email format. Please try again.'
+          }
+        }
+      });
+      return { success: false, error: 'Invalid email' };
+    }
+
+    // Update email via backend API
+    const response = await axios.post(`${BASE_URL}auth/update-email/${phoneNumber}`, {
+      email: newEmail,
+      recipient_type: 'user'
+    }, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    console.log('Email update response:', response.data);
+
+    // Mark user as awaiting email change
+    awaitingEmailChange.add(phoneNumber);
+
+    await axios({
+      url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+      method: 'post',
+      headers: {
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+        messaging_product: 'whatsapp',
+        to: phoneNumber,
+        type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: {
+            text: 'Email updated! An OTP has been sent to your new email. Please reply with the OTP to verify.'
+          },
+          action: {
+            buttons: [
+              {
+                type: 'reply',
+                reply: {
+                  id: 'resend_otp',
+                  title: 'Resend OTP'
+                }
+              },
+              {
+                type: 'reply',
+                reply: {
+                  id: 'change_email',
+                  title: 'Change Email'
+                }
+              }
+            ]
+          }
+        }
+      }
+    });
+
+    console.log('Email updated and OTP sent');
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating email:', error.response?.data || error.message);
+    
+    await axios({
+      url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+      method: 'post',
+      headers: {
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+        messaging_product: 'whatsapp',
+        to: phoneNumber,
+        type: 'text',
+        text: {
+          body: 'Failed to update email. Please try again or contact support.'
+        }
+      }
+    });
+    
+    return { success: false, error: error.message };
   }
 }
 
@@ -215,22 +374,36 @@ export async function verifyOTP(otp, phoneNumber) {
     if (response.status === 200) {
       console.log(' OTP verified successfully');
       
-      // Manually update email_verified in database
-      try {
-        const pool = (await import('../db/database.js')).default;
-        await pool.query(
-          'UPDATE users SET email_verified = true WHERE phone_number = $1',
-          [phoneNumber]
-        );
-        console.log(' Database updated: email_verified = true');
-      } catch (dbError) {
-        console.error(' Failed to update database:', dbError.message);
+      // Check if this was an email change verification
+      if (awaitingEmailChange.has(phoneNumber)) {
+        awaitingEmailChange.delete(phoneNumber);
+        
+        await axios({
+          url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+          method: 'post',
+          headers: {
+            'Authorization': `Bearer ${ACCESS_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          data: {
+            messaging_product: 'whatsapp',
+            to: phoneNumber,
+            type: 'text',
+            text: {
+              body: 'Your email has been updated and verified successfully.'
+            }
+          }
+        });
+      } else{
+        await sendMessage(phoneNumber, 'Your account has been verified successfully!'); 
+        console.log(' Verification success message sent');
       }
       
-            
-      // Send template format message
-      sendOrderTemplateMessage(phoneNumber);
-     
+      // else {
+        // Send welcome message for new user onboarding
+        await sendOrderTemplateMessage(phoneNumber);
+     // }
+      
       
       return { success: true };
     }
@@ -409,11 +582,36 @@ export async function sendChangeEmailFlow(phoneNumber) {
         'Content-Type': 'application/json'
       },
       data: {
+        recipient_type: 'individual',
         messaging_product: 'whatsapp',
         to: phoneNumber,
-        type: 'text',
-        text: {
-          body: 'Please reply with your new email address:'
+        type: 'interactive',
+        interactive: {
+          type: 'flow',
+          header: {
+            type: 'text',
+            text: 'Downtown'
+          },
+          body: {
+            text: "Update your email"
+          },
+          action: {
+            name: 'flow',
+            parameters: {
+              flow_message_version: '3',
+              flow_token: 'unused',
+              flow_id: '2123429215130517',
+              flow_cta: 'Update',
+              flow_action: 'navigate',
+              flow_action_payload: {
+                screen: 'update_email',
+                data: {
+                  type: 'dynamic_object',
+                  value: {}
+                }
+              }
+            }
+          }
         }
       }
     });

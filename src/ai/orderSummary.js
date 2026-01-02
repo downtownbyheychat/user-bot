@@ -75,21 +75,27 @@ const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = gemini.getGenerativeModel({model: "gemini-2.0-flash-lite"});
 
 export async function generateOrderSummary(message, customerId = null) {
-  const prompt = `You are an information extraction system. Analyze the customer message and return a structured JSON order summary.
+const prompt = `You are an information extraction system. Analyze the customer message and return a structured JSON order summary.
 
- OBJECTIVE
+OBJECTIVE
 Extract:
-1. **vendor** – restaurant/vendor name if mentioned
-2. **items** – each food item with quantity and price
-3. **quantity_type** – ONLY:
+1. vendor – restaurant/vendor name if mentioned
+2. items – each food item with quantity and price
+3. quantity_type – ONLY:
    - "per_price" → when the user gives a price directly tied to that item (e.g., "₦800 jollof rice", "stir fry ₦1200")
    - null → when no price implies a unit quantity
-4. **delivery_location** – extract location OR return "USER_HOSTEL" if user mentions:
+4. delivery_location – extract location OR return "USER_HOSTEL" if user mentions:
    "my hostel", "my room", "my block", "my place", "my hall", "my apartment", etc.
 
- EXTRACTION RULES
-- If no quantity is stated, use \`1\`.
-- If price is present for an item, set \`price\` to that value.
+EXTRACTION RULES
+- If no quantity is stated, use 1.
+- CRITICAL PRICE RULE: Any number greater than 50 should be treated as a PRICE, not a quantity
+  - "200 jollof rice" → price: 200, quantity: 1, quantity_type: "per_price"
+  - "500 stir fry" → price: 500, quantity: 1, quantity_type: "per_price"
+  - "1500 fried rice" → price: 1500, quantity: 1, quantity_type: "per_price"
+  - "2 jollof rice" → quantity: 2, price: null, quantity_type: null
+  - "50 chicken" → quantity: 50, price: null (edge case, treat as quantity)
+- If price is present for an item, set price to that value and quantity_type to "per_price".
 - If multiple items are mentioned, extract each separately.
 - Normalize item names (no emojis, no slang).
 - Detect vendor from phrases like:
@@ -98,10 +104,10 @@ Extract:
   - "order from *VendorName*"
 - Ignore text unrelated to the order.
 - CRITICAL EXCEPTION: These exact phrases are SINGLE items - NEVER split them:
-  1. "yam and egg" → ONE item, not "yam" + "egg"
-  2. "bread and egg" → ONE item, not "bread" + "egg"
-  3. "rice and beans" → ONE item, not "rice" + "beans"
-  4. "plantain and egg" → ONE item, not "plantain" + "egg"
+  1. "yam and egg" → ONE item
+  2. "bread and egg" → ONE item
+  3. "rice and beans" → ONE item
+  4. "plantain and egg" → ONE item
   5. "cake and cream" → ONE item
   6. "chicken and chips" → ONE item
   7. "big bread and egg" → ONE item
@@ -113,10 +119,10 @@ Extract:
 - For ALL other cases, treat "with" or "and" as delimiters between separate items
 - Example: "I want bread and egg" → items: [{name: "bread and egg", quantity: 1}]
 - Example: "I want jollof rice and chicken" → items: [{name: "jollof rice", quantity: 1}, {name: "chicken", quantity: 1}]
-- If no vendor is mentioned, set \`vendor\` to null.
-- If no delivery location is mentioned, set \`delivery_location\` to null.
+- If no vendor is mentioned, set vendor to null.
+- If no delivery location is mentioned, set delivery_location to null.
 
- OUTPUT FORMAT (STRICT)
+OUTPUT FORMAT (STRICT)
 Return ONLY valid JSON in this exact structure:
 
 {
@@ -132,11 +138,10 @@ Return ONLY valid JSON in this exact structure:
   "delivery_location": string | "USER_HOSTEL" | null
 }
 
-
-
- USER MESSAGE:  "${message}"
+USER MESSAGE: "${message}"
 
 Return ONLY JSON. No explanations.`;
+
 
   try {
     const result = await model.generateContent(prompt);
