@@ -508,6 +508,8 @@ if (!vendor && items.length > 0) {
     
     const vendorData = await getVendorByName(vendor);
 
+    // TODO: If the user does not provide the number of swallow request for it 
+    
     // Check if swallow is ordered without soup
     const swallowWithoutSoup = await hasSwallowWithoutSoup(vendorData.id, items);
     if (swallowWithoutSoup) {
