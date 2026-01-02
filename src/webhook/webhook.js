@@ -14,6 +14,7 @@ import {
 } from '../services/userOnboarding.js';
 import { processCart } from '../services/cartProcessor.js';
 import { sendMessage, sendDocument, sendTypingIndicator, markAsRead } from '../services/utils.js';
+import { getUserOrderStatus } from '../services/orderHandler.js';
 
 dotenv.config();
 
@@ -99,6 +100,8 @@ console.log(JSON.stringify(messages, null, 2));
     return res.status(500).json({ error: error.message });
   }
 });
+
+app.post('/user-order-status', getUserOrderStatus)
 
 // async function processMessagesAsync(body) {
 //   for (const entry of body.entry || []) {

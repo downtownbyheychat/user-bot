@@ -18,7 +18,7 @@ import { sendPassImage } from "./sendReciept.js";
 import { paymentSessions } from "./sessionManager.js";
 
 import { getAccount, confirmPayment } from "./paymentHandler.js";
-import { createOrder } from "./orderHandler.js";
+import { createOrder, sendtovendor } from "./orderHandler.js";
 
 const baseUrl = process.env.baseUrl;
 let grandTotal = 0;
@@ -593,7 +593,7 @@ export async function handleButtonClick(buttonId, customerId) {
       } else {
         order_type = "pick_up";
       }
-      await createOrder(
+      const creatingOrder = await createOrder(
         user_id.rows[0].id,
         order_details[0].vendorId,
         user,
@@ -605,6 +605,23 @@ export async function handleButtonClick(buttonId, customerId) {
         customerId,
         vendor_phone.rows[0].phone_number
       );
+      const sendingToVendor = await sendtovendor(
+        user_id.rows[0].id,
+        order_details[0].vendorId,
+        user,
+        order_details[0].vendor,
+        food_name,
+        finalPrice,
+        order_type,
+        order_details[0].delivery_location,
+        customerId,
+        vendor_phone.rows[0].phone_number
+      );
+
+      if (creatingOrder.status !== "success" || sendingToVendor.status !== "success") {
+        console.log("Order creation or sending to vendor failed");
+        return
+      }
 
       await sendPassImage(customerId, order_details[0].vendor, finalPrice);
       const session = paymentSessions.get(customerId);
@@ -1051,10 +1068,10 @@ export async function handleButtonClick(buttonId, customerId) {
         const allVendors = await getAllVendors();
         console.log("All vendors fetched:", allVendors.length);
         console.log("Vendor ID parsed:", vendorId);
-        console.log(
-          "Vendor found:",
-          allVendors.find((v) => v.id === vendorId)
-        );
+        // console.log(
+        //   "Vendor found:",
+        //   allVendors.find((v) => v.id === vendorId)
+        // );
         const vendor = allVendors.find((v) => v.id === vendorId);
         if (vendor) {
           console.log("Vendor name:", vendor.name);
@@ -1127,7 +1144,7 @@ export async function handleButtonClick(buttonId, customerId) {
         }
 
         if (menuItems.length) {
-          console.log("sending from button handler");
+          // console.log("sending from button handler");
           if (vendor.name === "AFRICAN KITCHEN") {
             await sendAfricanKitchenCatalog(customerId);
           } else if (vendor.name === "ARENA") {

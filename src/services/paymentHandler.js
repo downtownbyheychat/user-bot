@@ -152,17 +152,43 @@ export async function confirmPayment(total, customer_id) {
   }
 }
 
-export async function finalizePayment(external_reference) {
-  try {
-    const response = await axios.post(
-      `${baseUrl}transactions/${external_reference}/finalize`
-    );
+export async function finalizePayment(external_reference, maxRetries = 3) {
+  let lastError;
 
-    return response.data.data;
-  } catch (err) {
-    console.log(err);
-    throw err;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await axios.post(
+        `${baseUrl}transactions/${external_reference}/finalize`
+      );
+
+      return response.data.data;
+    } catch (err) {
+      lastError = err;
+
+      // Check if it's a network error or server error worth retrying
+      const isRetryable = 
+        !err.response || // Network error (no response from server)
+        err.code === 'ECONNABORTED' || // Timeout
+        err.code === 'ENOTFOUND' || // DNS lookup failed
+        err.code === 'ECONNREFUSED' || // Connection refused
+        (err.response && err.response.status >= 500) || // Server errors
+        err.response?.status === 429; // Rate limiting
+
+      if (!isRetryable || attempt === maxRetries - 1) {
+        // Don't retry for client errors (4xx) or if we've exhausted retries
+        console.error(`Payment finalization failed after ${attempt + 1} attempt(s):`, err);
+        throw err;
+      }
+
+      // Exponential backoff: wait 1s, 2s, 4s, etc.
+      const delayMs = Math.pow(2, attempt) * 1000;
+      console.log(`Retrying payment finalization in ${delayMs}ms (attempt ${attempt + 1}/${maxRetries})...`);
+      
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
   }
+
+  throw lastError;
 }
 
 export async function refundPayment(external_reference) {

@@ -1,32 +1,32 @@
-// export const orderStatusMessages = {
-//   placed: (orderDetails) => ({
-//     message: "🟡 Order Placed\nGot it! Your order has been received 🧾\nWe'll confirm with the restaurant and update you shortly.",
-//     data: { status: "placed", order: orderDetails }
-//   }),
+export const orderStatusMessages = {
+  "received": (orderDetails) => ({
+    message: "🟡 Order Placed\nGot it! Your order has been received 🧾\nWe'll confirm with the restaurant and update you shortly.",
+    data: { status: "received", order: orderDetails }
+  }),
 
-//   preparing: (vendorName) => ({
-//     message: `🟠 Preparing\nYour order is being prepared by ${vendorName} 👨🏽🍳🔥\nSmells good already 😋 — we'll ping you when it's out for delivery.`,
-//     data: { status: "preparing" }
-//   }),
+  "pick_up_ready": (vendorName) => ({
+    message: `Your order is ready for pickup at ${vendorName}.`,
+    data: { status: "pick_up_ready" }
+  }),
 
-//   outForDelivery: () => ({
-//     message: "🔵 Out for Delivery\nYour order is on its way! 🚴♂️💨\nRider just picked it up — you can expect delivery in about 7-10 mins.",
-//     data: { status: "out_for_delivery" }
-//   }),
+  "picked_up": () => ({
+    message: "Your order has been picked up and is on the way.",
+    data: { status: "picked_up" }
+  }),
 
-//   delivered: () => ({
-//     message: "🟢 Delivered\nOrder delivered ✅\nEnjoy your meal! 😋\nWanna leave a quick rating for your experience?",
-//     data: { 
-//       status: "delivered",
-//       buttons: [{ id: "rate_order", title: "Rate Experience" }]
-//     }
-//   }),
+  "delivered": () => ({
+    message: "Please step out to receive your order. Enjoy your meal!",
+    data: { 
+      status: "delivered",
+      buttons: [{ id: "rate_order", title: "Rate Experience" }]
+    }
+  }),
 
-//   delayed: () => ({
-//     message: "🔴 Delayed\nHey 👋 just a heads-up — your delivery's taking a little longer than expected 😓\nOur rider's still on it though, 5mins. Thanks for your patience ❤️",
-//     data: { status: "delayed" }
-//   })
-// };
+  "cancelled": () => ({
+    message: "Your order has been cancelled by the vendor. We apologize for the inconvenience caused. You will be refunded shortly.",
+    data: { status: "cancelled" }
+  })
+};
 
 // export const paymentMessages = {
 //   insufficientBalance: () => ({
