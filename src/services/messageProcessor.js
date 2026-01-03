@@ -222,7 +222,7 @@ export async function processMessage(customerId, message) {
         response_type: "order_summary",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `📦 Pack Added to Cart\n\nItems:\n${itemsList}\n\nItems Total: ₦${packSubTotal}${packFee > 0 ? `\nPack Fee: ₦${packFee}` : ''}\nDelivery Fee: ₦${deliveryFee}\n---\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nDelivery: ${deliveryLocation}\n\nWhat would you like to do next?`,
+        message: `Pack Added to Cart\n\nItems:\n${itemsList}\n\nItems Total: ₦${packSubTotal}${packFee > 0 ? `\nPack Fee: ₦${packFee}` : ''}\nDelivery Fee: ₦${deliveryFee}\n---\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nDelivery: ${deliveryLocation}\n\nWhat would you like to do next?`,
         data: {
           buttons: [
             { id: "proceed_payment", title: "Proceed to Payment" },
