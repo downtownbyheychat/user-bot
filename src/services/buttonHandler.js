@@ -498,9 +498,13 @@ export async function handleButtonClick(buttonId, customerId) {
         };
       } catch (error) {
         console.error("Receipt generation/sending failed:", error);
+        
+        // Fallback: Send text receipt
+        const { sendTextReceipt } = await import("./sendReciept.js");
+        await sendTextReceipt(customerId, receiptData);
+        
         return {
-          status: "error",
-          message: "Sorry, couldn't generate receipt. Please try again.",
+          status: "silent",
         };
       }
     }
