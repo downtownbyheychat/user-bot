@@ -256,7 +256,10 @@ export async function handleButtonClick(buttonId, customerId) {
         timestamp: new Date().toISOString(),
         message: `Payment Details\nYour Order:\n${orderDetails}===================\n*Total: ₦${grandTotal}*\n===================\n\nAccount Number: ${account_details.account_number}\nBank: ${account_details.bank_name}\n\n`,
         data: {
-          buttons: [{ id: "payment_sent", title: "Payment Sent" }],
+          buttons: [
+            { id: "payment_sent", title: "Payment Sent" },
+            { id: "send_receipt", title: "📄 Send Receipt" }
+          ],
         },
       };
 
@@ -448,6 +451,60 @@ export async function handleButtonClick(buttonId, customerId) {
       };
 
     
+
+    case "send_receipt": {
+      const { getOrderStack } = await import("./orderStack.js");
+      const stack = getOrderStack(customerId);
+      
+      if (stack.length === 0) {
+        return {
+          status: "error",
+          message: "No orders found. Please place an order first.",
+        };
+      }
+
+      let total = 0;
+      const packs = stack.map((pack, index) => {
+        total += pack.total;
+        return {
+          packNumber: index + 1,
+          vendor: pack.vendor,
+          deliveryLocation: pack.delivery_location,
+          items: pack.items.map((item) => ({
+            name: item.name,
+            quantity: item.quantity || 1,
+            price: item.quantity_type === "per_price" ? item.price : item.price,
+          })),
+          total: pack.total,
+        };
+      });
+
+      const receiptData = {
+        orderId: `ORD${Date.now()}`,
+        packs: packs,
+        amount: total,
+        customerName: "Customer",
+      };
+
+      try {
+        const { generateReceipt } = await import("./receiptGenerator.js");
+        const result = await generateReceipt(receiptData);
+        
+        const { sendReceiptPDF } = await import("./sendReciept.js");
+        await sendReceiptPDF(customerId, result.filePath, receiptData.orderId);
+        
+        return {
+          status: "success",
+          message: "📄 Receipt sent! Check your messages for the PDF receipt.",
+        };
+      } catch (error) {
+        console.error("Receipt generation/sending failed:", error);
+        return {
+          status: "error",
+          message: "Sorry, couldn't generate receipt. Please try again.",
+        };
+      }
+    }
 
     case "payment_sent": {
       const { getOrderStack: getStack, clearOrderStack: clearStack } =
