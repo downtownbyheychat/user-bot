@@ -711,10 +711,11 @@ export async function handleButtonClick(buttonId, customerId) {
 
         const itemsList = pendingOrder.orderSummary.items
           .map((i) => {
+            const displayName = i.dbName || i.name;
             if (i.quantity_type === "per_price") {
-              return `${i.name} -- ₦${i.price}`;
+              return `${displayName} -- ₦${i.price}`;
             } else {
-              return `${i.name} (x${i.quantity}) -- ₦${i.price}`;
+              return `${displayName} (x${i.quantity}) -- ₦${i.price}`;
             }
           })
           .join("\n");
