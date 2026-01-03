@@ -258,7 +258,7 @@ export async function handleButtonClick(buttonId, customerId) {
         data: {
           buttons: [
             { id: "payment_sent", title: "Payment Sent" },
-            { id: "send_receipt", title: "📄 Send Receipt" }
+            { id: "send_receipt", title: "Send Receipt" }
           ],
         },
       };
@@ -495,7 +495,6 @@ export async function handleButtonClick(buttonId, customerId) {
         
         return {
           status: "success",
-          message: "📄 Receipt sent! Check your messages for the PDF receipt.",
         };
       } catch (error) {
         console.error("Receipt generation/sending failed:", error);

@@ -24,7 +24,7 @@
 //   }
 // }
 
-const baseUrl = 'https://app.downtown.ng/'
+const baseUrl = 'https://api.downtown.ng/'
 
 import pool from '../database.js';
 import axios from 'axios';

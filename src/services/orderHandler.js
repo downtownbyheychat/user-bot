@@ -7,7 +7,7 @@ const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 
 
-const baseUrl = 'https://downtownbyhai-api.onrender.com/';
+const baseUrl = 'https://api.downtown.ng/' //'https://downtownbyhai-api.onrender.com/';
 const directUrl = 'https://vendorbot-1.onrender.com/' // this will be changed to the vps url later on
 
 //
