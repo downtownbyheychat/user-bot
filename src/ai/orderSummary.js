@@ -105,7 +105,7 @@ EXTRACTION RULES
   - "*VendorName* restaurant"
   - "order from *VendorName*"
   - Vendor name after items list
-- Available vendors (prefer these but not limited to): AFRICAN KITCHEN, ALPHA'S PLACE, ARENA, BESTMAN, CHEF MAYO, EXCEEDING GRACE, FAMOT, RENEES CAFE, RUKAMAT, YOMICE CAFE
+  - Here are som available vendors you can match from the user's messages as vendors (prefer these but not limited to): AFRICAN KITCHEN, ALPHA'S PLACE, ARENA, BESTMAN, CHEF MAYO, EXCEEDING GRACE, FAMOT, RENEES CAFE, RUKAMAT, YOMICE CAFE
 - Ignore text unrelated to the order.
 - CRITICAL EXCEPTION: These exact phrases are SINGLE items - NEVER split them:
   1. "yam and egg" → ONE item
