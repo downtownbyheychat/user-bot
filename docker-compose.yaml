@@ -1,22 +1,6 @@
 version: '3.8'
 
 services:
-  campus-watchtower:
-    image: containrrr/watchtower
-    container_name: campus-watchtower
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /home/deploy/.docker:/config
-    environment:
-      DOCKER_CONFIG: /config
-      DOCKER_API_VERSION: "1.45"
-    command:
-      - "--interval"
-      - "300"
-      - "--cleanup"
-      - "--label-enable"
-
   campus-bot:
     image: tomisin05/campus-ai-bot:latest
     container_name: campus-ai-bot
