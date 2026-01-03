@@ -217,7 +217,6 @@ export async function generateReceipt(orderData) {
   try {
     const browser = await puppeteer.launch({ 
       headless: true,
-      timeout: 30000,
       args: [
         '--no-sandbox', 
         '--disable-setuid-sandbox',
@@ -226,24 +225,19 @@ export async function generateReceipt(orderData) {
         '--no-first-run',
         '--no-zygote',
         '--single-process',
-        '--disable-gpu',
-        '--disable-web-security',
-        '--disable-features=VizDisplayCompositor'
+        '--disable-gpu'
       ],
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
     });
-    
     const page = await browser.newPage();
     await page.setViewport({ width: 400, height: 800 });
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 10000 });
+    await page.setContent(html, { waitUntil: 'load' });
     
     const screenshot = await page.screenshot({ 
       type: 'png',
       fullPage: true,
       omitBackground: false
     });
-    
-    await page.close();
     await browser.close();
 
     const receiptsDir = path.join(process.cwd(), 'receipts');

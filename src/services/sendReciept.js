@@ -55,6 +55,91 @@ export async function sendReceiptImage(customerId, filePath, orderId) {
 }
 
 
+export async function sendTextReceipt(customerId, receiptData) {
+  const { orderId, packs, amount } = receiptData;
+  
+  let receiptText = `📄 ORDER RECEIPT\n`;
+  receiptText += `Order ID: ${orderId}\n`;
+  receiptText += `Customer: ${receiptData.customerName}\n\n`;
+  
+  packs.forEach(pack => {
+    receiptText += `📦 Pack ${pack.packNumber} - ${pack.vendor}\n`;
+    pack.items.forEach(item => {
+      receiptText += `  • ${item.name} (x${item.quantity}) - ₦${(item.quantity * item.price).toLocaleString()}\n`;
+    });
+    receiptText += `  Pack Total: ₦${pack.total.toLocaleString()}\n`;
+    receiptText += `  ${pack.deliveryLocation === 'Pickup' ? 'Pickup' : 'Delivery'}: ${pack.deliveryLocation === 'Pickup' ? 'Yes' : pack.deliveryLocation}\n\n`;
+  });
+  
+  receiptText += `💰 TOTAL AMOUNT: ₦${amount.toLocaleString()}\n\n`;
+  receiptText += `Thank you for your order! 🙏`;
+  
+  await axios.post(
+    `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+    {
+      messaging_product: "whatsapp",
+      to: customerId,
+      type: "text",
+      text: { body: receiptText }
+    },
+    {
+      headers: {
+        'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    }
+  );
+}
+
+
+export async function sendReceiptPDF(customerId, filePath, orderId) {
+  try {
+    // Upload PDF to WhatsApp Media API
+    const formData = new FormData();
+    formData.append('file', fs.createReadStream(filePath));
+    formData.append('type', 'application/pdf');
+    formData.append('messaging_product', 'whatsapp');
+
+    const uploadResponse = await axios.post(
+      `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/media`,
+      formData,
+      {
+        headers: {
+          'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+          ...formData.getHeaders()
+        }
+      }
+    );
+
+    const mediaId = uploadResponse.data.id;
+
+    // Send PDF document
+    await axios.post(
+      `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
+      {
+        messaging_product: "whatsapp",
+        to: customerId,
+        type: "document",
+        document: {
+          id: mediaId,
+          caption: `📄 Your Order Receipt - ${orderId}`,
+          filename: `receipt_${orderId}.pdf`
+        }
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+  } catch (error) {
+    console.error('Error sending receipt PDF:', error);
+    throw error;
+  }
+}
+
+
 export async function sendPassImage(customerId, vendor, amount) {
   await axios({
     url: `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
