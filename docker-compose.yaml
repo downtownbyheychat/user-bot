@@ -1,8 +1,20 @@
 version: '3.8'
 
 services:
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_LABEL_ENABLE=true
+    command: --interval 300 --cleanup
+
   campus-bot:
-    build: .
+    image: Tomisin05/campus-ai-bot:latest
     container_name: campus-ai-bot
     restart: unless-stopped
     environment:
@@ -14,6 +26,8 @@ services:
       - "3000:3000"
     volumes:
       - ./receipts:/app/receipts
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
       interval: 30s
