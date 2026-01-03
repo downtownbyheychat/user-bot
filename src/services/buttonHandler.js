@@ -447,6 +447,8 @@ export async function handleButtonClick(buttonId, customerId) {
           " Order Cancelled\nYour order has been cancelled successfully.\n\nReady to order again? Just drop your order in this format:\n\n*Example:*\njollof rice - ₦1,400, 1 beef 1 egg from African Kitchen delivered to my hostel(location)",
       };
 
+    
+
     case "payment_sent": {
       const { getOrderStack: getStack, clearOrderStack: clearStack } =
         await import("./orderStack.js");
@@ -608,6 +610,30 @@ export async function handleButtonClick(buttonId, customerId) {
     }
 
     default:
+      // Handle swallow selection
+      if (buttonId.startsWith("select_swallow_")) {
+        const swallowName = buttonId.replace("select_swallow_", "").replace(/_/g, " ");
+        const { setAwaitingInput, getFailedOrder } = await import("./sessionManager.js");
+        const failedOrder = getFailedOrder(customerId);
+        
+        if (!failedOrder) {
+          return {
+            status: "error",
+            message: "Session expired. Please start your order again."
+          };
+        }
+        
+        // Store selected swallow and set awaiting quantity input
+        setAwaitingInput(customerId, {
+          type: "swallow_quantity",
+          selectedSwallow: swallowName
+        });
+        
+        return {
+          status: "success",
+          message: `How many ${swallowName} would you like? (e.g., 1, 2, 3)`
+        };
+      }
       // Handle pickup button
       if (buttonId.startsWith("pickup_")) {
         const vendorId = buttonId.substring(7);

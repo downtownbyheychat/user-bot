@@ -27,11 +27,11 @@ export function setFailedOrder(customerId, orderData) {
   });
 }
 
-export function setAwaitingInput(customerId, inputType) {
+export function setAwaitingInput(customerId, inputData) {
   const existing = failedOrders.get(customerId) || {};
   failedOrders.set(customerId, {
     ...existing,
-    awaitingInput: inputType,
+    awaitingInput: inputData,
     timestamp: Date.now()
   });
 }

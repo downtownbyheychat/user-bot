@@ -149,7 +149,6 @@ export const intentHandlers = {
 
   const { vendor, items, delivery_location } = orderSummary;
 
-//   TODO: error code 400
   // Case 1: Vendor only, no items
   if (vendor && items.length === 0) {
     const vendorStatus = await checkVendorStatus(vendor);
@@ -529,7 +528,6 @@ if (!vendor && items.length > 0) {
     
     const vendorData = await getVendorByName(vendor);
 
-    // TODO: If the user does not provide the number of swallow request for it 
     
     // Check if swallow is ordered without soup
     const swallowWithoutSoup = await hasSwallowWithoutSoup(vendorData.id, items);
@@ -691,7 +689,7 @@ if (!vendor && items.length > 0) {
                     priceDesc = `₦${swallow.price}`;
                   }
                   return {
-                    id: `add_swallow_${swallow.food_name.toLowerCase().replace(/\s+/g, '_')}`,
+                    id: `select_swallow_${swallow.food_name.toLowerCase().replace(/\s+/g, '_')}`,
                     title: swallow.food_name.substring(0, 24),
                     description: priceDesc.substring(0, 72)
                   };

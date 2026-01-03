@@ -4,23 +4,6 @@ import {  generateOrderSummary, ORDER_SUMMARY_INTENTS} from "../ai/orderSummary.
 
 export async function processMessage(customerId, message) {
   try {
-    // // Check for cancel command
-    // if (message.toLowerCase().trim() === "cancel") {
-    //   const { clearPendingOrder, clearFailedOrder } = await import(
-    //     "./sessionManager.js"
-    //   );
-    //   clearPendingOrder(customerId);
-    //   clearFailedOrder(customerId);
-    //   clearOrderStack(customerId)
-    //   return {
-    //     status: "success",
-    //     response_type: "order_cancelled",
-    //     customer_id: customerId,
-    //     timestamp: new Date().toISOString(),
-    //     message: "Order cancelled. Start fresh whenever you're ready! 😊",
-    //   };
-    // }
-
     // Check if user is correcting a failed order
     const { getFailedOrder, clearFailedOrder, getAwaitingInput } = await import(
       "./sessionManager.js"
@@ -35,104 +18,146 @@ export async function processMessage(customerId, message) {
         clearFailedOrder(customerId);
         // Fall through to normal processing below
       } else if (awaitingInput) {
-        // If awaiting direct input (soup/swallow), parse message directly without AI
-        const correctionSummary = {
-          vendor: failedOrder.vendor,
-          items: [
-            { name: message.trim(), quantity: 1, quantity_type: "per_piece" },
-          ],
-          delivery_location: failedOrder.delivery_location,
-        };
+        // Handle swallow quantity input
+        if (awaitingInput.type === "swallow_quantity") {
+          const quantity = parseInt(message.trim());
+          if (isNaN(quantity) || quantity < 1) {
+            return {
+              status: "error",
+              message: "Please enter a valid number (e.g., 1, 2, 3)"
+            };
+          }
+          
+          const correctionSummary = {
+            vendor: failedOrder.vendor,
+            items: [
+              { name: awaitingInput.selectedSwallow, quantity: quantity, quantity_type: "per_piece" },
+            ],
+            delivery_location: failedOrder.delivery_location,
+          };
+          
+          // Merge with original items
+          const baseItems = failedOrder.originalItems || [];
+          const mergedItems = [...baseItems, ...correctionSummary.items];
+          const mergedSummary = {
+            vendor: failedOrder.vendor,
+            items: mergedItems,
+            delivery_location: failedOrder.delivery_location,
+          };
 
-        // Merge with original items
-        const baseItems =
-          failedOrder.errorType === "swallow_without_soup" ||
-          failedOrder.errorType === "only_free_soup"
-            ? failedOrder.originalItems || []
-            : failedOrder.validatedItems || [];
-        const mergedItems = [...baseItems, ...correctionSummary.items];
-        const mergedSummary = {
-          vendor: failedOrder.vendor,
-          items: mergedItems,
-          delivery_location: failedOrder.delivery_location,
-        };
+          clearFailedOrder(customerId);
+          const response = await handleIntent(
+            "Food Ordering",
+            customerId,
+            message,
+            mergedSummary
+          );
+          return {
+            ...response,
+            classification: { intent: "Food Ordering" },
+            data: { ...response.data },
+          };
+        }
+        // If awaiting direct input (soup), parse message directly without AI
+        else {
+          const correctionSummary = {
+            vendor: failedOrder.vendor,
+            items: [
+              { name: message.trim(), quantity: 1, quantity_type: "per_piece" },
+            ],
+            delivery_location: failedOrder.delivery_location,
+          };
 
-        clearFailedOrder(customerId);
-        const response = await handleIntent(
-          "Food Ordering",
-          customerId,
-          message,
-          mergedSummary
-        );
-        return {
-          ...response,
-          classification: { intent: "Food Ordering" },
-          data: { ...response.data },
-        };
+          // Merge with original items
+          const baseItems =
+            failedOrder.errorType === "swallow_without_soup" ||
+            failedOrder.errorType === "only_free_soup"
+              ? failedOrder.originalItems || []
+              : failedOrder.validatedItems || [];
+          const mergedItems = [...baseItems, ...correctionSummary.items];
+          const mergedSummary = {
+            vendor: failedOrder.vendor,
+            items: mergedItems,
+            delivery_location: failedOrder.delivery_location,
+          };
+
+          clearFailedOrder(customerId);
+          const response = await handleIntent(
+            "Food Ordering",
+            customerId,
+            message,
+            mergedSummary
+          );
+          return {
+            ...response,
+            classification: { intent: "Food Ordering" },
+            data: { ...response.data },
+          };
+        }
       } else {
         // Otherwise use AI to parse correction
-      // Don't prepend vendor if user is specifying a new vendor
-      const hasVendorKeywords = /\b(from|at)\s+\w+/i.test(message);
-      const messageWithVendor = failedOrder.vendor && !hasVendorKeywords
-        ? `${message} from ${failedOrder.vendor}`
-        : message;
-      const correctionSummary = await generateOrderSummary(
-        messageWithVendor,
-        customerId
-      );
-
-      // Handle vendor selection for items without vendor
-      if (correctionSummary?.vendor && failedOrder.errorType === "no_vendor") {
-        const mergedSummary = {
-          vendor: correctionSummary.vendor,
-          items: failedOrder.items || [],
-          delivery_location:
-            correctionSummary.delivery_location ||
-            failedOrder.delivery_location,
-        };
-        clearFailedOrder(customerId);
-        const response = await handleIntent(
-          "Food Ordering",
-          customerId,
-          message,
-          mergedSummary
+        // Don't prepend vendor if user is specifying a new vendor
+        const hasVendorKeywords = /\b(from|at)\s+\w+/i.test(message);
+        const messageWithVendor = failedOrder.vendor && !hasVendorKeywords
+          ? `${message} from ${failedOrder.vendor}`
+          : message;
+        const correctionSummary = await generateOrderSummary(
+          messageWithVendor,
+          customerId
         );
-        return {
-          ...response,
-          classification: { intent: "Food Ordering" },
-          data: { ...response.data },
-        };
-      }
 
-      if (correctionSummary?.items?.length > 0) {
-        // Merge original items with new corrections for swallow/soup errors, otherwise use validated items
-        const baseItems =
-          failedOrder.errorType === "swallow_without_soup" ||
-          failedOrder.errorType === "only_free_soup"
-            ? failedOrder.originalItems || []
-            : failedOrder.validatedItems || [];
-        const mergedItems = [...baseItems, ...correctionSummary.items];
-        const mergedSummary = {
-          vendor: failedOrder.vendor,
-          items: mergedItems,
-          delivery_location:
-            correctionSummary.delivery_location ||
-            failedOrder.delivery_location,
-        };
+        // Handle vendor selection for items without vendor
+        if (correctionSummary?.vendor && failedOrder.errorType === "no_vendor") {
+          const mergedSummary = {
+            vendor: correctionSummary.vendor,
+            items: failedOrder.items || [],
+            delivery_location:
+              correctionSummary.delivery_location ||
+              failedOrder.delivery_location,
+          };
+          clearFailedOrder(customerId);
+          const response = await handleIntent(
+            "Food Ordering",
+            customerId,
+            message,
+            mergedSummary
+          );
+          return {
+            ...response,
+            classification: { intent: "Food Ordering" },
+            data: { ...response.data },
+          };
+        }
 
-        clearFailedOrder(customerId);
-        const response = await handleIntent(
-          "Food Ordering",
-          customerId,
-          message,
-          mergedSummary
-        );
-        return {
-          ...response,
-          classification: { intent: "Food Ordering" },
-          data: { ...response.data },
-        };
-      }
+        if (correctionSummary?.items?.length > 0) {
+          // Merge original items with new corrections for swallow/soup errors, otherwise use validated items
+          const baseItems =
+            failedOrder.errorType === "swallow_without_soup" ||
+            failedOrder.errorType === "only_free_soup"
+              ? failedOrder.originalItems || []
+              : failedOrder.validatedItems || [];
+          const mergedItems = [...baseItems, ...correctionSummary.items];
+          const mergedSummary = {
+            vendor: failedOrder.vendor,
+            items: mergedItems,
+            delivery_location:
+              correctionSummary.delivery_location ||
+              failedOrder.delivery_location,
+          };
+
+          clearFailedOrder(customerId);
+          const response = await handleIntent(
+            "Food Ordering",
+            customerId,
+            message,
+            mergedSummary
+          );
+          return {
+            ...response,
+            classification: { intent: "Food Ordering" },
+            data: { ...response.data },
+          };
+        }
       }
     }
 
@@ -159,7 +184,7 @@ export async function processMessage(customerId, message) {
           deliveryLocation = message.replace(hostelKeywords, userHostel);
         }
       }
-    // TODO: price for direct order and total for catalogue
+      // TODO: price for direct order and total for catalogue
       const packSubTotal = pendingOrder.orderSummary.items.reduce(
         (sum, item) => sum + (Number(item.price) || 0),
         0
@@ -198,8 +223,6 @@ export async function processMessage(customerId, message) {
         customer_id: customerId,
         timestamp: new Date().toISOString(),
         message: `📦 Pack Added to Cart\n\nItems:\n${itemsList}\n\nItems Total: ₦${packSubTotal}${packFee > 0 ? `\nPack Fee: ₦${packFee}` : ''}\nDelivery Fee: ₦${deliveryFee}\n---\nPack Total: ₦${packTotal}\nVendor: ${vendor?.name}\nDelivery: ${deliveryLocation}\n\nWhat would you like to do next?`,
-
-
         data: {
           buttons: [
             { id: "proceed_payment", title: "Proceed to Payment" },
@@ -227,20 +250,6 @@ export async function processMessage(customerId, message) {
       orderSummary
     );
 
-    // // Add payment handling ONLY for successful orders
-    // if (
-    //   orderSummary?.items?.length > 0 &&
-    //   classification.intent === "Food Ordering" &&
-    //   response.status === "success" &&
-    //   response.response_type === "order_confirmation"
-    // ) {
-    //   const paymentInfo = paymentMessages.firstTimePayment(
-    //     orderSummary.total_estimated || "2500",
-    //     "9182 XXXX 645"
-    //   );
-    //   response.data = { ...response.data, ...paymentInfo.data };
-    // }
-
     return {
       ...response,
       classification: classification,
@@ -261,4 +270,3 @@ export async function processMessage(customerId, message) {
     };
   }
 }
-
