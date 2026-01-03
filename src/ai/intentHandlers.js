@@ -3,6 +3,27 @@ import { getVendorByName, searchItemAcrossVendors, getVendorCatalogue, getVendor
 import { sendAfricanKitchenCatalog, sendAlphaCatalog, sendArenaCatalog, sendBestmanCatalog, sendChefMayoCatalog, sendExceedingGraceCatalog, sendFamotCatalog, sendReneesCatalog, sendRukamatCatalog, sendYomiceCatalog, sendTestvendor } from "../services/sendVendorCatalog.js";
 import { createListSections } from "../utils/listHelper.js";
 
+// Helper function to generate corrections
+async function generateCorrections(vendorId, originalItems) {
+  const corrections = [];
+  
+  for (const item of originalItems || []) {
+    const validation = await validateOrderItem(
+      vendorId,
+      item.name,
+      item.quantity_type,
+      item.price,
+      item.quantity
+    );
+
+    if (!validation.valid) {
+      corrections.push(`• ${validation.error}`);
+    }
+  }
+  
+  return corrections;
+}
+
 
 
 export const intentHandlers = {
@@ -827,15 +848,17 @@ if (!vendor && items.length > 0) {
         };
       }
       
+      // Generate corrections for failed items
+      const corrections = await generateCorrections(vendorData.id, items);
+      
       return {
         status: "error",
         response_type: "validation_error",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: ` Order validation failed:\n\nWhat would you like to do?`,
+        message: `Order validation failed:\n\nHere is what needs to be corrected:\n\n${corrections.join('\n')}\n\nReply with the corrected items.`,
         data: {
           buttons: [
-            { id: "show_corrections", title: "Show What to Correct" },
             { id: "cancel_order", title: "Cancel" }
           ]
         }
