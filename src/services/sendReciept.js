@@ -8,42 +8,6 @@ const baseUrl = process.env.baseUrl;
 const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 
-export async function sendTextReceipt(customerId, receiptData) {
-  const { orderId, packs, amount } = receiptData;
-  
-  let receiptText = `📄 ORDER RECEIPT\n`;
-  receiptText += `Order ID: ${orderId}\n`;
-  receiptText += `Customer: ${receiptData.customerName}\n\n`;
-  
-  packs.forEach(pack => {
-    receiptText += `📦 Pack ${pack.packNumber} - ${pack.vendor}\n`;
-    pack.items.forEach(item => {
-      receiptText += `  • ${item.name} (x${item.quantity}) - ₦${(item.quantity * item.price).toLocaleString()}\n`;
-    });
-    receiptText += `  Pack Total: ₦${pack.total.toLocaleString()}\n`;
-    receiptText += `  ${pack.deliveryLocation === 'Pickup' ? 'Pickup' : 'Delivery'}: ${pack.deliveryLocation === 'Pickup' ? 'Yes' : pack.deliveryLocation}\n\n`;
-  });
-  
-  receiptText += `💰 TOTAL AMOUNT: ₦${amount.toLocaleString()}\n\n`;
-  receiptText += `Thank you for your order! 🙏`;
-  
-  await axios.post(
-    `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
-    {
-      messaging_product: "whatsapp",
-      to: customerId,
-      type: "text",
-      text: { body: receiptText }
-    },
-    {
-      headers: {
-        'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json'
-      }
-    }
-  );
-}
-
 export async function sendReceiptPDF(customerId, filePath, orderId) {
   try {
     // Upload PDF to WhatsApp Media API
