@@ -596,12 +596,46 @@ export async function handleButtonClick(buttonId, customerId) {
 
       paymentSessions.set(customerId, session);
 
+      // Build order details breakdown
+      let orderDetails = "";
+      let totalItemsAmount = 0;
+      let totalPackFees = 0;
+      let totalDeliveryFees = 0;
+      
+      order_details.forEach((pack, index) => {
+        const itemsTotal = pack.itemsTotal || 0;
+        const packFee = pack.packFee || 0;
+        const deliveryFee = pack.deliveryFee || 0;
+        
+        totalItemsAmount += itemsTotal;
+        totalPackFees += packFee;
+        totalDeliveryFees += deliveryFee;
+        
+        orderDetails += `Pack ${index + 1} from ${pack.vendor}:\n`;
+        pack.items.forEach(item => {
+          orderDetails += `  ${item.name} (x${item.quantity || 1}) - ₦${item.price}\n`;
+        });
+        orderDetails += `\n`;
+      });
+      
+      // Determine fee type based on delivery location
+      const isPickup = order_details[0].delivery_location === "Pickup";
+      const feeLabel = isPickup ? "Pickup Fee" : "Delivery Fee";
+      
+      let breakdownMessage = `Payment Confirmed Successfully!\n\nYour order has been forwarded to the vendor.\n\n${orderDetails}Order Breakdown:\nItems Total: ₦${totalItemsAmount}`;
+      
+      if (totalPackFees > 0) {
+        breakdownMessage += `\nPack Fee: ₦${totalPackFees}`;
+      }
+      
+      breakdownMessage += `\n${feeLabel}: ₦${totalDeliveryFees}\n---\nTotal: ₦${total}\n\nOrder ID: ${receiptData.orderId}\n\nNeed to cancel? Use the button below.`;
+
       return {
         status: "success",
         response_type: "payment_confirmed",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `Payment Confirmed Successfully!\n\nYour order has been forwarded to the vendor.\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}\n\nNeed to cancel? Use the button below.`,
+        message: breakdownMessage,
         data: {
           receipt_path: receiptPath,
           buttons: [{ id: "refund_order", title: "🔄 Cancel & Refund" }],
