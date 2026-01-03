@@ -14,7 +14,7 @@ services:
     command: --interval 300 --cleanup
 
   campus-bot:
-    image: Tomisin05/campus-ai-bot:latest
+    image: ghcr.io/downtownbyheychat/campus-ai-bot:latest
     container_name: campus-ai-bot
     restart: unless-stopped
     environment:
