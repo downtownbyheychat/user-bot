@@ -1,5 +1,27 @@
 import pool from '../database.js';
 
+// Item name mapping for common alternatives
+const ITEM_NAME_MAP = {
+  'j rice': 'jollof rice',
+  'jrice': 'jollof rice',
+  'frice': 'fried rice',
+  'f rice': 'fried rice',
+  'fry rice': 'fried rice',
+  'kpomo': 'ponmo',
+  'donut': 'doughnut',
+  'meat': 'beef',
+  'ofada': 'ofada rice',
+  'ayamashe': 'ofada sauce',
+  'dodo': 'plantain',
+  'beans cake': 'moi moi'
+};
+
+// Function to normalize item names using the mapping
+function normalizeItemName(itemName) {
+  const lowerName = itemName.toLowerCase().trim();
+  return ITEM_NAME_MAP[lowerName] || itemName;
+}
+
 // Enable pg_trgm extension for similarity search (run once)
 async function enableSimilarity() {
   try {
@@ -60,6 +82,9 @@ export async function getVendorById(vendorId) {
 
 export async function searchItemAcrossVendors(itemName) {
   await enableSimilarity();
+  // Normalize item name using mapping
+  const normalizedName = normalizeItemName(itemName);
+  
   try {
     const result = await pool.query(
       `SELECT m.*, v.name as vendor_name, v.id as vendor_id 
@@ -68,7 +93,7 @@ export async function searchItemAcrossVendors(itemName) {
        WHERE similarity(LOWER(m.food_name), LOWER($1)) > 0.5 
        AND v.status = $2
        ORDER BY similarity(LOWER(m.food_name), LOWER($1)) DESC`,
-      [itemName, 'open']
+      [normalizedName, 'open']
     );
     return result.rows;
   } catch (error) {
@@ -124,13 +149,16 @@ export async function getVendorCatalogue(vendorId) {
 
 export async function validateOrderItem(vendorId, itemName, quantityType, price, quantity=1) {
   await enableSimilarity();
+  // Normalize item name using mapping
+  const normalizedName = normalizeItemName(itemName);
+  
   try {
     // First, check for exact matches (could be multiple with same name)
     const exactMatches = await pool.query(
       `SELECT * FROM menus 
        WHERE vendor_id = $1 
        AND LOWER(food_name) = LOWER($2)`,
-      [vendorId, itemName]
+      [vendorId, normalizedName]
     );
 
     // If exact matches found
@@ -161,11 +189,11 @@ export async function validateOrderItem(vendorId, itemName, quantityType, price,
        AND similarity(LOWER(food_name), LOWER($2)) > 0.3
        ORDER BY similarity(LOWER(food_name), LOWER($2)) DESC
        LIMIT 5`,
-      [vendorId, itemName]
+      [vendorId, normalizedName]
     );
 
     if (similarItems.rows.length === 0) {
-      return { valid: false, error: `${itemName} not available at this vendor` };
+      return { valid: false, error: `${normalizedName} not available at this vendor` };
     }
 
     // Check if any items have a food_base (not '')
