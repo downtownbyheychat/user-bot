@@ -490,8 +490,14 @@ export async function handleButtonClick(buttonId, customerId) {
         const { generateReceipt } = await import("./receiptGenerator.js");
         const result = await generateReceipt(receiptData);
         
-        const { sendReceiptImage } = await import("./sendReciept.js");
-        await sendReceiptImage(customerId, result.filePath, receiptData.orderId);
+        try {
+          const { sendReceiptImage } = await import("./sendReciept.js");
+          await sendReceiptImage(customerId, result.imagePath, receiptData.orderId);
+        } catch (imageError) {
+          console.error("Image sending failed, sending PDF instead:", imageError);
+          const { sendReceiptPDF } = await import("./sendReciept.js");
+          await sendReceiptPDF(customerId, result.pdfPath, receiptData.orderId);
+        }
         
         return {
           status: "success",

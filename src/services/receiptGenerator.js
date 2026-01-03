@@ -2,6 +2,21 @@ import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 
+async function convertPdfToImage(pdfPath, orderId) {
+  const { default: pdf2pic } = await import('pdf2pic');
+  const convert = pdf2pic.fromPath(pdfPath, {
+    density: 300,
+    saveFilename: orderId,
+    savePath: path.join(process.cwd(), 'receipts'),
+    format: 'png',
+    width: 800,
+    height: 1200
+  });
+  
+  const result = await convert(1);
+  return result.path;
+}
+
 export async function generateReceipt(orderData) {
   const { orderId, packs, amount, customerName } = orderData;
 
@@ -230,14 +245,8 @@ export async function generateReceipt(orderData) {
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
     });
     const page = await browser.newPage();
-    await page.setViewport({ width: 400, height: 800 });
     await page.setContent(html, { waitUntil: 'load' });
-    
-    const screenshot = await page.screenshot({ 
-      type: 'png',
-      fullPage: true,
-      omitBackground: false
-    });
+    const pdf = await page.pdf({ format: 'A4', printBackground: true });
     await browser.close();
 
     const receiptsDir = path.join(process.cwd(), 'receipts');
@@ -245,10 +254,13 @@ export async function generateReceipt(orderData) {
       fs.mkdirSync(receiptsDir, { recursive: true });
     }
     
-    const filePath = path.join(receiptsDir, `${orderId}.png`);
-    fs.writeFileSync(filePath, screenshot);
+    const pdfPath = path.join(receiptsDir, `${orderId}.pdf`);
+    fs.writeFileSync(pdfPath, pdf);
     
-    return { image: screenshot, filePath };
+    // Convert PDF to image
+    const imagePath = await convertPdfToImage(pdfPath, orderId);
+    
+    return { pdf, pdfPath, imagePath };
   } catch (error) {
     console.error('Receipt generation error:', error);
     throw error;
