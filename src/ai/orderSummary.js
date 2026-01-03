@@ -93,6 +93,8 @@ EXTRACTION RULES
   - "200 jollof rice" → price: 200, quantity: 1, quantity_type: "per_price"
   - "500 stir fry" → price: 500, quantity: 1, quantity_type: "per_price"
   - "1500 fried rice" → price: 1500, quantity: 1, quantity_type: "per_price"
+  - "jollof rice #800" → price: 800, quantity: 1, quantity_type: "per_price"
+  - "#500 stir fry" → price: 500, quantity: 1, quantity_type: "per_price"
   - "2 jollof rice" → quantity: 2, price: null, quantity_type: null
   - "50 chicken" → quantity: 50, price: null (edge case, treat as quantity)
 - If price is present for an item, set price to that value and quantity_type to "per_price".
@@ -102,6 +104,8 @@ EXTRACTION RULES
   - "from *VendorName*"
   - "*VendorName* restaurant"
   - "order from *VendorName*"
+  - Vendor name after items list
+- Available vendors (prefer these but not limited to): AFRICAN KITCHEN, ALPHA'S PLACE, ARENA, BESTMAN, CHEF MAYO, EXCEEDING GRACE, FAMOT, RENEES CAFE, RUKAMAT, YOMICE CAFE
 - Ignore text unrelated to the order.
 - CRITICAL EXCEPTION: These exact phrases are SINGLE items - NEVER split them:
   1. "yam and egg" → ONE item
