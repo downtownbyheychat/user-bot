@@ -32,7 +32,7 @@ app.use('/assests', express.static('assests'));
 app.use('/codec-pro-cufonfonts', express.static('codec-pro-cufonfonts'));
 
 app.get('/', (req, res) => {
-  res.send('Campus AI Bot - WhatsApp Webhook');
+  res.send('Campus AI Bot is running.');
 });
 
 app.get('/health', (req, res) => {
