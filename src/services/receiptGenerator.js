@@ -217,11 +217,27 @@ export async function generateReceipt(orderData) {
   try {
     const browser = await puppeteer.launch({ 
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu'
+      ],
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
     });
     const page = await browser.newPage();
+    await page.setViewport({ width: 400, height: 800 });
     await page.setContent(html, { waitUntil: 'load' });
-    const pdf = await page.pdf({ format: 'A4', printBackground: true });
+    
+    const screenshot = await page.screenshot({ 
+      type: 'png',
+      fullPage: true,
+      omitBackground: false
+    });
     await browser.close();
 
     const receiptsDir = path.join(process.cwd(), 'receipts');
@@ -229,10 +245,10 @@ export async function generateReceipt(orderData) {
       fs.mkdirSync(receiptsDir, { recursive: true });
     }
     
-    const filePath = path.join(receiptsDir, `${orderId}.pdf`);
-    fs.writeFileSync(filePath, pdf);
+    const filePath = path.join(receiptsDir, `${orderId}.png`);
+    fs.writeFileSync(filePath, screenshot);
     
-    return { pdf, filePath };
+    return { image: screenshot, filePath };
   } catch (error) {
     console.error('Receipt generation error:', error);
     throw error;

@@ -8,12 +8,12 @@ const baseUrl = process.env.baseUrl;
 const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 
-export async function sendReceiptPDF(customerId, filePath, orderId) {
+export async function sendReceiptImage(customerId, filePath, orderId) {
   try {
-    // Upload PDF to WhatsApp Media API
+    // Upload image to WhatsApp Media API
     const formData = new FormData();
     formData.append('file', fs.createReadStream(filePath));
-    formData.append('type', 'application/pdf');
+    formData.append('type', 'image/png');
     formData.append('messaging_product', 'whatsapp');
 
     const uploadResponse = await axios.post(
@@ -29,17 +29,16 @@ export async function sendReceiptPDF(customerId, filePath, orderId) {
 
     const mediaId = uploadResponse.data.id;
 
-    // Send PDF document
+    // Send image
     await axios.post(
       `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`,
       {
         messaging_product: "whatsapp",
         to: customerId,
-        type: "document",
-        document: {
+        type: "image",
+        image: {
           id: mediaId,
-          caption: `📄 Your Order Receipt - ${orderId}`,
-          filename: `receipt_${orderId}.pdf`
+          caption: `Your Order Receipt - ${orderId}`
         }
       },
       {
@@ -50,7 +49,7 @@ export async function sendReceiptPDF(customerId, filePath, orderId) {
       }
     );
   } catch (error) {
-    console.error('Error sending receipt PDF:', error);
+    console.error('Error sending receipt image:', error);
     throw error;
   }
 }

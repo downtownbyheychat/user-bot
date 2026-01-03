@@ -490,8 +490,8 @@ export async function handleButtonClick(buttonId, customerId) {
         const { generateReceipt } = await import("./receiptGenerator.js");
         const result = await generateReceipt(receiptData);
         
-        const { sendReceiptPDF } = await import("./sendReciept.js");
-        await sendReceiptPDF(customerId, result.filePath, receiptData.orderId);
+        const { sendReceiptImage } = await import("./sendReciept.js");
+        await sendReceiptImage(customerId, result.filePath, receiptData.orderId);
         
         return {
           status: "success",
