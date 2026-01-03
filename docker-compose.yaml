@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   heychat-watchtower:
-    image: containrrr/watchtower
+    image: containrrr/watchtower:1.4.0
     container_name: heychat-watchtower
     restart: unless-stopped
     volumes:
