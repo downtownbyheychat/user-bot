@@ -10,14 +10,26 @@ services:
       - PORT=3000
     env_file:
       - .env
-    ports:
-      - "3000:3000"
     volumes:
       - ./receipts:/app/receipts
+    expose:
+      - "3000"
     labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-network"
+      - "traefik.http.routers.campus-bot.rule=Host(`user-bot.downtown.ng`)"
+      - "traefik.http.routers.campus-bot.entrypoints=websecure"
+      - "traefik.http.routers.campus-bot.tls.certresolver=myresolver"
+      - "traefik.http.services.campus-bot.loadbalancer.server.port=3000"
       - "com.centurylinklabs.watchtower.enable=true"
+    networks:
+      - traefik-network
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+
+networks:
+  traefik-network:
+    external: true
