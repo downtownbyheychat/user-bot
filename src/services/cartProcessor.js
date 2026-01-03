@@ -173,7 +173,7 @@ export async function processCart(cart, to) {
       .join("\n");
 
     return (
-      `*Order:*\n${itemLines} from` +
+      `Order: ${itemLines} from ` +
       `${orderSummary.vendorName}\n`
     );
   }
