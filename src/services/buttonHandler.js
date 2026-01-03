@@ -256,7 +256,10 @@ export async function handleButtonClick(buttonId, customerId) {
         timestamp: new Date().toISOString(),
         message: `Payment Details\nYour Order:\n${orderDetails}===================\n*Total: ₦${grandTotal}*\n===================\n\nAccount Number: ${account_details.account_number}\nBank: ${account_details.bank_name}\n\n`,
         data: {
-          buttons: [{ id: "payment_sent", title: "Payment Sent" }],
+          buttons: [
+            { id: "payment_sent", title: "Payment Sent" },
+            { id: "send_receipt", title: "📄 Send Receipt" }
+          ],
         },
       };
 
@@ -428,42 +431,7 @@ export async function handleButtonClick(buttonId, customerId) {
         message: `Current valid items: ${validItemsList}\n\nWhat would you like to add to your order?`,
       };
 
-    case "show_corrections":
-      const { getFailedOrder: getFailedForCorrections } = await import(
-        "./sessionManager.js"
-      );
-      const failedOrderCorrections = getFailedForCorrections(customerId);
 
-      if (!failedOrderCorrections) {
-        return {
-          status: "error",
-          message: "No order found to correct.",
-        };
-      }
-
-      const { validateOrderItem } = await import("../db/Utils/vendor.js");
-      const corrections = [];
-
-      for (const item of failedOrderCorrections.originalItems || []) {
-        const validation = await validateOrderItem(
-          failedOrderCorrections.vendorId,
-          item.name,
-          item.quantity_type,
-          item.price,
-          item.quantity
-        );
-
-        if (!validation.valid) {
-          corrections.push(`• ${validation.error}`);
-        }
-      }
-
-      return {
-        status: "success",
-        message: `Here's what needs to be corrected:\n\n${corrections.join(
-          "\n"
-        )}\n\n Reply with the corrected items.`,
-      };
 
     case "cancel_order":
       const { clearOrderStack } = await import("./orderStack.js");
@@ -481,6 +449,62 @@ export async function handleButtonClick(buttonId, customerId) {
         message:
           " Order Cancelled\nYour order has been cancelled successfully.\n\nReady to order again? Just drop your order in this format:\n\n*Example:*\njollof rice - ₦1,400, 1 beef 1 egg from African Kitchen delivered to my hostel(location)",
       };
+
+    
+
+    case "send_receipt": {
+      const { getOrderStack } = await import("./orderStack.js");
+      const stack = getOrderStack(customerId);
+      
+      if (stack.length === 0) {
+        return {
+          status: "error",
+          message: "No orders found. Please place an order first.",
+        };
+      }
+
+      let total = 0;
+      const packs = stack.map((pack, index) => {
+        total += pack.total;
+        return {
+          packNumber: index + 1,
+          vendor: pack.vendor,
+          deliveryLocation: pack.delivery_location,
+          items: pack.items.map((item) => ({
+            name: item.name,
+            quantity: item.quantity || 1,
+            price: item.quantity_type === "per_price" ? item.price : item.price,
+          })),
+          total: pack.total,
+        };
+      });
+
+      const receiptData = {
+        orderId: `ORD${Date.now()}`,
+        packs: packs,
+        amount: total,
+        customerName: "Customer",
+      };
+
+      try {
+        const { generateReceipt } = await import("./receiptGenerator.js");
+        const result = await generateReceipt(receiptData);
+        
+        const { sendReceiptPDF } = await import("./sendReciept.js");
+        await sendReceiptPDF(customerId, result.filePath, receiptData.orderId);
+        
+        return {
+          status: "success",
+          message: "📄 Receipt sent! Check your messages for the PDF receipt.",
+        };
+      } catch (error) {
+        console.error("Receipt generation/sending failed:", error);
+        return {
+          status: "error",
+          message: "Sorry, couldn't generate receipt. Please try again.",
+        };
+      }
+    }
 
     case "payment_sent": {
       const { getOrderStack: getStack, clearOrderStack: clearStack } =
@@ -629,12 +653,46 @@ export async function handleButtonClick(buttonId, customerId) {
 
       paymentSessions.set(customerId, session);
 
+      // Build order details breakdown
+      let orderDetails = "";
+      let totalItemsAmount = 0;
+      let totalPackFees = 0;
+      let totalDeliveryFees = 0;
+      
+      order_details.forEach((pack, index) => {
+        const itemsTotal = pack.itemsTotal || 0;
+        const packFee = pack.packFee || 0;
+        const deliveryFee = pack.deliveryFee || 0;
+        
+        totalItemsAmount += itemsTotal;
+        totalPackFees += packFee;
+        totalDeliveryFees += deliveryFee;
+        
+        orderDetails += `Pack ${index + 1} from ${pack.vendor}:\n`;
+        pack.items.forEach(item => {
+          orderDetails += `  ${item.name} (x${item.quantity || 1}) - ₦${item.price}\n`;
+        });
+        orderDetails += `\n`;
+      });
+      
+      // Determine fee type based on delivery location
+      const isPickup = order_details[0].delivery_location === "Pickup";
+      const feeLabel = isPickup ? "Pickup Fee" : "Delivery Fee";
+      
+      let breakdownMessage = `Payment Confirmed Successfully!\n\nYour order has been forwarded to the vendor.\n\n${orderDetails}Order Breakdown:\nItems Total: ₦${totalItemsAmount}`;
+      
+      if (totalPackFees > 0) {
+        breakdownMessage += `\nPack Fee: ₦${totalPackFees}`;
+      }
+      
+      breakdownMessage += `\n${feeLabel}: ₦${totalDeliveryFees}\n---\nTotal: ₦${total}\n\nOrder ID: ${receiptData.orderId}\n\nNeed to cancel? Use the button below.`;
+
       return {
         status: "success",
         response_type: "payment_confirmed",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: `Payment Confirmed Successfully!\n\nYour order has been forwarded to the vendor.\n\nOrder ID: ${receiptData.orderId}\nTotal: ₦${total}\n\nNeed to cancel? Use the button below.`,
+        message: breakdownMessage,
         data: {
           receipt_path: receiptPath,
           buttons: [{ id: "refund_order", title: "🔄 Cancel & Refund" }],
@@ -643,6 +701,30 @@ export async function handleButtonClick(buttonId, customerId) {
     }
 
     default:
+      // Handle swallow selection
+      if (buttonId.startsWith("select_swallow_")) {
+        const swallowName = buttonId.replace("select_swallow_", "").replace(/_/g, " ");
+        const { setAwaitingInput, getFailedOrder } = await import("./sessionManager.js");
+        const failedOrder = getFailedOrder(customerId);
+        
+        if (!failedOrder) {
+          return {
+            status: "error",
+            message: "Session expired. Please start your order again."
+          };
+        }
+        
+        // Store selected swallow and set awaiting quantity input
+        setAwaitingInput(customerId, {
+          type: "swallow_quantity",
+          selectedSwallow: swallowName
+        });
+        
+        return {
+          status: "success",
+          message: `How many ${swallowName} would you like? (e.g., 1, 2, 3)`
+        };
+      }
       // Handle pickup button
       if (buttonId.startsWith("pickup_")) {
         const vendorId = buttonId.substring(7);
@@ -686,10 +768,11 @@ export async function handleButtonClick(buttonId, customerId) {
 
         const itemsList = pendingOrder.orderSummary.items
           .map((i) => {
+            const displayName = i.dbName || i.name;
             if (i.quantity_type === "per_price") {
-              return `${i.name} -- ₦${i.price}`;
+              return `${displayName} -- ₦${i.price}`;
             } else {
-              return `${i.name} (x${i.quantity}) -- ₦${i.price}`;
+              return `${displayName} (x${i.quantity}) -- ₦${i.price}`;
             }
           })
           .join("\n");
