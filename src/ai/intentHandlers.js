@@ -1065,8 +1065,8 @@ if (!vendor && items.length > 0) {
 
 
   "Cancel Order": async (customerId, message) => {
-    const { getOrderStack } = await import("../services/orderStack.js");
-    const { getPendingOrder } = await import("../services/sessionManager.js");
+    const { getOrderStack, clearOrderStack } = await import("../services/orderStack.js");
+    const { getPendingOrder, clearPendingOrder, clearFailedOrder } = await import("../services/sessionManager.js");
     
     const orderStack = getOrderStack(customerId);
     const pendingOrder = getPendingOrder(customerId);
@@ -1074,26 +1074,25 @@ if (!vendor && items.length > 0) {
     // Check if there's anything to cancel
     if (orderStack.length === 0 && !pendingOrder) {
       return {
-        status: "error",
+        status: "success",
         response_type: "order_management",
         customer_id: customerId,
         timestamp: new Date().toISOString(),
-        message: "You don't have any active orders to cancel."
+        message: "You don't have any active orders to cancel.\n\nReady to place a new order? Just tell me what you'd like!"
       };
     }
     
+    // If there are orders, clear them immediately and confirm
+    clearOrderStack(customerId);
+    clearPendingOrder(customerId);
+    clearFailedOrder(customerId);
+    
     return {
       status: "success",
-      response_type: "order_management",
+      response_type: "order_cancelled",
       customer_id: customerId,
       timestamp: new Date().toISOString(),
-      message: "Are you sure you want to cancel your order?",
-      data: {
-        buttons: [
-          { id: "confirm_cancel", title: "Yes, Cancel" },
-          { id: "keep_order", title: "No, Keep Order" }
-        ]
-      }
+      message: "✅ Order Cancelled\nYour order has been cancelled successfully.\n\nReady to order again? Just drop your order in this format:\n\n*Example:*\njollof rice - ₦1,400, 1 beef 1 egg from African Kitchen delivered to my hostel(location)"
     };
   },
 
