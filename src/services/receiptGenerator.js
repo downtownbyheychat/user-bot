@@ -36,25 +36,21 @@ async function convertPdfToImage(pdfPath, orderId) {
     console.log('📁 PDF path:', pdfPath);
     console.log('🆔 Order ID:', orderId);
     
-    const pdf2pic = await import('pdf2pic');
-    console.log('✅ pdf2pic imported successfully');
+    const { pdf } = await import('pdf-to-img');
+    console.log('✅ pdf-to-img imported successfully');
     
-    const convert = pdf2pic.fromPath(pdfPath, {
-      density: 100,
-      saveFilename: orderId,
-      savePath: path.join(process.cwd(), 'receipts'),
-      format: 'png',
-      width: 600,
-      height: 800
-    });
+    const document = await pdf(pdfPath, { scale: 2 });
+    console.log('⚙️ PDF document loaded');
     
-    console.log('⚙️ Starting conversion...');
-    const result = await convert(1, { responseType: 'image' });
+    const page1Buffer = await document.getPage(1);
+    const imagePath = path.join(process.cwd(), 'receipts', `${orderId}.png`);
     
-    const imagePath = path.join(process.cwd(), 'receipts', `${orderId}.1.png`);
-    console.log('🖼️ Expected image path:', imagePath);
+    const fs = await import('fs');
+    await fs.promises.writeFile(imagePath, page1Buffer);
     
-    if (fs.existsSync(imagePath)) {
+    console.log('🖼️ Image saved to:', imagePath);
+    
+    if (fs.default.existsSync(imagePath)) {
       console.log('✅ PNG conversion successful!');
       return imagePath;
     } else {
@@ -63,7 +59,6 @@ async function convertPdfToImage(pdfPath, orderId) {
     }
   } catch (error) {
     console.error('❌ PDF to PNG conversion failed:', error.message);
-    console.log('💡 VPS may need: apt install graphicsmagick');
     return null;
   }
 }
