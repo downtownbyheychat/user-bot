@@ -12,6 +12,7 @@ import {
   sendTestvendor,
 } from "../services/sendVendorCatalog.js";
 import dotenv from "dotenv";
+import fs from "fs";
 dotenv.config();
 import pool from "../db/database.js";
 import { sendPassImage } from "./sendReciept.js";
@@ -492,16 +493,21 @@ export async function handleButtonClick(buttonId, customerId) {
 
         // Try sending as image first, fallback to PDF
         try {
-          if (result.imagePath) {
+          if (result.imagePath && fs.existsSync(result.imagePath)) {
             const { sendReceiptImage } = await import("./sendReciept.js");
             await sendReceiptImage(customerId, result.imagePath, receiptData.orderId);
+            console.log('✅ Receipt sent as PNG image');
           } else {
-            throw new Error('No image available');
+            console.log('📄 PNG not available, sending PDF instead');
+            const { sendReceiptPDF } = await import("./sendReciept.js");
+            await sendReceiptPDF(customerId, result.filePath, receiptData.orderId);
+            console.log('✅ Receipt sent as PDF');
           }
         } catch (imageError) {
-          console.error('Image sending failed, trying PDF:', imageError);
+          console.error('📄 Image sending failed, trying PDF:', imageError.message);
           const { sendReceiptPDF } = await import("./sendReciept.js");
           await sendReceiptPDF(customerId, result.filePath, receiptData.orderId);
+          console.log('✅ Receipt sent as PDF fallback');
         }
 
         return {
@@ -509,11 +515,6 @@ export async function handleButtonClick(buttonId, customerId) {
         };
       } catch (error) {
         console.error("Receipt generation/sending failed:", error);
-
-
-
-
-
         return {
           status: "error",
           message: "Sorry, couldn't generate receipt. Please try again.",

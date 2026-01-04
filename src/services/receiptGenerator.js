@@ -36,19 +36,22 @@ async function convertPdfToImage(pdfPath, orderId) {
     console.log('📁 PDF path:', pdfPath);
     console.log('🆔 Order ID:', orderId);
     
-    const pdf = await import('pdf-poppler');
-    console.log('✅ pdf-poppler imported successfully');
+    const pdf2pic = await import('pdf2pic');
+    console.log('✅ pdf2pic imported successfully');
     
-    const options = {
+    const convert = pdf2pic.fromPath(pdfPath, {
+      density: 100,
+      saveFilename: orderId,
+      savePath: path.join(process.cwd(), 'receipts'),
       format: 'png',
-      out_dir: path.join(process.cwd(), 'receipts'),
-      out_prefix: orderId,
-      page: 1
-    };
-    console.log('⚙️ Conversion options:', options);
+      width: 600,
+      height: 800
+    });
     
-    await pdf.convert(pdfPath, options);
-    const imagePath = path.join(process.cwd(), 'receipts', `${orderId}-1.png`);
+    console.log('⚙️ Starting conversion...');
+    const result = await convert(1, { responseType: 'image' });
+    
+    const imagePath = path.join(process.cwd(), 'receipts', `${orderId}.1.png`);
     console.log('🖼️ Expected image path:', imagePath);
     
     if (fs.existsSync(imagePath)) {
@@ -60,7 +63,7 @@ async function convertPdfToImage(pdfPath, orderId) {
     }
   } catch (error) {
     console.error('❌ PDF to PNG conversion failed:', error.message);
-    console.log('💡 VPS may need: apt install poppler-utils');
+    console.log('💡 VPS may need: apt install graphicsmagick');
     return null;
   }
 }
