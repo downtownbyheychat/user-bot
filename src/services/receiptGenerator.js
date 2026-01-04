@@ -2,6 +2,21 @@ import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 
+async function convertPdfToImage(pdfPath, orderId) {
+  const { default: pdf2pic } = await import('pdf2pic');
+  const convert = pdf2pic.fromPath(pdfPath, {
+    density: 300,
+    saveFilename: orderId,
+    savePath: path.join(process.cwd(), 'receipts'),
+    format: 'png',
+    width: 800,
+    height: 1200
+  });
+  
+  const result = await convert(1);
+  return result.path;
+}
+
 export async function generateReceipt(orderData) {
   const { orderId, packs, amount, customerName } = orderData;
 
@@ -242,7 +257,10 @@ export async function generateReceipt(orderData) {
     const filePath = path.join(receiptsDir, `${orderId}.pdf`);
     fs.writeFileSync(filePath, pdf);
 
-    return { pdf, filePath };
+    // Convert PDF to image
+    const imagePath = await convertPdfToImage(filePath, orderId);
+
+    return { pdf, filePath, imagePath };
   } catch (error) {
     console.error('Receipt generation error:', error);
     throw error;

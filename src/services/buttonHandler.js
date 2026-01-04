@@ -490,12 +490,18 @@ export async function handleButtonClick(buttonId, customerId) {
         const { generateReceipt } = await import("./receiptGenerator.js");
         const result = await generateReceipt(receiptData);
 
-        const { sendReceiptPDF } = await import("./sendReciept.js");
-        await sendReceiptPDF(customerId, result.filePath, receiptData.orderId);
+        // Try sending as image first, fallback to PDF
+        try {
+          const { sendReceiptImage } = await import("./sendReciept.js");
+          await sendReceiptImage(customerId, result.imagePath, receiptData.orderId);
+        } catch (imageError) {
+          console.error('Image sending failed, trying PDF:', imageError);
+          const { sendReceiptPDF } = await import("./sendReciept.js");
+          await sendReceiptPDF(customerId, result.filePath, receiptData.orderId);
+        }
 
         return {
           status: "success",
-
         };
       } catch (error) {
         console.error("Receipt generation/sending failed:", error);
@@ -574,6 +580,16 @@ export async function handleButtonClick(buttonId, customerId) {
       try {
         const result = await generateReceipt(receiptData);
         receiptPath = result.filePath;
+        
+        // Try sending as image first, fallback to PDF
+        try {
+          const { sendReceiptImage } = await import("./sendReciept.js");
+          await sendReceiptImage(customerId, result.imagePath, receiptData.orderId);
+        } catch (imageError) {
+          console.error('Image sending failed, trying PDF:', imageError);
+          const { sendReceiptPDF } = await import("./sendReciept.js");
+          await sendReceiptPDF(customerId, result.filePath, receiptData.orderId);
+        }
       } catch (err) {
         console.error("Receipt generation failed:", err);
       }
