@@ -125,7 +125,7 @@ export async function getVendorCatalogue(vendorId) {
       [vendorId]
     );
 
-    let catalogue = `🍽️ ${vendor.name} Menu:\n\n`;
+    let catalogue = `️${vendor.name} Menu:\n\n`;
     result.rows.forEach((item, idx) => {
       catalogue += `${idx + 1}. ${item.food_name}`;
       if (item.sale_quantity === 'per_price') {

@@ -90,7 +90,7 @@ export async function generateReceipt(orderData) {
             <tr>
               <td>${item.name}</td>
               <td class="qty"><strong>${item.quantity}</strong></td>
-              <td class="price">₦${(item.quantity * item.price).toLocaleString()}</td>
+              <td class="price">₦${item.price.toLocaleString()}</td>
             </tr>
           `).join('')}
         </tbody>

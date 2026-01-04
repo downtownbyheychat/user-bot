@@ -31,7 +31,7 @@ export const intentHandlers = {
     try {
         const userName = await getUserName(customerId);
         const vendors = await getAllVendors();
-        const greetingMessage = `Sup ${userName || ""}👋! \nDowntown is active. Select food shop`;
+        const greetingMessage = `Sup ${userName || ""}! \nDowntown is active. Select food shop`;
         
         // If more than 10 vendors, return multiple lists
         if (vendors.length > 10) {
@@ -1092,7 +1092,7 @@ if (!vendor && items.length > 0) {
       response_type: "order_cancelled",
       customer_id: customerId,
       timestamp: new Date().toISOString(),
-      message: "✅ Order Cancelled\nYour order has been cancelled successfully.\n\nReady to order again? Just drop your order in this format:\n\n*Example:*\njollof rice - ₦1,400, 1 beef 1 egg from African Kitchen delivered to my hostel(location)"
+      message: "Order Cancelled\nYour order has been cancelled successfully.\n\nReady to order again? Just drop your order in this format:\n\n*Example:*\njollof rice - ₦1,400, 1 beef 1 egg from African Kitchen delivered to my hostel(location)"
     };
   },
 

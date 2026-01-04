@@ -746,7 +746,7 @@ export async function handleButtonClick(buttonId, customerId) {
         message: breakdownMessage,
         data: {
           receipt_path: receiptPath,
-          buttons: [{ id: "refund_order", title: "🔄 Cancel & Refund" }],
+          buttons: [{ id: "refund_order", title: "Cancel & Refund" }],
         },
       };
     }
