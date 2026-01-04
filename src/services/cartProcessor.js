@@ -123,7 +123,7 @@ export async function processCart(cart, to) {
     // Store item with correct structure
     itemsList.push({
       name: menu.food_name,
-      price,
+      price: total, // Use total price instead of unit price
       quantity,
       total,
       saleQuantity: menu.sale_quantity,
