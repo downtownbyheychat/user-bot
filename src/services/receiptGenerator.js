@@ -2,24 +2,57 @@ import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 
-async function convertPdfToImage(pdfPath, orderId) {
-  const pdf = await import('pdf-poppler');
-  const options = {
-    format: 'png',
-    out_dir: path.join(process.cwd(), 'receipts'),
-    out_prefix: orderId,
-    page: 1
-  };
+async function convertSvgToPng(svgContent) {
+  if (!svgContent) return '';
   
-  await pdf.convert(pdfPath, options);
-  return path.join(process.cwd(), 'receipts', `${orderId}-1.png`);
+  try {
+    const browser = await puppeteer.launch({ 
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    const page = await browser.newPage();
+    
+    await page.setContent(`<html><body>${svgContent}</body></html>`);
+    const svgElement = await page.$('svg');
+    
+    if (!svgElement) {
+      await browser.close();
+      return '';
+    }
+    
+    const screenshot = await svgElement.screenshot({ type: 'png' });
+    await browser.close();
+    
+    return `data:image/png;base64,${screenshot.toString('base64')}`;
+  } catch (error) {
+    console.log('SVG conversion failed, using original SVG');
+    return `data:image/svg+xml;base64,${Buffer.from(svgContent).toString('base64')}`;
+  }
+}
+
+async function convertPdfToImage(pdfPath, orderId) {
+  try {
+    const pdf = await import('pdf-poppler');
+    const options = {
+      format: 'png',
+      out_dir: path.join(process.cwd(), 'receipts'),
+      out_prefix: orderId,
+      page: 1
+    };
+    
+    await pdf.convert(pdfPath, options);
+    return path.join(process.cwd(), 'receipts', `${orderId}-1.png`);
+  } catch (error) {
+    console.log('PDF to image conversion not available, using PDF only');
+    return null;
+  }
 }
 
 export async function generateReceipt(orderData) {
   const { orderId, packs, amount, customerName } = orderData;
 
   const assetsPath = path.join(process.cwd(), 'assests');
-  const logoSvg = fs.existsSync(path.join(assetsPath, 'downtown.svg')) ? fs.readFileSync(path.join(assetsPath, 'downtown.svg'), 'base64') : '';
+  const logoPng = fs.existsSync(path.join(assetsPath, 'downtown_logo.png')) ? `data:image/png;base64,${fs.readFileSync(path.join(assetsPath, 'downtown_logo.png'), 'base64')}` : '';
   const jesusPng = fs.existsSync(path.join(assetsPath, 'jesus_loves_you.png')) ? fs.readFileSync(path.join(assetsPath, 'jesus_loves_you.png'), 'base64') : '';
   const eatPng = fs.existsSync(path.join(assetsPath, 'eat_print_repeat.png')) ? fs.readFileSync(path.join(assetsPath, 'eat_print_repeat.png'), 'base64') : '';
   const bgPng = fs.existsSync(path.join(assetsPath, 'background.png')) ? fs.readFileSync(path.join(assetsPath, 'background.png'), 'base64') : '';
@@ -192,7 +225,7 @@ export async function generateReceipt(orderData) {
   <div class="ticket">
     <div class="top-right">
       <div style="color: #999; font-size: 10px; margin-bottom: 2px;">downtown.ng</div>
-      <img src="data:image/svg+xml;base64,${logoSvg}" alt="Downtown" style="width: 40px; height: auto;">
+      <img src="${logoPng}" alt="Downtown" style="width: 40px; height: auto;">
     </div>
     
     <h2>Order Ticket</h2>
