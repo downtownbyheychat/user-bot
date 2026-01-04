@@ -352,7 +352,13 @@ async function processMessagesAsync(body) {
                             }
                         } catch (error) {
                             console.error('Button handling error:', error);
-                            await sendMessage(customerPhone, "Sorry, that action isn't working right now. Please try again.");
+                            await sendMessage(customerPhone, {
+                                status: "error",
+                                message: "Sorry, that action isn't working right now. Please try again.",
+                                data: {
+                                    buttons: [{ id: buttonId, title: "Try Again" }]
+                                }
+                            });
                         }
                     }
 
@@ -410,7 +416,13 @@ async function processMessagesAsync(body) {
                             }
                         } catch (error) {
                             console.error('List handling error:', error);
-                            await sendMessage(customerPhone, "Sorry, that action isn't working right now. Please try again.");
+                            await sendMessage(customerPhone, {
+                                status: "error",
+                                message: "Sorry, that action isn't working right now. Please try again.",
+                                data: {
+                                    buttons: [{ id: listItemId, title: "Try Again" }]
+                                }
+                            });
                         }
                     }
 

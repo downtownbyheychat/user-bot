@@ -3,18 +3,32 @@ import fs from 'fs';
 import path from 'path';
 
 async function convertPdfToImage(pdfPath, orderId) {
-  const { default: pdf2pic } = await import('pdf2pic');
-  const convert = pdf2pic.fromPath(pdfPath, {
-    density: 300,
-    saveFilename: orderId,
-    savePath: path.join(process.cwd(), 'receipts'),
-    format: 'png',
-    width: 800,
-    height: 1200
-  });
-  
-  const result = await convert(1);
-  return result.path;
+  try {
+    const { createCanvas } = await import('canvas');
+    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.js');
+    
+    const pdfBuffer = fs.readFileSync(pdfPath);
+    const pdf = await pdfjsLib.getDocument({ data: pdfBuffer }).promise;
+    const page = await pdf.getPage(1);
+    
+    const viewport = page.getViewport({ scale: 2.0 });
+    const canvas = createCanvas(viewport.width, viewport.height);
+    const context = canvas.getContext('2d');
+    
+    await page.render({
+      canvasContext: context,
+      viewport: viewport
+    }).promise;
+    
+    const imagePath = path.join(process.cwd(), 'receipts', `${orderId}.png`);
+    const buffer = canvas.toBuffer('image/png');
+    fs.writeFileSync(imagePath, buffer);
+    
+    return imagePath;
+  } catch (error) {
+    console.error('PDF to image conversion failed:', error);
+    throw error;
+  }
 }
 
 export async function generateReceipt(orderData) {

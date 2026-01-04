@@ -513,6 +513,9 @@ export async function handleButtonClick(buttonId, customerId) {
         return {
           status: "error",
           message: "Sorry, couldn't generate receipt. Please try again.",
+          data: {
+            buttons: [{ id: "send_receipt", title: " Try Again" }],
+          }
         };
       }
     }
