@@ -464,6 +464,21 @@ export async function handleButtonClick(buttonId, customerId) {
         };
       }
 
+      // Get customer name from database
+      let customerName = "Customer";
+      try {
+        const userResult = await pool.query(
+          `SELECT first_name, last_name FROM users WHERE phone_number = $1`,
+          [customerId]
+        );
+        if (userResult.rows.length > 0) {
+          const { first_name, last_name } = userResult.rows[0];
+          customerName = `${first_name || ''} ${last_name || ''}`.trim() || "Customer";
+        }
+      } catch (error) {
+        console.log('Could not fetch customer name:', error.message);
+      }
+
       let total = 0;
       const packs = stack.map((pack, index) => {
         total += pack.total;
@@ -476,6 +491,9 @@ export async function handleButtonClick(buttonId, customerId) {
             quantity: item.quantity || 1,
             price: item.quantity_type === "per_price" ? item.price : item.price,
           })),
+          itemsTotal: pack.itemsTotal || 0,
+          packFee: pack.packFee || 0,
+          deliveryFee: pack.deliveryFee || 0,
           total: pack.total,
         };
       });
@@ -484,7 +502,7 @@ export async function handleButtonClick(buttonId, customerId) {
         orderId: `ORD${Date.now()}`,
         packs: packs,
         amount: total,
-        customerName: "Customer",
+        customerName: customerName,
       };
 
       try {

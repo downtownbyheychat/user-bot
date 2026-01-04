@@ -90,14 +90,27 @@ export async function generateReceipt(orderData) {
             <tr>
               <td>${item.name}</td>
               <td class="qty"><strong>${item.quantity}</strong></td>
-              <td class="price">N${(item.quantity * item.price).toLocaleString()}</td>
+              <td class="price">₦${(item.quantity * item.price).toLocaleString()}</td>
             </tr>
           `).join('')}
         </tbody>
       </table>
       <div class="field">
+        <span class="field-label">Items Total:</span>
+        <span class="field-value">₦${(pack.itemsTotal || 0).toLocaleString()}</span>
+      </div>
+      ${pack.packFee > 0 ? `
+      <div class="field">
+        <span class="field-label">Pack Fee:</span>
+        <span class="field-value">₦${pack.packFee.toLocaleString()}</span>
+      </div>` : ''}
+      <div class="field">
+        <span class="field-label">${pack.deliveryLocation === 'Pickup' ? 'Pickup Fee' : 'Delivery Fee'}:</span>
+        <span class="field-value">₦${(pack.deliveryFee || 0).toLocaleString()}</span>
+      </div>
+      <div class="field highlight">
         <span class="field-label">Pack Total:</span>
-        <span class="field-value">N${pack.total.toLocaleString()}</span>
+        <span class="field-value">₦${pack.total.toLocaleString()}</span>
       </div>
       <div class="field">
         <span class="field-label">${pack.deliveryLocation === 'Pickup' ? 'Pickup' : 'Delivery'}:</span>
@@ -261,7 +274,7 @@ export async function generateReceipt(orderData) {
     
     <div class="field highlight">
       <span class="field-label">Total Amount:</span>
-      <span class="field-value">N${amount.toLocaleString()}</span>
+      <span class="field-value">₦${amount.toLocaleString()}</span>
     </div>
     
     <div class="footer">
