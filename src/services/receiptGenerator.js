@@ -32,18 +32,35 @@ async function convertSvgToPng(svgContent) {
 
 async function convertPdfToImage(pdfPath, orderId) {
   try {
+    console.log('🔄 Starting PDF to PNG conversion...');
+    console.log('📁 PDF path:', pdfPath);
+    console.log('🆔 Order ID:', orderId);
+    
     const pdf = await import('pdf-poppler');
+    console.log('✅ pdf-poppler imported successfully');
+    
     const options = {
       format: 'png',
       out_dir: path.join(process.cwd(), 'receipts'),
       out_prefix: orderId,
       page: 1
     };
+    console.log('⚙️ Conversion options:', options);
     
     await pdf.convert(pdfPath, options);
-    return path.join(process.cwd(), 'receipts', `${orderId}-1.png`);
+    const imagePath = path.join(process.cwd(), 'receipts', `${orderId}-1.png`);
+    console.log('🖼️ Expected image path:', imagePath);
+    
+    if (fs.existsSync(imagePath)) {
+      console.log('✅ PNG conversion successful!');
+      return imagePath;
+    } else {
+      console.log('❌ PNG file not created');
+      return null;
+    }
   } catch (error) {
-    console.log('PDF to image conversion not available, using PDF only');
+    console.error('❌ PDF to PNG conversion failed:', error.message);
+    console.log('💡 VPS may need: apt install poppler-utils');
     return null;
   }
 }
@@ -261,39 +278,40 @@ export async function generateReceipt(orderData) {
   `;
 
   try {
+    console.log('🎫 Starting receipt generation...');
+    console.log('📄 Order data:', { orderId, customerName, packsCount: packs.length });
+    
     const browser = await puppeteer.launch({ 
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
-
-
-
-
-
-
-
-
-
-
     });
+    console.log('🌐 Puppeteer browser launched');
+    
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'load' });
+    console.log('📝 HTML content loaded');
+    
     const pdf = await page.pdf({ format: 'A4', printBackground: true });
     await browser.close();
+    console.log('📝 PDF generated successfully');
 
     const receiptsDir = path.join(process.cwd(), 'receipts');
     if (!fs.existsSync(receiptsDir)) {
       fs.mkdirSync(receiptsDir, { recursive: true });
+      console.log('📁 Created receipts directory');
     }
 
     const filePath = path.join(receiptsDir, `${orderId}.pdf`);
     fs.writeFileSync(filePath, pdf);
+    console.log('💾 PDF saved to:', filePath);
 
     // Convert PDF to image
     const imagePath = await convertPdfToImage(filePath, orderId);
 
     return { pdf, filePath, imagePath };
   } catch (error) {
-    console.error('Receipt generation error:', error);
+    console.error('❌ Receipt generation error:', error);
+    console.error('🔍 Error stack:', error.stack);
     throw error;
   }
 }
