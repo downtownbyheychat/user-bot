@@ -3,32 +3,16 @@ import fs from 'fs';
 import path from 'path';
 
 async function convertPdfToImage(pdfPath, orderId) {
-  try {
-    const { createCanvas } = await import('canvas');
-    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.js');
-    
-    const pdfBuffer = fs.readFileSync(pdfPath);
-    const pdf = await pdfjsLib.getDocument({ data: pdfBuffer }).promise;
-    const page = await pdf.getPage(1);
-    
-    const viewport = page.getViewport({ scale: 2.0 });
-    const canvas = createCanvas(viewport.width, viewport.height);
-    const context = canvas.getContext('2d');
-    
-    await page.render({
-      canvasContext: context,
-      viewport: viewport
-    }).promise;
-    
-    const imagePath = path.join(process.cwd(), 'receipts', `${orderId}.png`);
-    const buffer = canvas.toBuffer('image/png');
-    fs.writeFileSync(imagePath, buffer);
-    
-    return imagePath;
-  } catch (error) {
-    console.error('PDF to image conversion failed:', error);
-    throw error;
-  }
+  const pdf = await import('pdf-poppler');
+  const options = {
+    format: 'png',
+    out_dir: path.join(process.cwd(), 'receipts'),
+    out_prefix: orderId,
+    page: 1
+  };
+  
+  await pdf.convert(pdfPath, options);
+  return path.join(process.cwd(), 'receipts', `${orderId}-1.png`);
 }
 
 export async function generateReceipt(orderData) {
